@@ -23,7 +23,7 @@ GameObject:
   - component: {fileID: 23017582917722062}
   - component: {fileID: 65496218761447360}
   m_Layer: 0
-  m_Name: Cube
+  m_Name: Grid Prefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -36,7 +36,7 @@ Transform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1731050344747762}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -206.42226, y: 15, z: -165.44568}
+  m_LocalPosition: {x: 117.84, y: 15, z: -83.243416}
   m_LocalScale: {x: 100, y: 10, z: 100}
   m_Children: []
   m_Father: {fileID: 0}

@@ -23,7 +23,7 @@ GameObject:
   - component: {fileID: 23643381499268262}
   - component: {fileID: 65870584582434626}
   m_Layer: 0
-  m_Name: Cube 1
+  m_Name: TempDogPrefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -36,7 +36,7 @@ Transform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1718596337844594}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 200.8265, y: 30, z: -90.23724}
+  m_LocalPosition: {x: 203.1025, y: 30, z: 165.50908}
   m_LocalScale: {x: 10, y: 10, z: 10}
   m_Children: []
   m_Father: {fileID: 0}

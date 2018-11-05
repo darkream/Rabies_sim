@@ -3,9 +3,10 @@ namespace Mapbox.Examples
 	using UnityEngine;
 	using Mapbox.Utils;
 	using Mapbox.Unity.Map;
-	using Mapbox.Unity.MeshGeneration.Factories;
 	using Mapbox.Unity.Utilities;
 	using System.Collections.Generic;
+    using Mapbox.Unity.MeshGeneration.Factories;
+    using Mapbox.Geocoding;
 
 	public class SpawnOnMap : MonoBehaviour
 	{
@@ -86,25 +87,7 @@ namespace Mapbox.Examples
             //Finding neighbour world based index from each grid
             for (int j = 0; j < transform.childCount; j++)
             {
-                //Neighbour Grid from up down left right
-                Vector3 thiswbi = transform.GetChild(j).position;
-                neighbourname[0] = findNearestGridAt(thiswbi.x - 100.0f , thiswbi.z);
-                neighbourname[1] = findNearestGridAt(thiswbi.x + 100.0f , thiswbi.z);
-                neighbourname[2] = findNearestGridAt(thiswbi.x , thiswbi.z - 100.0f);
-                neighbourname[3] = findNearestGridAt(thiswbi.x , thiswbi.z + 100.0f);
-
-                for (int i = 0; i < 4; i++)
-                {
-                    if (neighbourname[i].Equals("")) //if there is no neighbour, then match itself
-                    {
-                        SplitAndAddItself(transform.GetChild(i).name, i);
-                    }
-                    else
-                    {
-                        SplitAndAddWBI(neighbourname[i], transform.GetChild(i).name, i); //else match the neighbour grid
-                    }
-                }
-
+                //If the grid already has the dog
                 if (transform.GetChild(j).childCount > 1)
                 {
                     string parentname = "dog" + transform.GetChild(j).name + "(Clone)";
@@ -118,11 +101,31 @@ namespace Mapbox.Examples
                 }
                 else
                 {
-                    foreach(string dog in doglocationlist)
+                    //Neighbour Grid from up down left right
+                    Vector3 thiswbi = transform.GetChild(j).position;
+                    neighbourname[0] = findNearestGridAt(thiswbi.x - 100.0f , thiswbi.z);
+                    neighbourname[1] = findNearestGridAt(thiswbi.x + 100.0f , thiswbi.z);
+                    neighbourname[2] = findNearestGridAt(thiswbi.x , thiswbi.z - 100.0f);
+                    neighbourname[3] = findNearestGridAt(thiswbi.x , thiswbi.z + 100.0f);
+
+                    for (int i = 0; i < 4; i++)
+                    {
+                        if (neighbourname[i].Equals("")) //if there is no neighbour, then match itself
+                        {
+                            SplitAndAddItself(transform.GetChild(i).name , i);
+                        }
+                        else
+                        {
+                            SplitAndAddWBI(neighbourname[i] , transform.GetChild(i).name , i); //else match the neighbour grid
+                        }
+                    }
+
+                    foreach (string dog in doglocationlist)
                     {
                         if (isWithinNeighbour(dog))
                         {
                             createDogAt(j);
+                            break;
                         }
                     }
                 }
@@ -171,27 +174,27 @@ namespace Mapbox.Examples
             string[] WBI = text.Split('/');
             string[] anotherWBI = anothertext.Split('/');
             if (at < 2)
-                neighbourx[at] = (float.Parse(WBI[1]) + float.Parse(anotherWBI[1])) / 2.0f;
+                neighbourx[at] = (float.Parse("0."+WBI[1]) + float.Parse("0."+anotherWBI[1])) / 4.0f;
             else
-                neighboury[at] = (float.Parse(WBI[2]) + float.Parse(anotherWBI[2])) / 2.0f;
+                neighboury[at] = (float.Parse("0."+WBI[2]) + float.Parse("0."+anotherWBI[2])) / 4.0f;
         }
 
-        private void SplitAndAddItself(string text,int at)
+        private void SplitAndAddItself(string text, int at)
         {
             string[] WBI = text.Split('/');
             if (at < 2)
-                neighbourx[at] = float.Parse(WBI[1]);
+                neighbourx[at] = float.Parse("0." + WBI[1]);
             else
-                neighboury[at] = float.Parse(WBI[2]);
+                neighboury[at] = float.Parse("0." + WBI[2]);
         }
 
         private bool isWithinNeighbour(string text)
         {
             string[] WBI = text.Split('/');
-            float x = float.Parse(WBI[1]);
-            float y = float.Parse(WBI[2]);
-            Debug.Log("is " + x + " within " + neighbourx[0] + " - " + neighbourx[1]);
-            Debug.Log("is " + y + " within " + neighboury[2] + " - " + neighboury[3]);
+            float x = float.Parse("0." + WBI[1]);
+            float y = float.Parse("0." + WBI[2]);
+            //Debug.Log("is " + x + " within " + neighbourx[0] + " - " + neighbourx[1]);
+            //Debug.Log("is " + y + " within " + neighboury[2] + " - " + neighboury[3]);
             bool xtruth = false;
             bool ytruth = false;
             if (x >= neighbourx[0])
@@ -199,6 +202,7 @@ namespace Mapbox.Examples
                 if (x <= neighbourx[1])
                 {
                     xtruth = true;
+                    //Debug.Log(x + " in " + neighbourx[0] + " and " + neighbourx[1] + " is truth");
                 }
             }
             if (x <= neighbourx[0])
@@ -224,6 +228,7 @@ namespace Mapbox.Examples
             }
             if (xtruth && ytruth)
             {
+                Debug.Log("finally");
                 return true;
             }
             else
