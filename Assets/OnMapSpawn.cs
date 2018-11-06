@@ -26,13 +26,7 @@ public class OnMapSpawn : MonoBehaviour
     GameObject dogpanel; //Prefabs for dog layer
 
     [SerializeField]
-    float radius_earth = 6378.1f; // Radius of the earth in km (Google Answer)
-
-    [SerializeField] //(reference: http://www.longitudestore.com/how-big-is-one-gps-degree.html)
-    float equator_latitude_per_degree = 110570.0f; //110 km per degree
-    float pole_latitude_per_degree = 111690.0f; //111.69 km per degree
-    float widest_longitude_per_degree = 111321.0f; //111.321 km longitude per degree at equator (while 0 at pole)
-    float one_degree_per_radian = 0.0174532925f; //(Google Answer)
+    float radius_earth = 6378.1f; // Radius of the earth in km
 
     List<float> doglat, doglon;
     List<GameObject> dogObjs;
@@ -61,6 +55,43 @@ public class OnMapSpawn : MonoBehaviour
 
     private void Update()
     {
+        //---------------------------------------------------------------------------------------
+        //dog distribute zone
+        //distribute tester
+        //update time
+        if (Input.GetKeyDown("z"))
+        {
+           // distribute dog top side on every existed dog 
+           int tempcount=dogObjs.Count; //prevent unlimited loophole
+            for (int j = 0; j < tempcount; j++)
+            {
+
+                // distribute dog top side on every existed dog 
+                float templon = doglon[j] ;
+                float templat = doglat[j] + addLatByMeters(1000.0f); 
+                //check that new lat lon is same as old one
+               Distribute_add(templat,templon,tempcount);
+               // distribute dog down side on every existed dog 
+                 templon = doglon[j] ;
+                templat = doglat[j] + addLatByMeters(-1000.0f); 
+                //check that new lat lon is same as old one
+               Distribute_add(templat,templon,tempcount);
+               // distribute dog rigth side on every existed dog 
+                templon = doglon[j] + addLonByMeters(1000.0f); 
+                templat = doglat[j] ; 
+                //check that new lat lon is same as old one
+               Distribute_add(templat,templon,tempcount);
+               // distribute dog left side on every existed dog 
+                templon = doglon[j] + addLonByMeters(-1000.0f); 
+                templat = doglat[j] ; 
+                //check that new lat lon is same as old one
+               Distribute_add(templat,templon,tempcount);
+            }
+        }
+        //---------------------------------------------------------------------------------------   
+
+
+
         for (int i = 0; i < dogObjs.Count; i++) //for each spawn object
         {
             var spawnedObject = dogObjs[i];
@@ -83,6 +114,32 @@ public class OnMapSpawn : MonoBehaviour
             addDogLocation(latlongDelta); //add new dog object from clicked position
         }
     }
+
+    //-----------------------------------------------
+    //dog distribute zone
+        private void Distribute_add(float templat,float templon,int tempcount)
+        {
+                bool check_exist=false;
+                for (int k = 0; k < tempcount; k++)
+                {
+                    if (templon==doglon[k]&&templat==doglat[k]) //if distribute pos got object
+                    {
+                    // add dog number that not exist in script yet
+                    Debug.Log("Dog distribute to other dog grid,add up");
+                    check_exist=true;
+                    }
+                }  
+                if (!check_exist) //if is new pos
+                {
+                    addDogLocation(templat , templon);
+                }
+        }
+
+
+    //----------------------------------------------
+
+
+
 
     //Harversine Formula, 
     //(reference: https://stackoverflow.com/questions/639695/how-to-convert-latitude-or-longitude-to-meters)
@@ -117,22 +174,15 @@ public class OnMapSpawn : MonoBehaviour
         return meter / 111111.0f; //because cos(0 degree) is 1
     }
 
-    //Earth is oblate sphere, so if we're getting taking it seriously we have to do this
-    private float addLatByMeters(float meter, float currentlat)
+    //Original [lat, long] add meter conversion
+    private float addLatByMeters(float meter, float theta) 
     {
-        //the difference length between equator and the pole
-        float difference = pole_latitude_per_degree - equator_latitude_per_degree;
-        float latitude_length = ((currentlat / 90.0f) * difference) + equator_latitude_per_degree;
-        return meter / latitude_length;
+        return (meter / 111111.0f) * Mathf.Sin(theta);
     }
-    
-    //(reference: https://gis.stackexchange.com/questions/142326/calculating-longitude-length-in-miles)
-    private float addLonByMeters(float meter, float currentlat)
+
+    private float addLonByMeters(float meter, float theta)
     {
-        //The length of longitude depends on the current latitude
-        float latitude_degree_radian = currentlat * one_degree_per_radian;
-        float longitude_length = widest_longitude_per_degree * latitude_degree_radian;
-        return meter / longitude_length;
+        return (meter / 111111.0f) * Mathf.Cos(theta);
     }
 
     //Add new dog location by float lat lon
