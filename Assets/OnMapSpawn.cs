@@ -26,7 +26,13 @@ public class OnMapSpawn : MonoBehaviour
     GameObject dogpanel; //Prefabs for dog layer
 
     [SerializeField]
-    float radius_earth = 6378.1f; // Radius of the earth in km
+    float radius_earth = 6378.1f; // Radius of the earth in km (Google Answer)
+
+    [SerializeField] //(reference: http://www.longitudestore.com/how-big-is-one-gps-degree.html)
+    float equator_latitude_per_degree = 110570.0f; //110 km per degree
+    float pole_latitude_per_degree = 111690.0f; //111.69 km per degree
+    float widest_longitude_per_degree = 111321.0f; //111.321 km longitude per degree at equator (while 0 at pole)
+    float one_degree_per_radian = 0.0174532925f; //(Google Answer)
 
     List<float> doglat, doglon;
     List<GameObject> dogObjs;
@@ -111,15 +117,22 @@ public class OnMapSpawn : MonoBehaviour
         return meter / 111111.0f; //because cos(0 degree) is 1
     }
 
-    //Original [lat, long] add meter conversion
-    private float addLatByMeters(float meter, float theta) 
+    //Earth is oblate sphere, so if we're getting taking it seriously we have to do this
+    private float addLatByMeters(float meter, float currentlat)
     {
-        return (meter / 111111.0f) * Mathf.Sin(theta);
+        //the difference length between equator and the pole
+        float difference = pole_latitude_per_degree - equator_latitude_per_degree;
+        float latitude_length = ((currentlat / 90.0f) * difference) + equator_latitude_per_degree;
+        return meter / latitude_length;
     }
-
-    private float addLonByMeters(float meter, float theta)
+    
+    //(reference: https://gis.stackexchange.com/questions/142326/calculating-longitude-length-in-miles)
+    private float addLonByMeters(float meter, float currentlat)
     {
-        return (meter / 111111.0f) * Mathf.Cos(theta);
+        //The length of longitude depends on the current latitude
+        float latitude_degree_radian = currentlat * one_degree_per_radian;
+        float longitude_length = widest_longitude_per_degree * latitude_degree_radian;
+        return meter / longitude_length;
     }
 
     //Add new dog location by float lat lon
