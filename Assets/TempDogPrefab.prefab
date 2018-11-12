@@ -23,7 +23,7 @@ GameObject:
   - component: {fileID: 23643381499268262}
   - component: {fileID: 65870584582434626}
   m_Layer: 0
-  m_Name: dog11/1593/984634
+  m_Name: TempDogPrefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
