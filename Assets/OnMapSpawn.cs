@@ -29,6 +29,7 @@ public class OnMapSpawn : MonoBehaviour
     float radius_earth = 6378.1f; // Radius of the earth in km (Google Answer)
 
     [SerializeField] //(reference: http://www.longitudestore.com/how-big-is-one-gps-degree.html)
+    float rough_sphere_per_degree = 111111.0f;
     float equator_latitude_per_degree = 110570.0f; //110 km per degree
     float pole_latitude_per_degree = 111690.0f; //111.69 km per degree
     float widest_longitude_per_degree = 111321.0f; //111.321 km longitude per degree at equator (while 0 at pole)
@@ -36,14 +37,17 @@ public class OnMapSpawn : MonoBehaviour
 
 
     //Data List of Arrays
-    List<float> doglat, doglon, doggroundheight;
+    List<float> doglat, doglon, dogheight;
     List<GameObject> dogObjs;
 
     [SerializeField]
-    public Camera _referenceCamera;
+    Camera _referenceCamera;
 
     [SerializeField]
-    public GameObject DogLayer;
+    GameObject DogLayer; //Dog Layer, their child elements are in here
+
+    [SerializeField]
+    float GridSize; //default: "5", unit: meters
 
     void Start()
     {
@@ -51,7 +55,7 @@ public class OnMapSpawn : MonoBehaviour
         doglocations = new List<Vector2d>(); //initialization for the dog object
         doglat = new List<float>(); //initialization for lat, long
         doglon = new List<float>();
-        doggroundheight = new List<float>();
+        dogheight = new List<float>();
         dogObjs = new List<GameObject>();
         for (int i = 0; i < initSize; i++)
         {
@@ -104,13 +108,13 @@ public class OnMapSpawn : MonoBehaviour
     //Directions of this function indicate by +/- of meter value
     private float addLatByMeters(float meter) //return the increased or decreased Lat by meter
     {
-        return meter / 111111.0f; // because sin(90 degree) is 1
+        return meter / rough_sphere_per_degree; // because sin(90 degree) is 1
     }
 
     //Directions of this function indicate by +/- of meter value
     private float addLonByMeters(float meter) //return the increased or decreased Lon by meter
     {
-        return meter / 111111.0f; //because cos(0 degree) is 1
+        return meter / rough_sphere_per_degree; //because cos(0 degree) is 1
     }
 
     //Original [lat, long] add meter conversion
@@ -124,15 +128,35 @@ public class OnMapSpawn : MonoBehaviour
         return (meter / 111111.0f) * Mathf.Cos(theta);
     }
 
+    //Earth is oblate sphere, so if we're getting taking it seriously we have to do this
+    private float addLatByMetersOS(float meter , float currentlat)
+    {
+        //the difference length between equator and the pole
+        float difference = pole_latitude_per_degree - equator_latitude_per_degree;
+        float latitude_length = ((currentlat / 90.0f) * difference) + equator_latitude_per_degree;
+        return meter / latitude_length;
+    } 
+
+    //(reference: https://gis.stackexchange.com/questions/142326/calculating-longitude-length-in-miles)
+    private float addLonByMetersOS(float meter , float currentlat)
+    {
+        //The length of longitude depends on the current latitude
+        float latitude_degree_radian = currentlat * one_degree_per_radian;
+        float longitude_length = widest_longitude_per_degree * latitude_degree_radian;
+        return meter / longitude_length;
+    }
+
     //using Mapbox Conversion return length of meter in lat, lon distance
     private float addLatByMetersMapbox(float meter)
     {
-        return (float)Conversions.MetersToLatLon(new Vector2d(meter , 0.0)).x;
+        float vy = (meter / one_degree_per_radian) * radius_earth;
+        float assoc = (2 * Mathf.Atan(Mathf.Exp(vy * one_degree_per_radian)) - (one_degree_per_radian * 180.0f) / 2);
+        return assoc / one_degree_per_radian;
     }
 
     private float addLonByMetersMapbox(float meter)
     {
-        return (float)Conversions.MetersToLatLon(new Vector2d(0.0 , meter)).y;
+        return (meter / one_degree_per_radian) * radius_earth;
     }
 
     private Vector2d addLatLonByMetersMapbox(Vector2d latlonvector)
@@ -143,21 +167,21 @@ public class OnMapSpawn : MonoBehaviour
     //Add new dog location by float lat lon
     private void addDogLocation(float lat , float lon)
     {
-        doglocations.Add(Conversions.StringToLatLon(lat + ", " + lon));
+        doglocations.Add(new Vector2d(lat,lon));
         createDogObject();
     }
 
     //Add new doglocation by location string of vector lat lon, Formula: "lat, long"
     private void addDogLocation(string locationstring)
     {
-        doglocations.Add(Conversions.StringToLatLon(locationstring));
+        doglocations.Add(spawnLatLonWithinGrid(Conversions.StringToLatLon(locationstring)));
         createDogObject();
     }
 
     //Add new doglocation by location vector lat lon
     private void addDogLocation(Vector2d latlonvector)
     {
-        doglocations.Add(latlonvector);
+        doglocations.Add(spawnLatLonWithinGrid(latlonvector));
         createDogObject();
     }
 
@@ -170,8 +194,8 @@ public class OnMapSpawn : MonoBehaviour
         spawnDogPrefabWithHeight(doglat[lastIndex] , doglon[lastIndex]);
     }
 
-    //create the object to the map location (with calculated map height)
-    //(reference: https://github.com/mapbox/mapbox-unity-sdk/issues/222)
+    /// create the object to the map location (with calculated map height)
+    /// (reference: https://github.com/mapbox/mapbox-unity-sdk/issues/222)
     void spawnDogPrefabWithHeight(double lat , double lon)
     {
         //get tile ID
@@ -196,8 +220,8 @@ public class OnMapSpawn : MonoBehaviour
 
         //height in meter
         float height_in_meter = h / tile.TileScale; //*This is important, check out the function in UnityTile.cs
-        doggroundheight.Add(height_in_meter); //stored ground height to the array of that specific dog
-        Debug.Log("World Height: " + height_in_meter + " meter(s)");
+        dogheight.Add(height_in_meter); //stored ground height to the array of that specific dog
+        //Debug.Log(height_in_meter);
 
         //lat lon to unity units
         Vector3 location = Conversions.GeoToWorldPosition(lat , lon , _map.CenterMercator , _map.WorldRelativeScale).ToVector3xz();
@@ -212,6 +236,36 @@ public class OnMapSpawn : MonoBehaviour
         dogObjs.Add(obj);
     }
 
+    private Vector2d spawnLatLonWithinGrid(float lat , float lon)
+    {
+        lat -= lat % (GridSize / 111111.0f);
+        lon -= lon % (GridSize / 111111.0f);
+        return new Vector2d(lat,lon);
+    }
+
+    private Vector2d spawnLatLonWithinGrid(Vector2d latlonvector)
+    {
+        latlonvector.x -= latlonvector.x % (GridSize / 111111.0f);
+        latlonvector.y -= latlonvector.y % (GridSize / 111111.0f);
+        return latlonvector;
+    }
+
+    private Vector2d spawnLatLonWithinGridMapbox(float lat, float lon)
+    {
+        Vector2d meter_conversion = Conversions.LatLonToMeters(lat,lon);
+        meter_conversion.x += meter_conversion.x % GridSize;
+        meter_conversion.y += meter_conversion.y % GridSize;
+        return Conversions.MetersToLatLon(meter_conversion);
+    }
+
+    private Vector2d spawnLatLonWithinGridMapbox(Vector2d latlonvector)
+    {
+        Vector2d meter_conversion = Conversions.LatLonToMeters(latlonvector);
+        meter_conversion.x += meter_conversion.x % GridSize;
+        meter_conversion.y += meter_conversion.y % GridSize;
+        return Conversions.MetersToLatLon(meter_conversion);
+    }
+
     private void zdistribution()
     {
         //dog distribute zone
@@ -223,46 +277,76 @@ public class OnMapSpawn : MonoBehaviour
             int tempcount = dogObjs.Count; //prevent unlimited loophole
             for (int j = 0; j < tempcount; j++)
             {
-                // distribute dog top side on every existed dog 
-                float templon = doglon[j];
-                float templat = doglat[j] + addLatByMeters(1000.0f);
-                //check that new lat lon is same as old one
-                Distribute_add(templat , templon , tempcount);
-                // distribute dog down side on every existed dog 
-                templon = doglon[j];
-                templat = doglat[j] + addLatByMeters(-1000.0f);
-                //check that new lat lon is same as old one
-                Distribute_add(templat , templon , tempcount);
-                // distribute dog rigth side on every existed dog 
-                templon = doglon[j] + addLonByMeters(1000.0f);
-                templat = doglat[j];
-                //check that new lat lon is same as old one
-                Distribute_add(templat , templon , tempcount);
-                // distribute dog left side on every existed dog 
-                templon = doglon[j] + addLonByMeters(-1000.0f);
-                templat = doglat[j];
-                //check that new lat lon is same as old one
-                Distribute_add(templat , templon , tempcount);
+                //check that new lat lon is same as old one in 4-directions
+                Distribute_add(doglat[j] , doglon[j] , addLatByMeters(GridSize) , 0.0f , tempcount);
+                float a = findDegreeSlope(GridSize, abs(dogheight[j], dogheight[dogheight.Count - 1]));
+                Debug.Log(a);
+
+                Distribute_add(doglat[j] , doglon[j] , addLatByMeters(-GridSize) , 0.0f , tempcount);
+                a = findDegreeSlope(GridSize , abs(dogheight[j] , dogheight[dogheight.Count - 1]));
+                Debug.Log(a);
+
+                Distribute_add(doglat[j] , doglon[j] , 0.0f , addLonByMeters(GridSize) , tempcount);
+                a = findDegreeSlope(GridSize , abs(dogheight[j] , dogheight[dogheight.Count - 1]));
+                Debug.Log(a);
+
+                Distribute_add(doglat[j] , doglon[j] , 0.0f , addLonByMeters(-GridSize) , tempcount);
+                a = findDegreeSlope(GridSize , abs(dogheight[j] , dogheight[dogheight.Count - 1]));
+                Debug.Log(a);
             }
         }
     }
 
     //dog distribute zone
-    private void Distribute_add(float templat , float templon , int tempcount)
+    private void Distribute_add(float thislat , float thislon , float addedlat, float addedlon, int tempcount)
     {
-        bool check_exist = false;
-        for (int k = 0; k < tempcount; k++)
-        {
-            if (templon == doglon[k] && templat == doglat[k]) //if distribute pos got object
-            {
-                // add dog number that not exist in script yet
-                Debug.Log("Dog distribute to other dog grid,add up");
-                check_exist = true;
-            }
-        }
+        thislat += addedlat;
+        thislon += addedlon;
+        bool check_exist = latlonExisted(thislat , thislon , tempcount);
         if (!check_exist) //if is new pos
         {
-            addDogLocation(templat , templon);
+            addDogLocation(thislat , thislon);
         }
+        else
+        {
+            addDogLocation(thislat , thislon);
+        }
+
+    }
+
+    private bool latlonExisted(float lat, float lon, int tempcount)
+    {
+        for (int k = 0; k < tempcount; k++)
+        {
+            if (lon == doglon[k] && lat == doglat[k]) //if distribute pos got object
+            {
+                // add dog number that not exist in script yet
+                // Debug.Log("Dog distribute to other dog grid,add up");
+                return true;
+            }
+        }
+        return false;
+    }
+
+    //The level of distribution
+    //since the distribution always equal to GridSize, height difference create the theta elevation
+    private float distributeElevationLevel(float height1, float height2)
+    {
+        float degree = findDegreeSlope(GridSize , abs(height1, height2));
+        return Mathf.Cos(degree);
+    }
+
+    private float findDegreeSlope(float x , float y)
+    {
+        return Mathf.Atan2(y , x) / one_degree_per_radian;
+    }
+
+    private float abs(float h1, float h2)
+    {
+        float diff = h1 - h2;
+        if (diff < 0.0f)
+            return -diff;
+        else
+            return diff;
     }
 }

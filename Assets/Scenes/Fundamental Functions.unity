@@ -398,15 +398,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _map: {fileID: 555018383}
   doglocationStrings:
-  - 7.03169034704473, 100.478511282507
-  - 7.130, 100.577
+  - 6.9984936390145, 100.513719597575
   _spawnScale: 10
   gridpanel: {fileID: 1731050344747762, guid: 6269feed41597f14298488ba0b0da6e3, type: 2}
   dogpanel: {fileID: 1718596337844594, guid: ec6387168a43fe24dbaada47522f0c9a, type: 2}
   radius_earth: 6378.1
-  equator_latitude_per_degree: 110570
+  rough_sphere_per_degree: 111111
   _referenceCamera: {fileID: 1787361574}
   DogLayer: {fileID: 1807989378}
+  GridSize: 50
 --- !u!114 &555018386
 MonoBehaviour:
   m_ObjectHideFlags: 0
