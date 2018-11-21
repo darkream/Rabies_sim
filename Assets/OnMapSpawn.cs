@@ -5,6 +5,7 @@ using Mapbox.Unity.Utilities;
 using System.Collections.Generic;
 using Mapbox.Map;
 using Mapbox.Unity.MeshGeneration.Data;
+using System.IO;
 
 public class OnMapSpawn : MonoBehaviour
 {
@@ -49,6 +50,9 @@ public class OnMapSpawn : MonoBehaviour
     [SerializeField]
     float GridSize; //default: "5", unit: meters
 
+    private float minh, maxh;
+    private float[,] heightxy = new float[1700 , 1000];
+
     void Start()
     {
         int initSize = doglocationStrings.Count;
@@ -61,6 +65,10 @@ public class OnMapSpawn : MonoBehaviour
         {
             addDogLocation(doglocationStrings[i]);
         }
+        minh = dogheight[0];
+        maxh = dogheight[0];
+        pointToColorMap();
+
     }
 
     private void Update()
@@ -199,15 +207,15 @@ public class OnMapSpawn : MonoBehaviour
     void spawnDogPrefabWithHeight(double lat , double lon)
     {
         //get tile ID
-        var tileIDUnwrapped = TileCover.CoordinateToTileId(new Mapbox.Utils.Vector2d(lat , lon) , (int)_map.Zoom);
+        var tileIDUnwrapped = TileCover.CoordinateToTileId(new Vector2d(lat , lon) , (int)_map.Zoom);
 
         //get tile
         UnityTile tile = _map.MapVisualizer.GetUnityTileFromUnwrappedTileId(tileIDUnwrapped);
 
         //lat lon to meters because the tiles rect is also in meters
-        Vector2d v2d = Conversions.LatLonToMeters(new Mapbox.Utils.Vector2d(lat , lon));
+        Vector2d v2d = Conversions.LatLonToMeters(new Vector2d(lat , lon));
         //get the origin of the tile in meters
-        Vector2d v2dcenter = tile.Rect.Center - new Mapbox.Utils.Vector2d(tile.Rect.Size.x / 2.0 , tile.Rect.Size.y / 2.0);
+        Vector2d v2dcenter = tile.Rect.Center - new Vector2d(tile.Rect.Size.x / 2.0 , tile.Rect.Size.y / 2.0);
         //offset between the tile origin and the lat lon point
         Vector2d diff = v2d - v2dcenter;
 
@@ -232,7 +240,7 @@ public class OnMapSpawn : MonoBehaviour
         obj.transform.position = location;
         obj.transform.localScale = new Vector3(_spawnScale , _spawnScale , _spawnScale);
         obj.transform.parent = DogLayer.transform; //let the dog becomes the child of DogLayer game object
-
+        
         dogObjs.Add(obj);
     }
 
@@ -348,5 +356,70 @@ public class OnMapSpawn : MonoBehaviour
             return -diff;
         else
             return diff;
+    }
+
+    private void pointToColorMap()
+    {
+        int width = 1700, height = 1000;
+        float currlat = doglat[0], currlon = doglon[0], firstlat = doglat[0];
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                currlat -= addLatByMeters(GridSize);
+                heightxy[x , y] = getHeightAt(currlat , currlon);
+            }
+            currlat = firstlat;
+            currlon += addLonByMeters(GridSize);
+        }
+        createImage(width , height);
+    }
+
+    private float getHeightAt(float lat, float lon)
+    {
+        var tileIDUnwrapped = TileCover.CoordinateToTileId(new Vector2d(lat , lon) , (int)_map.Zoom);
+        UnityTile tile = _map.MapVisualizer.GetUnityTileFromUnwrappedTileId(tileIDUnwrapped);
+        Vector2d v2d = Conversions.LatLonToMeters(new Vector2d(lat , lon));
+        Vector2d v2dcenter = tile.Rect.Center - new Vector2d(tile.Rect.Size.x / 2.0 , tile.Rect.Size.y / 2.0);
+        Vector2d diff = v2d - v2dcenter;
+
+        float Dx = (float)(diff.x / tile.Rect.Size.x);
+        float Dy = (float)(diff.y / tile.Rect.Size.y);
+
+        var h = tile.QueryHeightData(Dx , Dy);
+        float height_in_meter = h / tile.TileScale;
+
+        if (height_in_meter < minh)
+            minh = height_in_meter;
+        else if (height_in_meter > maxh)
+            maxh = height_in_meter;
+
+        return height_in_meter;
+    }
+
+    private void createImage(int input_width, int input_height)
+    {
+        int width = input_width, height = input_height;
+        Texture2D texture = new Texture2D(width , height , TextureFormat.RGB24, false);
+        Color color = new Color(255.0f , 0.0f , 0.0f);
+        float colorvalue = 0.0f;
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                colorvalue = ((heightxy[x,y] - minh) / (maxh - minh));
+                color = new Color(colorvalue , 0.0f , 0.0f);
+                texture.SetPixel(x , y , color);
+            }
+        }
+        texture.Apply();
+
+        //encode to png
+        byte[] bytes = texture.EncodeToPNG();
+        Object.Destroy(texture);
+
+        File.WriteAllBytes(Application.dataPath + "/../Assets/MickRendered/newTerrain.png" , bytes);
     }
 }

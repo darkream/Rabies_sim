@@ -261,8 +261,8 @@ MonoBehaviour:
   _initializeOnStart: 1
   _options:
     locationOptions:
-      latitudeLongitude: 7.03169034704473, 100.478511282507
-      zoom: 11.425
+      latitudeLongitude: 7.01423933055, 100.48318286555
+      zoom: 13.1425
     extentOptions:
       extentType: 0
       cameraBoundsOptions:
@@ -398,7 +398,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _map: {fileID: 555018383}
   doglocationStrings:
-  - 6.9984936390145, 100.513719597575
+  - 7.044082, 100.4482
+  - 6.999304, 100.526
   _spawnScale: 10
   gridpanel: {fileID: 1731050344747762, guid: 6269feed41597f14298488ba0b0da6e3, type: 2}
   dogpanel: {fileID: 1718596337844594, guid: ec6387168a43fe24dbaada47522f0c9a, type: 2}
@@ -406,7 +407,7 @@ MonoBehaviour:
   rough_sphere_per_degree: 111111
   _referenceCamera: {fileID: 1787361574}
   DogLayer: {fileID: 1807989378}
-  GridSize: 50
+  GridSize: 5
 --- !u!114 &555018386
 MonoBehaviour:
   m_ObjectHideFlags: 0
