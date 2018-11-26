@@ -2,10 +2,25 @@
 using Mapbox.Utils;
 using Mapbox.Unity.Map;
 using Mapbox.Unity.Utilities;
-using System.Collections.Generic;
 using Mapbox.Map;
 using Mapbox.Unity.MeshGeneration.Data;
 using System.IO;
+using System.Collections.Generic;
+
+[System.Serializable]
+public struct LatLonSize
+{
+    public int latid;
+    public int lonid;
+    public float size;
+
+    public LatLonSize(int lt, int ln, float sz)
+    {
+        latid = lt;
+        lonid = ln;
+        size = sz;
+    }
+}
 
 public class OnMapSpawn : MonoBehaviour
 {
@@ -16,6 +31,9 @@ public class OnMapSpawn : MonoBehaviour
     [Geocode]
     List<string> doglocationStrings; //list of dogs == 7.03169034704473, 100.478511282507 default
     List<Vector2d> doglocations;
+
+    [SerializeField]
+    List<int> doggroupsize; //initial group size of the list of dogs above
 
     [SerializeField]
     float _spawnScale = 10f;
@@ -29,16 +47,21 @@ public class OnMapSpawn : MonoBehaviour
     [SerializeField]
     float radius_earth = 6378.1f; // Radius of the earth in km (Google Answer)
 
-    [SerializeField] //(reference: http://www.longitudestore.com/how-big-is-one-gps-degree.html)
-    float rough_sphere_per_degree = 111111.0f;
-    float equator_latitude_per_degree = 110570.0f; //110 km per degree
-    float pole_latitude_per_degree = 111690.0f; //111.69 km per degree
-    float widest_longitude_per_degree = 111321.0f; //111.321 km longitude per degree at equator (while 0 at pole)
-    float one_degree_per_radian = 0.0174532925f; //PI divided by 180
+    [SerializeField]
+    float walkable_degree = 60.0f; //Range is between 0.0f to 90.0f degrees
+
+    [SerializeField]
+    float distribution_criteria = 0.5f; //0.5 dog means at least 1 dog
+
+    //(reference: http://www.longitudestore.com/how-big-is-one-gps-degree.html)
+    private float rough_sphere_per_degree = 111111.0f;
+    private float equator_latitude_per_degree = 110570.0f; //110 km per degree
+    private float pole_latitude_per_degree = 111690.0f; //111.69 km per degree
+    private float widest_longitude_per_degree = 111321.0f; //111.321 km longitude per degree at equator (while 0 at pole)
+    private float one_degree_per_radian = 0.0174532925f; //PI divided by 180
 
 
-    //Data List of Arrays
-    List<float> doglat, doglon, dogheight;
+    //Data List of dog objects
     List<GameObject> dogObjs;
 
     [SerializeField]
@@ -50,31 +73,44 @@ public class OnMapSpawn : MonoBehaviour
     [SerializeField]
     float GridSize; //default: "5", unit: meters
 
+    private float startlat = 7.044082f, startlon = 100.4482f; //default_ lat: 7.044082, lon = 100.4482
+    private int xgridsize = 1700, ygridsize = 1000; //default_ xsize = 1700 grid, ysize = 1000 grid
     private float minh, maxh;
-    private float[,] heightxy = new float[1700 , 1000];
+    private float[,] heightxy;
+
+    private List<LatLonSize> dogdata;
+    private float[,] doggroup; //dog group size in 2D-array
+    private float[,] tempgroup;
+
+    [SerializeField]
+    int loopCriteria = 10;
 
     void Start()
     {
         int initSize = doglocationStrings.Count;
         doglocations = new List<Vector2d>(); //initialization for the dog object
-        doglat = new List<float>(); //initialization for lat, long
-        doglon = new List<float>();
-        dogheight = new List<float>();
         dogObjs = new List<GameObject>();
+        dogdata = new List<LatLonSize>();
         for (int i = 0; i < initSize; i++)
         {
             addDogLocation(doglocationStrings[i]);
         }
-        minh = dogheight[0];
-        maxh = dogheight[0];
-        pointToColorMap();
 
+        heightxy = new float[xgridsize , ygridsize];
+        pointToColorMap(startlat , startlon , xgridsize , ygridsize);
+        createMapImage(xgridsize , ygridsize);
+
+        initializeDogGroup();
+        for (int i = 0; i < loopCriteria; i++)
+        {
+            normalDistribution();
+        }
+
+        createDogImage(xgridsize , ygridsize);
     }
 
     private void Update()
     {
-        zdistribution();
-
         for (int i = 0; i < dogObjs.Count; i++) //for each spawn object
         {
             var spawnedObject = dogObjs[i];
@@ -197,9 +233,12 @@ public class OnMapSpawn : MonoBehaviour
     private void createDogObject()
     {
         int lastIndex = doglocations.Count - 1;
-        doglat.Add((float)doglocations[lastIndex].x);
-        doglon.Add((float)doglocations[lastIndex].y);
-        spawnDogPrefabWithHeight(doglat[lastIndex] , doglon[lastIndex]);
+        float lat = (float)doglocations[lastIndex].x;
+        float lon = (float)doglocations[lastIndex].y;
+        int at_lat = getLatGridIndex(abs(startlat - lat));
+        int at_lon = getLonGridIndex(abs(startlon - lon));
+        dogdata.Add(new LatLonSize(at_lat , at_lon , doggroupsize[lastIndex]));
+        spawnDogPrefabWithHeight(lat , lon);
     }
 
     /// create the object to the map location (with calculated map height)
@@ -224,12 +263,7 @@ public class OnMapSpawn : MonoBehaviour
         float Dy = (float)(diff.y / tile.Rect.Size.y);
 
         //height in unity units
-        var h = tile.QueryHeightData(Dx , Dy);
-
-        //height in meter
-        float height_in_meter = h / tile.TileScale; //*This is important, check out the function in UnityTile.cs
-        dogheight.Add(height_in_meter); //stored ground height to the array of that specific dog
-        //Debug.Log(height_in_meter);
+        float h = tile.QueryHeightData(Dx , Dy);
 
         //lat lon to unity units
         Vector3 location = Conversions.GeoToWorldPosition(lat , lon , _map.CenterMercator , _map.WorldRelativeScale).ToVector3xz();
@@ -274,74 +308,16 @@ public class OnMapSpawn : MonoBehaviour
         return Conversions.MetersToLatLon(meter_conversion);
     }
 
-    private void zdistribution()
-    {
-        //dog distribute zone
-        //distribute tester
-        //update time
-        if (Input.GetKeyDown("z"))
-        {
-            // distribute dog top side on every existed dog 
-            int tempcount = dogObjs.Count; //prevent unlimited loophole
-            for (int j = 0; j < tempcount; j++)
-            {
-                //check that new lat lon is same as old one in 4-directions
-                Distribute_add(doglat[j] , doglon[j] , addLatByMeters(GridSize) , 0.0f , tempcount);
-                float a = findDegreeSlope(GridSize, abs(dogheight[j], dogheight[dogheight.Count - 1]));
-                Debug.Log(a);
-
-                Distribute_add(doglat[j] , doglon[j] , addLatByMeters(-GridSize) , 0.0f , tempcount);
-                a = findDegreeSlope(GridSize , abs(dogheight[j] , dogheight[dogheight.Count - 1]));
-                Debug.Log(a);
-
-                Distribute_add(doglat[j] , doglon[j] , 0.0f , addLonByMeters(GridSize) , tempcount);
-                a = findDegreeSlope(GridSize , abs(dogheight[j] , dogheight[dogheight.Count - 1]));
-                Debug.Log(a);
-
-                Distribute_add(doglat[j] , doglon[j] , 0.0f , addLonByMeters(-GridSize) , tempcount);
-                a = findDegreeSlope(GridSize , abs(dogheight[j] , dogheight[dogheight.Count - 1]));
-                Debug.Log(a);
-            }
-        }
-    }
-
-    //dog distribute zone
-    private void Distribute_add(float thislat , float thislon , float addedlat, float addedlon, int tempcount)
-    {
-        thislat += addedlat;
-        thislon += addedlon;
-        bool check_exist = latlonExisted(thislat , thislon , tempcount);
-        if (!check_exist) //if is new pos
-        {
-            addDogLocation(thislat , thislon);
-        }
-        else
-        {
-            addDogLocation(thislat , thislon);
-        }
-
-    }
-
-    private bool latlonExisted(float lat, float lon, int tempcount)
-    {
-        for (int k = 0; k < tempcount; k++)
-        {
-            if (lon == doglon[k] && lat == doglat[k]) //if distribute pos got object
-            {
-                // add dog number that not exist in script yet
-                // Debug.Log("Dog distribute to other dog grid,add up");
-                return true;
-            }
-        }
-        return false;
-    }
-
     //The level of distribution
     //since the distribution always equal to GridSize, height difference create the theta elevation
     private float distributeElevationLevel(float height1, float height2)
     {
-        float degree = findDegreeSlope(GridSize , abs(height1, height2));
-        return Mathf.Cos(degree);
+        float degree = findDegreeSlope(GridSize , abs(height1 - height2));
+        if (degree > walkable_degree || degree < -walkable_degree)
+        {
+            degree = walkable_degree;
+        }
+        return abs(Mathf.Cos(degree * 90.0f / walkable_degree));
     }
 
     private float findDegreeSlope(float x , float y)
@@ -349,19 +325,46 @@ public class OnMapSpawn : MonoBehaviour
         return Mathf.Atan2(y , x) / one_degree_per_radian;
     }
 
-    private float abs(float h1, float h2)
+    private float abs(float h)
     {
-        float diff = h1 - h2;
-        if (diff < 0.0f)
-            return -diff;
+        if (h < 0.0f)
+            return -h;
         else
-            return diff;
+            return h;
     }
 
-    private void pointToColorMap()
+    private float getHeightAt(float lat , float lon)
     {
-        int width = 1700, height = 1000;
-        float currlat = doglat[0], currlon = doglon[0], firstlat = doglat[0];
+        //get tile ID
+        var tileIDUnwrapped = TileCover.CoordinateToTileId(new Vector2d(lat , lon) , (int)_map.Zoom);
+
+        //get tile
+        UnityTile tile = _map.MapVisualizer.GetUnityTileFromUnwrappedTileId(tileIDUnwrapped);
+
+        //lat lon to meters because the tiles rect is also in meters
+        Vector2d v2d = Conversions.LatLonToMeters(new Vector2d(lat , lon));
+        //get the origin of the tile in meters
+        Vector2d v2dcenter = tile.Rect.Center - new Vector2d(tile.Rect.Size.x / 2.0 , tile.Rect.Size.y / 2.0);
+        //offset between the tile origin and the lat lon point
+        Vector2d diff = v2d - v2dcenter;
+
+        //maping the diffetences to (0-1)
+        float Dx = (float)(diff.x / tile.Rect.Size.x);
+        float Dy = (float)(diff.y / tile.Rect.Size.y);
+
+        //height in unity units
+        float h = tile.QueryHeightData(Dx , Dy);
+
+        return h / tile.TileScale; //return height_in_meter
+    }
+
+    //set height in the heatmap
+    private void pointToColorMap(float lat, float lon, int xsize, int ysize)
+    {
+        int width = xsize, height = ysize;
+        float currlat = lat;
+        float currlon = lon;
+        float firstlat = lat;
 
         for (int x = 0; x < width; x++)
         {
@@ -369,36 +372,18 @@ public class OnMapSpawn : MonoBehaviour
             {
                 currlat -= addLatByMeters(GridSize);
                 heightxy[x , y] = getHeightAt(currlat , currlon);
+                if (heightxy[x , y] < minh)
+                    minh = heightxy[x , y];
+                if (heightxy[x,y] > maxh)
+                    maxh = heightxy[x , y];
             }
             currlat = firstlat;
             currlon += addLonByMeters(GridSize);
         }
-        createImage(width , height);
     }
 
-    private float getHeightAt(float lat, float lon)
-    {
-        var tileIDUnwrapped = TileCover.CoordinateToTileId(new Vector2d(lat , lon) , (int)_map.Zoom);
-        UnityTile tile = _map.MapVisualizer.GetUnityTileFromUnwrappedTileId(tileIDUnwrapped);
-        Vector2d v2d = Conversions.LatLonToMeters(new Vector2d(lat , lon));
-        Vector2d v2dcenter = tile.Rect.Center - new Vector2d(tile.Rect.Size.x / 2.0 , tile.Rect.Size.y / 2.0);
-        Vector2d diff = v2d - v2dcenter;
-
-        float Dx = (float)(diff.x / tile.Rect.Size.x);
-        float Dy = (float)(diff.y / tile.Rect.Size.y);
-
-        var h = tile.QueryHeightData(Dx , Dy);
-        float height_in_meter = h / tile.TileScale;
-
-        if (height_in_meter < minh)
-            minh = height_in_meter;
-        else if (height_in_meter > maxh)
-            maxh = height_in_meter;
-
-        return height_in_meter;
-    }
-
-    private void createImage(int input_width, int input_height)
+    //create image from map height
+    private void createMapImage(int input_width, int input_height)
     {
         int width = input_width, height = input_height;
         Texture2D texture = new Texture2D(width , height , TextureFormat.RGB24, false);
@@ -418,8 +403,157 @@ public class OnMapSpawn : MonoBehaviour
 
         //encode to png
         byte[] bytes = texture.EncodeToPNG();
-        Object.Destroy(texture);
+        Destroy(texture);
 
-        File.WriteAllBytes(Application.dataPath + "/../Assets/MickRendered/newTerrain.png" , bytes);
+        File.WriteAllBytes(Application.dataPath + "/../Assets/MickRendered/plainTerrain.png" , bytes);
+    }
+
+    private int getLatGridIndex(float moved_lat)
+    {
+        return (int)(moved_lat / addLatByMeters(GridSize));
+    }
+
+    private int getLonGridIndex(float moved_lon)
+    {
+        return (int)(moved_lon / addLonByMeters(GridSize));
+    }
+
+    private void initializeDogGroup()
+    {
+        doggroup = new float[xgridsize , ygridsize];
+        tempgroup = new float[xgridsize , ygridsize];
+
+        for (int y = 0; y < ygridsize; y++)
+        {
+            for (int x = 0; x < xgridsize; x++)
+            {
+                doggroup[x , y] = 0.0f;
+                tempgroup[x , y] = 0.0f;
+            }
+        }
+        for (int i = 0; i < dogdata.Count; i++)
+        {
+            doggroup[dogdata[i].lonid , dogdata[i].latid] = dogdata[i].size;
+            tempgroup[dogdata[i].lonid , dogdata[i].latid] = dogdata[i].size;
+        }
+    }
+
+    private void normalDistribution()
+    {
+        int at_lat, at_lon;
+        int initial_size = dogdata.Count;
+        for (int i = 0; i < initial_size; i++)
+        {
+            at_lat = dogdata[i].latid;
+            at_lon = dogdata[i].lonid;
+
+            //normal distribution from up, down, left, right, and mid
+            centralDistribution(at_lat + 1 , at_lon);    //up
+            centralDistribution(at_lat - 1 , at_lon);    //down
+            centralDistribution(at_lat , at_lon + 1);    //left
+            centralDistribution(at_lat , at_lon - 1);    //right
+            centralDistribution(at_lat, at_lon);         //mid
+        }
+        extractDistribution();
+    }
+
+    private void centralDistribution(int latid, int lonid)
+    {
+        //find elevation of each direction
+        float elev_up = distributeElevationLevel(heightxy[lonid , latid] , heightxy[lonid , latid + 1]);
+        float elev_dn = distributeElevationLevel(heightxy[lonid , latid] , heightxy[lonid , latid - 1]);
+        float elev_lf = distributeElevationLevel(heightxy[lonid , latid] , heightxy[lonid + 1 , latid]);
+        float elev_rt = distributeElevationLevel(heightxy[lonid , latid] , heightxy[lonid - 1 , latid]);
+
+        //combine the received value from up, down, left, and right
+        float up = (doggroup[lonid , latid + 1] / 5.0f) * elev_up; //up
+        float dn = (doggroup[lonid , latid - 1] / 5.0f) * elev_dn; //down
+        float rt = (doggroup[lonid + 1 , latid] / 5.0f) * elev_rt; //left
+        float lf = (doggroup[lonid - 1 , latid] / 5.0f) * elev_lf; //right
+
+        float rear_distribute = up + dn + rt + lf;
+
+        //if it takes value from its rear and greater than criteria
+        if (rear_distribute > distribution_criteria)
+        {
+            //save the changes from up, down, left, right, and mid
+            tempgroup[lonid , latid] += rear_distribute;
+            tempgroup[lonid , latid + 1] -= up;
+            tempgroup[lonid , latid - 1] -= dn;
+            tempgroup[lonid + 1 , latid] -= rt;
+            tempgroup[lonid - 1 , latid] -= lf;
+        }
+    }
+
+    private void extractDistribution()
+    {
+        float tempvalue;
+        for (int y = 0; y < ygridsize; y++)
+        {
+            for (int x = 0; x < xgridsize; x++)
+            {
+                tempvalue = tempgroup[x , y];
+
+                //update the changes
+                doggroup[x , y] = tempvalue;
+                if (tempvalue > 0.0f)
+                {
+                    changeSizeOfDogData(y , x , tempvalue);
+                }
+            }
+        }
+    }
+
+    private void changeSizeOfDogData(int latid, int lonid, float size)
+    {
+        bool found = false;
+        for (int i = 0; i < dogdata.Count; i++)
+        {
+            if (dogdata[i].latid == latid)
+            {
+                if (dogdata[i].lonid == lonid)
+                {
+                    dogdata[i] = new LatLonSize(dogdata[i].latid, dogdata[i].lonid, size);
+                    found = true;
+                }
+            }
+        }
+        if (!found)
+        {
+            dogdata.Add(new LatLonSize(latid , lonid , size));
+        }
+    }
+
+    private void createDogImage(int sizex, int sizey)
+    {
+        int width = sizex, height = sizey;
+        Texture2D texture = new Texture2D(width , height , TextureFormat.RGB24 , false);
+        Color color = new Color(0.0f , 0.0f , 0.0f);
+        float colorvalue = 0.0f;
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                if (doggroup[x,y] > 0.0f)
+                {
+                    colorvalue = 255.0f;
+                }
+                else
+                {
+                    colorvalue = 0.0f;
+                }
+                color = new Color(0.0f , colorvalue , 0.0f);
+                texture.SetPixel(x , y , color);
+            }
+        }
+
+        texture.Apply();
+
+        //encode to png
+        byte[] bytes = texture.EncodeToPNG();
+        Destroy(texture);
+
+        File.WriteAllBytes(Application.dataPath + "/../Assets/MickRendered/plainDogTerrainWithIncline.png" , bytes);
     }
 }
