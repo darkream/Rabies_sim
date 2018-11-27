@@ -131,6 +131,22 @@ public class OnMapSpawn : MonoBehaviour
             Vector2d latlongDelta = _map.WorldToGeoPosition(pos);
             addDogLocation(latlongDelta); //add new dog object from clicked position
         }
+
+// test
+        if (Input.GetKeyDown("z"))
+        {   
+            normalDistribution();
+            Debug.Log("distribute do");
+        }
+
+        if (Input.GetKeyDown("x"))
+        {   
+            createMapImage(xgridsize , ygridsize);
+            createDogImage(xgridsize , ygridsize);
+            Debug.Log("create map do");
+        }
+//test
+
     }
 
     //Harversine Formula, 
@@ -233,6 +249,7 @@ public class OnMapSpawn : MonoBehaviour
     private void createDogObject()
     {
         int lastIndex = doglocations.Count - 1;
+        Debug.Log("wanna see"+doggroupsize.Count);
         float lat = (float)doglocations[lastIndex].x;
         float lon = (float)doglocations[lastIndex].y;
         int at_lat = getLatGridIndex(abs(startlat - lat));
@@ -477,6 +494,7 @@ public class OnMapSpawn : MonoBehaviour
         if (rear_distribute > distribution_criteria)
         {
             //save the changes from up, down, left, right, and mid
+            
             tempgroup[lonid , latid] += rear_distribute;
             tempgroup[lonid , latid + 1] -= up;
             tempgroup[lonid , latid - 1] -= dn;
