@@ -406,6 +406,7 @@ MonoBehaviour:
   _spawnScale: 10
   gridpanel: {fileID: 1731050344747762, guid: 6269feed41597f14298488ba0b0da6e3, type: 2}
   dogpanel: {fileID: 1718596337844594, guid: ec6387168a43fe24dbaada47522f0c9a, type: 2}
+  mappoint: {fileID: 1637165751344374, guid: 3d43ad30600b85c44b52c6a6ebb5a4ef, type: 2}
   radius_earth: 6378.1
   walkable_degree: 60
   distribution_criteria: 0.5
@@ -413,6 +414,7 @@ MonoBehaviour:
   DogLayer: {fileID: 1807989378}
   GridSize: 5
   loopCriteria: 10
+  initial_dog_groupsize: 625
 --- !u!114 &555018386
 MonoBehaviour:
   m_ObjectHideFlags: 0

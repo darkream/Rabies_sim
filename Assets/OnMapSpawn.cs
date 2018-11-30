@@ -45,6 +45,9 @@ public class OnMapSpawn : MonoBehaviour
     GameObject dogpanel; //Prefabs for dog layer
 
     [SerializeField]
+    GameObject mappoint;
+
+    [SerializeField]
     float radius_earth = 6378.1f; // Radius of the earth in km (Google Answer)
 
     [SerializeField]
@@ -63,6 +66,10 @@ public class OnMapSpawn : MonoBehaviour
 
     //Data List of dog objects
     List<GameObject> dogObjs;
+
+    //Data List of map point objects
+    List<GameObject> mappointObjs;
+    List<Vector2d> mappointlocations;
 
     [SerializeField]
     Camera _referenceCamera;
@@ -85,11 +92,18 @@ public class OnMapSpawn : MonoBehaviour
     [SerializeField]
     int loopCriteria = 10;
 
+    private int dogimageid = 0;
+
+    [SerializeField]
+    int initial_dog_groupsize;
+
     void Start()
     {
         int initSize = doglocationStrings.Count;
         doglocations = new List<Vector2d>(); //initialization for the dog object
+        mappointlocations = new List<Vector2d>();
         dogObjs = new List<GameObject>();
+        mappointObjs = new List<GameObject>();
         dogdata = new List<LatLonSize>();
         for (int i = 0; i < initSize; i++)
         {
@@ -97,56 +111,78 @@ public class OnMapSpawn : MonoBehaviour
         }
 
         heightxy = new float[xgridsize , ygridsize];
-        pointToColorMap(startlat , startlon , xgridsize , ygridsize);
-        createMapImage(xgridsize , ygridsize);
-
-        initializeDogGroup();
-        for (int i = 0; i < loopCriteria; i++)
-        {
-            normalDistribution();
-        }
-
-        createDogImage(xgridsize , ygridsize);
     }
 
     private void Update()
     {
         for (int i = 0; i < dogObjs.Count; i++) //for each spawn object
         {
-            var spawnedObject = dogObjs[i];
+            var dogObject = dogObjs[i];
             var location = doglocations[i]; //spawn the object to the dog locations
-            spawnedObject.transform.localPosition = _map.GeoToWorldPosition(location , true);
-            spawnedObject.transform.localScale = new Vector3(_spawnScale , _spawnScale , _spawnScale);
+            dogObject.transform.localPosition = _map.GeoToWorldPosition(location , true);
+            dogObject.transform.localScale = new Vector3(_spawnScale , _spawnScale , _spawnScale);
         }
 
-        //on click spawn dog
+        for (int i = 0; i < mappointObjs.Count; i++)
+        {
+            var mapObject = mappointObjs[i];
+            var location = mappointlocations[i]; //spawn the object to the dog locations
+            mapObject.transform.localPosition = _map.GeoToWorldPosition(location , true);
+            mapObject.transform.localScale = new Vector3(_spawnScale , _spawnScale , _spawnScale);
+        }
+
+        //Press Z to select the initiated map
+        if (Input.GetKeyDown("z"))
+        {
+            Vector2d latlongDelta = getLatLonFromMousePosition();
+            setStartLatLon(latlongDelta);
+        }
+
+        //Press X to select the xsize and ysize of the map
+        if (Input.GetKeyDown("x"))
+        {
+            Vector2d latlongDelta = getLatLonFromMousePosition();
+            setEndLatLon(latlongDelta);
+
+            pointToColorMap(startlat , startlon , xgridsize , ygridsize);
+            createMapImage(xgridsize , ygridsize);
+        }
+
+        //Left Click to spawn a dog with a size
         if (Input.GetMouseButtonUp(1))
         {
-            Vector3 mousePosScreen = Input.mousePosition;
-            //assign distance of camera to ground plane to z, otherwise ScreenToWorldPoint() will always return the position of the camera
-            //(reference: http://answers.unity3d.com/answers/599100/view.html)
-            mousePosScreen.z = _referenceCamera.transform.localPosition.y;
-            Vector3 pos = _referenceCamera.ScreenToWorldPoint(mousePosScreen);
-
-            Vector2d latlongDelta = _map.WorldToGeoPosition(pos);
+            Vector2d latlongDelta = getLatLonFromMousePosition();
+            doggroupsize.Add(initial_dog_groupsize); //size is static at 25
             addDogLocation(latlongDelta); //add new dog object from clicked position
         }
 
-// test
-        if (Input.GetKeyDown("z"))
-        {   
+        //Press C to initiate dog group
+        if (Input.GetKeyDown("c"))
+        {
+            Debug.Log("initiate dog group");
+            initializeDogGroup();
+        }
+
+        //Press V to start distribution
+        if (Input.GetKeyDown("v"))
+        {
+            dogimageid++;
+            Debug.Log("distribution id: " + dogimageid);
             normalDistribution();
-            Debug.Log("distribute do");
+            createDogImage(xgridsize , ygridsize, dogimageid);
+            createMapAndDog(xgridsize , ygridsize , dogimageid);
         }
+    }
 
-        if (Input.GetKeyDown("x"))
-        {   
-            createMapImage(xgridsize , ygridsize);
-            createDogImage(xgridsize , ygridsize);
-            Debug.Log("create map do");
-        }
-//test
-
+    //assign distance of camera to ground plane to z, 
+    //otherwise ScreenToWorldPoint() will always return the position of the camera
+    //(reference: http://answers.unity3d.com/answers/599100/view.html)
+    private Vector2d getLatLonFromMousePosition()
+    {
+        Vector3 mousePosScreen = Input.mousePosition;
+        mousePosScreen.z = _referenceCamera.transform.localPosition.y;
+        Vector3 pos = _referenceCamera.ScreenToWorldPoint(mousePosScreen);
+        return _map.WorldToGeoPosition(pos);
     }
 
     //Harversine Formula, 
@@ -180,12 +216,12 @@ public class OnMapSpawn : MonoBehaviour
     //Original [lat, long] add meter conversion
     private float addLatByMeters(float meter , float theta)
     {
-        return (meter / 111111.0f) * Mathf.Sin(theta);
+        return (meter / rough_sphere_per_degree) * Mathf.Sin(theta);
     }
 
     private float addLonByMeters(float meter , float theta)
     {
-        return (meter / 111111.0f) * Mathf.Cos(theta);
+        return (meter / rough_sphere_per_degree) * Mathf.Cos(theta);
     }
 
     //Earth is oblate sphere, so if we're getting taking it seriously we have to do this
@@ -249,7 +285,6 @@ public class OnMapSpawn : MonoBehaviour
     private void createDogObject()
     {
         int lastIndex = doglocations.Count - 1;
-        Debug.Log("wanna see"+doggroupsize.Count);
         float lat = (float)doglocations[lastIndex].x;
         float lon = (float)doglocations[lastIndex].y;
         int at_lat = getLatGridIndex(abs(startlat - lat));
@@ -260,32 +295,13 @@ public class OnMapSpawn : MonoBehaviour
 
     /// create the object to the map location (with calculated map height)
     /// (reference: https://github.com/mapbox/mapbox-unity-sdk/issues/222)
-    void spawnDogPrefabWithHeight(double lat , double lon)
+    private void spawnDogPrefabWithHeight(double lat , double lon)
     {
-        //get tile ID
-        var tileIDUnwrapped = TileCover.CoordinateToTileId(new Vector2d(lat , lon) , (int)_map.Zoom);
+        UnityTile tile = getTileAt(lat , lon);
+        float h = getHeightAt((float)lat,(float)lon);
 
-        //get tile
-        UnityTile tile = _map.MapVisualizer.GetUnityTileFromUnwrappedTileId(tileIDUnwrapped);
-
-        //lat lon to meters because the tiles rect is also in meters
-        Vector2d v2d = Conversions.LatLonToMeters(new Vector2d(lat , lon));
-        //get the origin of the tile in meters
-        Vector2d v2dcenter = tile.Rect.Center - new Vector2d(tile.Rect.Size.x / 2.0 , tile.Rect.Size.y / 2.0);
-        //offset between the tile origin and the lat lon point
-        Vector2d diff = v2d - v2dcenter;
-
-        //maping the diffetences to (0-1)
-        float Dx = (float)(diff.x / tile.Rect.Size.x);
-        float Dy = (float)(diff.y / tile.Rect.Size.y);
-
-        //height in unity units
-        float h = tile.QueryHeightData(Dx , Dy);
-
-        //lat lon to unity units
         Vector3 location = Conversions.GeoToWorldPosition(lat , lon , _map.CenterMercator , _map.WorldRelativeScale).ToVector3xz();
-        //replace y in position
-        location = new Vector3(location.x , h , location.z);
+        location = new Vector3(location.x , h * tile.TileScale, location.z);
 
         var obj = Instantiate(dogpanel);
         obj.transform.position = location;
@@ -295,17 +311,38 @@ public class OnMapSpawn : MonoBehaviour
         dogObjs.Add(obj);
     }
 
+    private void spawnMapPointer(double lat, double lon)
+    {
+        mappointlocations.Add(new Vector2d(lat , lon));
+        Vector3 location = Conversions.GeoToWorldPosition(lat , lon , _map.CenterMercator , _map.WorldRelativeScale).ToVector3xz();
+        location = new Vector3(location.x , 0.0f , location.z);
+        var obj = Instantiate(mappoint);
+        obj.transform.position = location;
+        obj.transform.localScale = new Vector3(_spawnScale , _spawnScale , _spawnScale);
+        
+        mappointObjs.Add(obj);
+    }
+
+    private UnityTile getTileAt(double lat, double lon)
+    {
+        //get tile ID
+        var tileIDUnwrapped = TileCover.CoordinateToTileId(new Vector2d(lat , lon) , (int)_map.Zoom);
+
+        //get tile
+        return _map.MapVisualizer.GetUnityTileFromUnwrappedTileId(tileIDUnwrapped);
+    }
+
     private Vector2d spawnLatLonWithinGrid(float lat , float lon)
     {
-        lat -= lat % (GridSize / 111111.0f);
-        lon -= lon % (GridSize / 111111.0f);
+        lat -= lat % (GridSize / rough_sphere_per_degree);
+        lon -= lon % (GridSize / rough_sphere_per_degree);
         return new Vector2d(lat,lon);
     }
 
     private Vector2d spawnLatLonWithinGrid(Vector2d latlonvector)
     {
-        latlonvector.x -= latlonvector.x % (GridSize / 111111.0f);
-        latlonvector.y -= latlonvector.y % (GridSize / 111111.0f);
+        latlonvector.x -= latlonvector.x % (GridSize / rough_sphere_per_degree);
+        latlonvector.y -= latlonvector.y % (GridSize / rough_sphere_per_degree);
         return latlonvector;
     }
 
@@ -352,11 +389,7 @@ public class OnMapSpawn : MonoBehaviour
 
     private float getHeightAt(float lat , float lon)
     {
-        //get tile ID
-        var tileIDUnwrapped = TileCover.CoordinateToTileId(new Vector2d(lat , lon) , (int)_map.Zoom);
-
-        //get tile
-        UnityTile tile = _map.MapVisualizer.GetUnityTileFromUnwrappedTileId(tileIDUnwrapped);
+        UnityTile tile = getTileAt(lat,lon);
 
         //lat lon to meters because the tiles rect is also in meters
         Vector2d v2d = Conversions.LatLonToMeters(new Vector2d(lat , lon));
@@ -375,17 +408,56 @@ public class OnMapSpawn : MonoBehaviour
         return h / tile.TileScale; //return height_in_meter
     }
 
+    private void setStartLatLon(Vector2d latlondelta)
+    {
+        destroyAllMapPoints();
+        destroyAllDogs();
+        startlat = (float)latlondelta.x;
+        startlon = (float)latlondelta.y;
+        spawnMapPointer(startlat , startlon);
+    }
+
+    private void setEndLatLon(Vector2d latlondelta)
+    {
+        ygridsize = getLatGridIndex(abs(startlat - (float)latlondelta.x));
+        xgridsize = getLonGridIndex(abs(startlon - (float)latlondelta.y));
+        spawnMapPointer(latlondelta.x , latlondelta.y);
+    }
+
+    private void destroyAllDogs()
+    {
+        int count = dogObjs.Count;
+        for (int i = 0; i < count; i++)
+        {
+            Destroy(dogObjs[0]);
+            dogObjs.RemoveAt(0);
+            doglocations.RemoveAt(0);
+            doggroupsize.RemoveAt(0);
+            dogdata.RemoveAt(0);
+        }
+    }
+
+    private void destroyAllMapPoints()
+    {
+        int count = mappointObjs.Count;
+        for (int i = 0; i < count; i++)
+        {
+            Destroy(mappointObjs[0]);
+            mappointObjs.RemoveAt(0);
+            mappointlocations.RemoveAt(0);
+        }
+    }
+
     //set height in the heatmap
     private void pointToColorMap(float lat, float lon, int xsize, int ysize)
     {
-        int width = xsize, height = ysize;
         float currlat = lat;
         float currlon = lon;
         float firstlat = lat;
 
-        for (int x = 0; x < width; x++)
+        for (int x = 0; x < xsize; x++)
         {
-            for (int y = 0; y < height; y++)
+            for (int y = 0; y < ysize; y++)
             {
                 currlat -= addLatByMeters(GridSize);
                 heightxy[x , y] = getHeightAt(currlat , currlon);
@@ -402,14 +474,13 @@ public class OnMapSpawn : MonoBehaviour
     //create image from map height
     private void createMapImage(int input_width, int input_height)
     {
-        int width = input_width, height = input_height;
-        Texture2D texture = new Texture2D(width , height , TextureFormat.RGB24, false);
+        Texture2D texture = new Texture2D(input_width , input_height , TextureFormat.RGB24, false);
         Color color = new Color(255.0f , 0.0f , 0.0f);
         float colorvalue = 0.0f;
 
-        for (int x = 0; x < width; x++)
+        for (int x = 0; x < input_width; x++)
         {
-            for (int y = 0; y < height; y++)
+            for (int y = 0; y < input_height; y++)
             {
                 colorvalue = ((heightxy[x,y] - minh) / (maxh - minh));
                 color = new Color(colorvalue , 0.0f , 0.0f);
@@ -422,7 +493,7 @@ public class OnMapSpawn : MonoBehaviour
         byte[] bytes = texture.EncodeToPNG();
         Destroy(texture);
 
-        File.WriteAllBytes(Application.dataPath + "/../Assets/MickRendered/plainTerrain.png" , bytes);
+        File.WriteAllBytes(Application.dataPath + "/../Assets/MickRendered/plainSelectedTerrain.png" , bytes);
     }
 
     private int getLatGridIndex(float moved_lat)
@@ -542,20 +613,19 @@ public class OnMapSpawn : MonoBehaviour
         }
     }
 
-    private void createDogImage(int sizex, int sizey)
+    private void createDogImage(int sizex, int sizey, int route)
     {
-        int width = sizex, height = sizey;
-        Texture2D texture = new Texture2D(width , height , TextureFormat.RGB24 , false);
+        Texture2D texture = new Texture2D(sizex , sizey , TextureFormat.RGB24 , false);
         Color color = new Color(0.0f , 0.0f , 0.0f);
         float colorvalue = 0.0f;
 
-        for (int x = 0; x < width; x++)
+        for (int x = 0; x < sizex; x++)
         {
-            for (int y = 0; y < height; y++)
+            for (int y = 0; y < sizey; y++)
             {
                 if (doggroup[x,y] > 0.0f)
                 {
-                    colorvalue = 255.0f;
+                    colorvalue = 255.0f * (doggroup[x,y] / initial_dog_groupsize);
                 }
                 else
                 {
@@ -572,6 +642,42 @@ public class OnMapSpawn : MonoBehaviour
         byte[] bytes = texture.EncodeToPNG();
         Destroy(texture);
 
-        File.WriteAllBytes(Application.dataPath + "/../Assets/MickRendered/plainDogTerrainWithIncline.png" , bytes);
+        File.WriteAllBytes(Application.dataPath + "/../Assets/MickRendered/selectedDogTerrainAt" + route +".png" , bytes);
+    }
+
+    private void createMapAndDog(int sizex , int sizey , int route)
+    {
+        int width = sizex, height = sizey;
+        Texture2D texture = new Texture2D(width , height , TextureFormat.RGB24 , false);
+        Color color = new Color(0.0f , 0.0f , 0.0f);
+        float dogvalue = 0.0f;
+        float mapvalue = 0.0f;
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                if (doggroup[x , y] > 0.0f)
+                {
+                    dogvalue = 255.0f * (doggroup[x , y] / initial_dog_groupsize);
+                    mapvalue = 0.0f;
+                }
+                else
+                {
+                    dogvalue = 0.0f;
+                    mapvalue = ((heightxy[x , y] - minh) / (maxh - minh));
+                }
+                color = new Color(mapvalue , dogvalue , 0.0f);
+                texture.SetPixel(x , y , color);
+            }
+        }
+
+        texture.Apply();
+
+        //encode to png
+        byte[] bytes = texture.EncodeToPNG();
+        Destroy(texture);
+
+        File.WriteAllBytes(Application.dataPath + "/../Assets/MickRendered/selectedMapAndDog" + route + ".png" , bytes);
     }
 }
