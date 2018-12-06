@@ -399,14 +399,19 @@ MonoBehaviour:
   _map: {fileID: 555018383}
   doglocationStrings:
   - 6.9984936390145, 100.513719597575
+  doggroupsize: 
   _spawnScale: 10
   gridpanel: {fileID: 1731050344747762, guid: 6269feed41597f14298488ba0b0da6e3, type: 2}
   dogpanel: {fileID: 1718596337844594, guid: ec6387168a43fe24dbaada47522f0c9a, type: 2}
+  mappoint: {fileID: 0}
   radius_earth: 6378.1
-  rough_sphere_per_degree: 111111
+  walkable_degree: 60
+  distribution_criteria: 0.5
   _referenceCamera: {fileID: 1787361574}
   DogLayer: {fileID: 1807989378}
   GridSize: 50
+  loopCriteria: 10
+  initial_dog_groupsize: 0
 --- !u!114 &555018386
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -454,12 +459,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   positions:
-  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 10, y: 0, z: 10, w: 0}
+  - {x: -10, y: 0, z: -10, w: 0}
+  - {x: 50, y: 0, z: 50, w: 0}
   radiuses:
-  - 5
+  - 40
+  - 40
+  - 40
   intensities:
-  - 5
-  material: {fileID: 2100000, guid: 88c60af6e7245bd4fb0e4b4a76ecccb8, type: 2}
+  - 2
+  - 2
+  - 2
+  material: {fileID: 2100000, guid: 8d7d6e6abc9471342b240bcf245cab38, type: 2}
 --- !u!64 &587768078
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -489,7 +500,7 @@ MeshRenderer:
   m_ReflectionProbeUsage: 1
   m_RenderingLayerMask: 4294967295
   m_Materials:
-  - {fileID: 2100000, guid: 88c60af6e7245bd4fb0e4b4a76ecccb8, type: 2}
+  - {fileID: 2100000, guid: 8d7d6e6abc9471342b240bcf245cab38, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -524,7 +535,7 @@ Transform:
   m_GameObject: {fileID: 587768076}
   m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
   m_LocalPosition: {x: 0, y: 11.56, z: 0}
-  m_LocalScale: {x: 50, y: 50, z: 1}
+  m_LocalScale: {x: 300, y: 300, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 7
