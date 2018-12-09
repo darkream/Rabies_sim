@@ -179,7 +179,8 @@ public class OnMapSpawn : MonoBehaviour
     //(reference: http://answers.unity3d.com/answers/599100/view.html)
     private Vector2d getLatLonFromMousePosition()
     {
-        Vector3 mousePosScreen = Input.mousePosition;
+        //Reminder this is (x, y, 0), so top-left is Screen.height and bot-right is Screen.width
+        Vector3 mousePosScreen = Input.mousePosition;   
         mousePosScreen.z = _referenceCamera.transform.localPosition.y;
         Vector3 pos = _referenceCamera.ScreenToWorldPoint(mousePosScreen);
         return _map.WorldToGeoPosition(pos);
@@ -311,6 +312,7 @@ public class OnMapSpawn : MonoBehaviour
         dogObjs.Add(obj);
     }
 
+    //Add map point reference to the world
     private void spawnMapPointer(double lat, double lon)
     {
         mappointlocations.Add(new Vector2d(lat , lon));
@@ -323,6 +325,7 @@ public class OnMapSpawn : MonoBehaviour
         mappointObjs.Add(obj);
     }
 
+    //Get the Tile Material from the Mapbox
     private UnityTile getTileAt(double lat, double lon)
     {
         //get tile ID
@@ -506,6 +509,7 @@ public class OnMapSpawn : MonoBehaviour
         return (int)(moved_lon / addLonByMeters(GridSize));
     }
 
+    //(reference: https://en.wikipedia.org/wiki/Home_range)
     private void initializeDogGroup()
     {
         doggroup = new float[xgridsize , ygridsize];
@@ -526,6 +530,7 @@ public class OnMapSpawn : MonoBehaviour
         }
     }
 
+    //(reference: https://en.wikipedia.org/wiki/Normal_distribution)
     private void normalDistribution()
     {
         int at_lat, at_lon;
@@ -545,20 +550,39 @@ public class OnMapSpawn : MonoBehaviour
         extractDistribution();
     }
 
-    private void centralDistribution(int latid, int lonid)
+    private void centralDistribution(int latid , int lonid)
     {
+        if (!latValid(latid) || !lonValid(lonid))
+        {
+            return;
+        }
+        float elev_up, elev_dn, elev_lf, elev_rt;
+        float up = 0.0f, dn = 0.0f, lf = 0.0f, rt = 0.0f;
+
         //find elevation of each direction
-        float elev_up = distributeElevationLevel(heightxy[lonid , latid] , heightxy[lonid , latid + 1]);
-        float elev_dn = distributeElevationLevel(heightxy[lonid , latid] , heightxy[lonid , latid - 1]);
-        float elev_lf = distributeElevationLevel(heightxy[lonid , latid] , heightxy[lonid + 1 , latid]);
-        float elev_rt = distributeElevationLevel(heightxy[lonid , latid] , heightxy[lonid - 1 , latid]);
+        //combine the received value from up, down, left, and right
+        if (latValid(latid + 1))
+        {
+            elev_up = distributeElevationLevel(heightxy[lonid , latid] , heightxy[lonid , latid + 1]);
+            up = (doggroup[lonid , latid + 1] / 5.0f) * elev_up; //up
+        }
+        if (latValid(latid - 1))
+        {
+            elev_dn = distributeElevationLevel(heightxy[lonid , latid] , heightxy[lonid , latid - 1]);
+            dn = (doggroup[lonid , latid - 1] / 5.0f) * elev_dn; //down
+        }
+        if (lonValid(lonid + 1))
+        {
+            elev_lf = distributeElevationLevel(heightxy[lonid , latid] , heightxy[lonid + 1 , latid]);
+            lf = (doggroup[lonid - 1 , latid] / 5.0f) * elev_lf; //right
+        }
+        if (lonValid(lonid - 1))
+        {
+            elev_rt = distributeElevationLevel(heightxy[lonid , latid] , heightxy[lonid - 1 , latid]);
+            rt = (doggroup[lonid + 1 , latid] / 5.0f) * elev_rt; //left
+        }
 
         //combine the received value from up, down, left, and right
-        float up = (doggroup[lonid , latid + 1] / 5.0f) * elev_up; //up
-        float dn = (doggroup[lonid , latid - 1] / 5.0f) * elev_dn; //down
-        float rt = (doggroup[lonid + 1 , latid] / 5.0f) * elev_rt; //left
-        float lf = (doggroup[lonid - 1 , latid] / 5.0f) * elev_lf; //right
-
         float rear_distribute = up + dn + rt + lf;
 
         //if it takes value from its rear and greater than criteria
@@ -572,6 +596,24 @@ public class OnMapSpawn : MonoBehaviour
             tempgroup[lonid + 1 , latid] -= rt;
             tempgroup[lonid - 1 , latid] -= lf;
         }
+    }
+
+    private bool latValid(int lat_id)
+    {
+        if (lat_id < 0 || lat_id > ygridsize)
+        {
+            return false;
+        }
+        return true;
+    }
+
+    private bool lonValid(int lon_id)
+    {
+        if (lon_id < 0 || lon_id > xgridsize)
+        {
+            return false;
+        }
+        return true;
     }
 
     private void extractDistribution()
@@ -679,5 +721,11 @@ public class OnMapSpawn : MonoBehaviour
         Destroy(texture);
 
         File.WriteAllBytes(Application.dataPath + "/../Assets/MickRendered/selectedMapAndDog" + route + ".png" , bytes);
+    }
+
+    //(reference: https://en.wikipedia.org/wiki/Multivariate_kernel_density_estimation)
+    private void kernelDensityEstimation()
+    {
+
     }
 }
