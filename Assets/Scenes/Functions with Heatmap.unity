@@ -413,7 +413,7 @@ MonoBehaviour:
   _referenceCamera: {fileID: 1787361574}
   DogLayer: {fileID: 1807989378}
   GridSize: 5
-  loopCriteria: 10
+  loopCriteria: 4
   initial_dog_groupsize: 625
 --- !u!114 &555018386
 MonoBehaviour:

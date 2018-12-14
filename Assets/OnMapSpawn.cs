@@ -90,8 +90,10 @@ public class OnMapSpawn : MonoBehaviour
     private float[,] tempgroup;
 
     [SerializeField]
-    int loopCriteria = 10;
-
+    int loopCriteria = 4;
+    
+    private int convergeCountdown;
+    private int convergeChangeCount = 0;
     private int dogimageid = 0;
 
     [SerializeField]
@@ -105,6 +107,7 @@ public class OnMapSpawn : MonoBehaviour
         dogObjs = new List<GameObject>();
         mappointObjs = new List<GameObject>();
         dogdata = new List<LatLonSize>();
+        convergeCountdown = loopCriteria;
         for (int i = 0; i < initSize; i++)
         {
             addDogLocation(doglocationStrings[i]);
@@ -168,9 +171,22 @@ public class OnMapSpawn : MonoBehaviour
         {
             dogimageid++;
             Debug.Log("distribution id: " + dogimageid);
-            normalDistribution();
+            normalDistribution(dogimageid);
             createDogImage(xgridsize , ygridsize, dogimageid);
             createMapAndDog(xgridsize , ygridsize , dogimageid);
+        }
+
+        //Press B to start distribution until it converge
+        if (Input.GetKeyDown("b"))
+        {
+            while (convergeCountdown > 0)
+            {
+                dogimageid++;
+                normalDistribution(dogimageid);
+            }
+            Debug.Log("distributed until it is converged at " + dogimageid + "-th loop");
+            createDogImage(xgridsize , ygridsize , 0);
+            createMapAndDog(xgridsize , ygridsize , 0);
         }
     }
 
@@ -531,7 +547,7 @@ public class OnMapSpawn : MonoBehaviour
     }
 
     //(reference: https://en.wikipedia.org/wiki/Normal_distribution)
-    private void normalDistribution()
+    private void normalDistribution(int round)
     {
         int at_lat, at_lon;
         int initial_size = dogdata.Count;
@@ -539,15 +555,38 @@ public class OnMapSpawn : MonoBehaviour
         {
             at_lat = dogdata[i].latid;
             at_lon = dogdata[i].lonid;
+            int up    = inSize(at_lon + round, false), 
+                down  = inSize(at_lon - round, false), 
+                left  = inSize(at_lat - round), 
+                right = inSize(at_lat + round);
 
-            //normal distribution from up, down, left, right, and mid
-            centralDistribution(at_lat + 1 , at_lon);    //up
-            centralDistribution(at_lat - 1 , at_lon);    //down
-            centralDistribution(at_lat , at_lon + 1);    //left
-            centralDistribution(at_lat , at_lon - 1);    //right
-            centralDistribution(at_lat, at_lon);         //mid
+            for (int lonid = down; lonid < up; lonid++)
+            {
+                for (int latid = left; latid < right; latid++)
+                {
+                    centralDistribution(latid , lonid);
+                }
+            }
         }
         extractDistribution();
+        trackConvergence();
+    }
+
+    private int inSize(int atlatorlon, bool isLat = true)
+    {
+        if (atlatorlon < 0)
+            return 0;
+        if (isLat)
+        {
+            if (atlatorlon >= ygridsize)
+                return ygridsize - 1;
+        }
+        else
+        {
+            if (atlatorlon >= xgridsize)
+                return xgridsize - 1;
+        }
+        return atlatorlon;
     }
 
     private void centralDistribution(int latid , int lonid)
@@ -556,51 +595,62 @@ public class OnMapSpawn : MonoBehaviour
         {
             return;
         }
+
         float elev_up, elev_dn, elev_lf, elev_rt;
-        float up = 0.0f, dn = 0.0f, lf = 0.0f, rt = 0.0f;
+        float up_val = 0.0f, dn_val = 0.0f, lf_val = 0.0f, rt_val = 0.0f;
+
+        bool upvalid = latValid(latid + 1), dnvalid = latValid(latid - 1);
+        bool lfvalid = lonValid(lonid - 1), rtvalid = lonValid(lonid + 1);
 
         //find elevation of each direction
         //combine the received value from up, down, left, and right
-        if (latValid(latid + 1))
+        if (upvalid)
         {
             elev_up = distributeElevationLevel(heightxy[lonid , latid] , heightxy[lonid , latid + 1]);
-            up = (doggroup[lonid , latid + 1] / 5.0f) * elev_up; //up
+            up_val = (doggroup[lonid , latid + 1] / 5.0f) * elev_up;
+            if (up_val < distribution_criteria)
+                up_val = 0.0f;
         }
-        if (latValid(latid - 1))
+        if (dnvalid)
         {
             elev_dn = distributeElevationLevel(heightxy[lonid , latid] , heightxy[lonid , latid - 1]);
-            dn = (doggroup[lonid , latid - 1] / 5.0f) * elev_dn; //down
+            dn_val = (doggroup[lonid , latid - 1] / 5.0f) * elev_dn;
+            if (dn_val < distribution_criteria)
+                dn_val = 0.0f;
         }
-        if (lonValid(lonid + 1))
+        if (rtvalid)
         {
-            elev_lf = distributeElevationLevel(heightxy[lonid , latid] , heightxy[lonid + 1 , latid]);
-            lf = (doggroup[lonid - 1 , latid] / 5.0f) * elev_lf; //right
+            elev_rt = distributeElevationLevel(heightxy[lonid , latid] , heightxy[lonid + 1 , latid]);
+            rt_val = (doggroup[lonid + 1 , latid] / 5.0f) * elev_rt;
+            if (rt_val < distribution_criteria)
+                rt_val = 0.0f;
         }
-        if (lonValid(lonid - 1))
+        if (lfvalid)
         {
-            elev_rt = distributeElevationLevel(heightxy[lonid , latid] , heightxy[lonid - 1 , latid]);
-            rt = (doggroup[lonid + 1 , latid] / 5.0f) * elev_rt; //left
+            elev_lf = distributeElevationLevel(heightxy[lonid , latid] , heightxy[lonid - 1 , latid]);
+            lf_val = (doggroup[lonid - 1 , latid] / 5.0f) * elev_lf;
+            if (lf_val < distribution_criteria)
+                lf_val = 0.0f;
         }
 
         //combine the received value from up, down, left, and right
-        float rear_distribute = up + dn + rt + lf;
+        float rear_distribute = up_val + dn_val + rt_val + lf_val;
 
         //if it takes value from its rear and greater than criteria
         if (rear_distribute > distribution_criteria)
         {
             //save the changes from up, down, left, right, and mid
-            
             tempgroup[lonid , latid] += rear_distribute;
-            tempgroup[lonid , latid + 1] -= up;
-            tempgroup[lonid , latid - 1] -= dn;
-            tempgroup[lonid + 1 , latid] -= rt;
-            tempgroup[lonid - 1 , latid] -= lf;
+            if (upvalid) tempgroup[lonid , latid + 1] -= up_val;
+            if (dnvalid) tempgroup[lonid , latid - 1] -= dn_val;
+            if (rtvalid) tempgroup[lonid + 1 , latid] -= rt_val;
+            if (lfvalid) tempgroup[lonid - 1 , latid] -= lf_val;
         }
     }
 
     private bool latValid(int lat_id)
     {
-        if (lat_id < 0 || lat_id > ygridsize)
+        if (lat_id < 0 || lat_id >= ygridsize)
         {
             return false;
         }
@@ -609,7 +659,7 @@ public class OnMapSpawn : MonoBehaviour
 
     private bool lonValid(int lon_id)
     {
-        if (lon_id < 0 || lon_id > xgridsize)
+        if (lon_id < 0 || lon_id >= xgridsize)
         {
             return false;
         }
@@ -624,35 +674,27 @@ public class OnMapSpawn : MonoBehaviour
             for (int x = 0; x < xgridsize; x++)
             {
                 tempvalue = tempgroup[x , y];
-
+                if (doggroup[x , y] == 0.0f && tempvalue > 0.0f)
+                {
+                    convergeChangeCount++;
+                }
                 //update the changes
                 doggroup[x , y] = tempvalue;
-                if (tempvalue > 0.0f)
-                {
-                    changeSizeOfDogData(y , x , tempvalue);
-                }
             }
         }
     }
 
-    private void changeSizeOfDogData(int latid, int lonid, float size)
+    private void trackConvergence()
     {
-        bool found = false;
-        for (int i = 0; i < dogdata.Count; i++)
+        if (convergeChangeCount == 0)
         {
-            if (dogdata[i].latid == latid)
-            {
-                if (dogdata[i].lonid == lonid)
-                {
-                    dogdata[i] = new LatLonSize(dogdata[i].latid, dogdata[i].lonid, size);
-                    found = true;
-                }
-            }
+            convergeCountdown--;
         }
-        if (!found)
+        else
         {
-            dogdata.Add(new LatLonSize(latid , lonid , size));
+            convergeCountdown = loopCriteria;
         }
+        convergeChangeCount = 0;
     }
 
     private void createDogImage(int sizex, int sizey, int route)
@@ -689,15 +731,14 @@ public class OnMapSpawn : MonoBehaviour
 
     private void createMapAndDog(int sizex , int sizey , int route)
     {
-        int width = sizex, height = sizey;
-        Texture2D texture = new Texture2D(width , height , TextureFormat.RGB24 , false);
+        Texture2D texture = new Texture2D(sizex , sizey , TextureFormat.RGB24 , false);
         Color color = new Color(0.0f , 0.0f , 0.0f);
         float dogvalue = 0.0f;
         float mapvalue = 0.0f;
 
-        for (int x = 0; x < width; x++)
+        for (int x = 0; x < sizex; x++)
         {
-            for (int y = 0; y < height; y++)
+            for (int y = 0; y < sizey; y++)
             {
                 if (doggroup[x , y] > 0.0f)
                 {
@@ -721,6 +762,22 @@ public class OnMapSpawn : MonoBehaviour
         Destroy(texture);
 
         File.WriteAllBytes(Application.dataPath + "/../Assets/MickRendered/selectedMapAndDog" + route + ".png" , bytes);
+    }
+
+    private float findMaxGreen(int width, int height)
+    {
+        float max = 0.0f;
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                if (doggroup[x , y] > max)
+                {
+                    max = doggroup[x , y];
+                }
+            }
+        }
+        return max;
     }
 
     //(reference: https://en.wikipedia.org/wiki/Multivariate_kernel_density_estimation)

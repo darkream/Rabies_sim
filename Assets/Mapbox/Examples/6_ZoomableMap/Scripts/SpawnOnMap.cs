@@ -43,9 +43,6 @@ namespace Mapbox.Examples
         private float[] neighbourx = new float[4];
         private float[] neighboury = new float[4];
 
-        //Magic Number
-        private float griddistance = 100.0f;
-
         void Start()
 		{
 			_locations = new Vector2d[_locationStrings.Length];
