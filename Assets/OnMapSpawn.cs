@@ -85,9 +85,11 @@ public class OnMapSpawn : MonoBehaviour
     private float minh, maxh;
     private float[,] heightxy;
 
+    private List<float> dogradius;
     private List<LatLonSize> dogdata;
     private float[,] doggroup; //dog group size in 2D-array
     private float[,] tempgroup;
+    private float[,] edge;
 
     [SerializeField]
     int loopCriteria = 4;
@@ -107,6 +109,7 @@ public class OnMapSpawn : MonoBehaviour
         dogObjs = new List<GameObject>();
         mappointObjs = new List<GameObject>();
         dogdata = new List<LatLonSize>();
+        dogradius = new List<float>();
         convergeCountdown = loopCriteria;
         for (int i = 0; i < initSize; i++)
         {
@@ -148,7 +151,8 @@ public class OnMapSpawn : MonoBehaviour
             setEndLatLon(latlongDelta);
 
             pointToColorMap(startlat , startlon , xgridsize , ygridsize);
-            createMapImage(xgridsize , ygridsize);
+            createImage(0, 0);
+            Debug.Log("Map Array is created with size (" + xgridsize + ", " + ygridsize + ")");
         }
 
         //Left Click to spawn a dog with a size
@@ -172,8 +176,8 @@ public class OnMapSpawn : MonoBehaviour
             dogimageid++;
             Debug.Log("distribution id: " + dogimageid);
             normalDistribution(dogimageid);
-            createDogImage(xgridsize , ygridsize, dogimageid);
-            createMapAndDog(xgridsize , ygridsize , dogimageid);
+            createImage(dogimageid, 1);
+            createImage(dogimageid, 2);
         }
 
         //Press B to start distribution until it converge
@@ -185,8 +189,15 @@ public class OnMapSpawn : MonoBehaviour
                 normalDistribution(dogimageid);
             }
             Debug.Log("distributed until it is converged at " + dogimageid + "-th loop");
-            createDogImage(xgridsize , ygridsize , 0);
-            createMapAndDog(xgridsize , ygridsize , 0);
+            createImage(0, 1);
+            createImage(0, 2);
+        }
+
+        //Press N to start edge detection and home range calculation
+        if (Input.GetKeyDown("b"))
+        {
+            setRadiusFromEachDogGroup();
+            createImage(0 , 3);
         }
     }
 
@@ -490,31 +501,6 @@ public class OnMapSpawn : MonoBehaviour
         }
     }
 
-    //create image from map height
-    private void createMapImage(int input_width, int input_height)
-    {
-        Texture2D texture = new Texture2D(input_width , input_height , TextureFormat.RGB24, false);
-        Color color = new Color(255.0f , 0.0f , 0.0f);
-        float colorvalue = 0.0f;
-
-        for (int x = 0; x < input_width; x++)
-        {
-            for (int y = 0; y < input_height; y++)
-            {
-                colorvalue = ((heightxy[x,y] - minh) / (maxh - minh));
-                color = new Color(colorvalue , 0.0f , 0.0f);
-                texture.SetPixel(x , y , color);
-            }
-        }
-        texture.Apply();
-
-        //encode to png
-        byte[] bytes = texture.EncodeToPNG();
-        Destroy(texture);
-
-        File.WriteAllBytes(Application.dataPath + "/../Assets/MickRendered/plainSelectedTerrain.png" , bytes);
-    }
-
     private int getLatGridIndex(float moved_lat)
     {
         return (int)(moved_lat / addLatByMeters(GridSize));
@@ -530,6 +516,7 @@ public class OnMapSpawn : MonoBehaviour
     {
         doggroup = new float[xgridsize , ygridsize];
         tempgroup = new float[xgridsize , ygridsize];
+        edge = new float[xgridsize , ygridsize];
 
         for (int y = 0; y < ygridsize; y++)
         {
@@ -697,26 +684,15 @@ public class OnMapSpawn : MonoBehaviour
         convergeChangeCount = 0;
     }
 
-    private void createDogImage(int sizex, int sizey, int route)
+    private void createImage(int route, int imagetype)
     {
-        Texture2D texture = new Texture2D(sizex , sizey , TextureFormat.RGB24 , false);
-        Color color = new Color(0.0f , 0.0f , 0.0f);
-        float colorvalue = 0.0f;
+        Texture2D texture = new Texture2D(xgridsize , ygridsize , TextureFormat.RGB24 , false);
 
-        for (int x = 0; x < sizex; x++)
+        for (int lat = 0; lat < ygridsize; lat++)
         {
-            for (int y = 0; y < sizey; y++)
+            for (int lon = 0; lon < xgridsize; lon++)
             {
-                if (doggroup[x,y] > 0.0f)
-                {
-                    colorvalue = 255.0f * (doggroup[x,y] / initial_dog_groupsize);
-                }
-                else
-                {
-                    colorvalue = 0.0f;
-                }
-                color = new Color(0.0f , colorvalue , 0.0f);
-                texture.SetPixel(x , y , color);
+                texture.SetPixel(lon , lat , getColorFromColorType(lat , lon , imagetype));
             }
         }
 
@@ -726,58 +702,185 @@ public class OnMapSpawn : MonoBehaviour
         byte[] bytes = texture.EncodeToPNG();
         Destroy(texture);
 
-        File.WriteAllBytes(Application.dataPath + "/../Assets/MickRendered/selectedDogTerrainAt" + route +".png" , bytes);
+        File.WriteAllBytes(Application.dataPath + getFileNameTag(imagetype, route) , bytes);
     }
 
-    private void createMapAndDog(int sizex , int sizey , int route)
+    private Color getColorFromColorType(int lat, int lon, int imagetype)
     {
-        Texture2D texture = new Texture2D(sizex , sizey , TextureFormat.RGB24 , false);
-        Color color = new Color(0.0f , 0.0f , 0.0f);
-        float dogvalue = 0.0f;
-        float mapvalue = 0.0f;
-
-        for (int x = 0; x < sizex; x++)
+        if(imagetype == 0) //Edge Image
         {
-            for (int y = 0; y < sizey; y++)
+            return new Color(((heightxy[lon , lat] - minh) / (maxh - minh)) , 0.0f , 0.0f);
+        }
+        else if (imagetype == 1) //Dog Image
+        {
+            if (doggroup[lon , lat] > 0.0f)
             {
-                if (doggroup[x , y] > 0.0f)
+                return new Color(0.0f , 255.0f * (doggroup[lon , lat] / initial_dog_groupsize) , 0.0f);
+            }
+            else
+            {
+                return Color.black;
+            }
+        }
+        else if (imagetype == 2) //Dog And Map Image
+        {
+            if (doggroup[lon , lat] > 0.0f)
+            {
+                return new Color(0.0f , 255.0f * (doggroup[lon , lat] / initial_dog_groupsize) , 0.0f);
+            }
+            else
+            {
+                return new Color(((heightxy[lon , lat] - minh) / (maxh - minh)) , 0.0f , 0.0f);
+            }
+        }
+        else if (imagetype == 3)
+        {
+            if (edge[lon , lat] > 0.0f)
+                return Color.black;
+            else
+                return Color.blue;
+        }
+        return Color.black;
+    }
+
+    private string getFileNameTag(int imagetype, int route)
+    {
+        if (imagetype == 0)
+        {
+            return "/../Assets/MickRendered/plainSelectedTerrain.png";
+        }
+        else if (imagetype == 1)
+        {
+            return "/../Assets/MickRendered/selectedDogTerrain" + route + ".png";
+        }
+        else if (imagetype == 2)
+        {
+            return "/../Assets/MickRendered/selectedMapAndDog" + route + ".png";
+        }
+        else if (imagetype == 3)
+        {
+            return "/../Assets/MickRendered/selectedEdge" + route + ".png";
+        }
+        return "/../Assets/MickRendered/createdImage" + route + ".png";
+    }
+
+    private void setRadiusFromEachDogGroup()
+    {
+        //using edge detection on dog group (image processing)
+        edgeDetection();
+
+        //set the radius of each group
+        for (int i = 0; i < dogdata.Count; i++)
+        {
+            findRadiusOfGroup(dogdata[i].latid , dogdata[i].lonid);
+        }
+    }
+
+    private void findRadiusOfGroup(int latid, int lonid)
+    {
+        
+    }
+
+    // kernel is  { [ -1 -1 -1] , [ -1  8 -1], [ -1 -1 -1] }
+    private void edgeDetection()
+    {
+        for (int y = 0; y < ygridsize; y++)
+        {
+            for (int x = 0; x < xgridsize; x++)
+            {
+                if (y == 0)
                 {
-                    dogvalue = 255.0f * (doggroup[x , y] / initial_dog_groupsize);
-                    mapvalue = 0.0f;
+                    if (x == 0)
+                    {
+                        edge[x , y] = 5.0f * doggroup[x , y];
+                        edge[x , y] -= 2.0f * doggroup[x + 1 , y];
+                        edge[x , y] -= 2.0f * doggroup[x , y + 1];
+                        edge[x , y] -= doggroup[x + 1 , y + 1];
+                    }
+                    else if (x == xgridsize - 1)
+                    {
+                        edge[x , y] = 5.0f * doggroup[x , y];
+                        edge[x , y] -= 2.0f * doggroup[x - 1 , y];
+                        edge[x , y] -= 2.0f * doggroup[x , y + 1];
+                        edge[x , y] -= doggroup[x - 1 , y + 1];
+                    }
+                    else
+                    {
+                        edge[x , y] = 7.0f * doggroup[x , y];
+                        edge[x , y] -= 2.0f * doggroup[x - 1 , y];
+                        edge[x , y] -= 2.0f * doggroup[x - 1 , y];
+                        edge[x , y] -= doggroup[x - 1 , y + 1];
+                        edge[x , y] -= doggroup[x , y + 1];
+                        edge[x , y] -= doggroup[x + 1 , y + 1];
+                    }
+                }
+                else if (y == ygridsize - 1)
+                {
+                    if (x == 0)
+                    {
+                        edge[x , y] = 5.0f * doggroup[x , y];
+                        edge[x , y] -= 2.0f * doggroup[x + 1 , y];
+                        edge[x , y] -= 2.0f * doggroup[x , y - 1];
+                        edge[x , y] -= doggroup[x + 1 , y - 1];
+                    }
+                    else if (x == xgridsize - 1)
+                    {
+                        edge[x , y] = 5.0f * doggroup[x , y];
+                        edge[x , y] -= 2.0f * doggroup[x - 1 , y];
+                        edge[x , y] -= 2.0f * doggroup[x , y - 1];
+                        edge[x , y] -= doggroup[x - 1 , y - 1];
+                    }
+                    else
+                    {
+                        edge[x , y] = 7.0f * doggroup[x , y];
+                        edge[x , y] -= 2.0f * doggroup[x - 1 , y];
+                        edge[x , y] -= 2.0f * doggroup[x - 1 , y];
+                        edge[x , y] -= doggroup[x - 1 , y - 1];
+                        edge[x , y] -= doggroup[x , y - 1];
+                        edge[x , y] -= doggroup[x + 1 , y - 1];
+                    }
+                }
+                else if (x == 0)
+                {
+                    edge[x , y] = 7.0f * doggroup[x , y];
+                    edge[x , y] -= 2.0f * doggroup[x, y + 1];
+                    edge[x , y] -= 2.0f * doggroup[x, y - 1];
+                    edge[x , y] -= doggroup[x + 1 , y - 1];
+                    edge[x , y] -= doggroup[x + 1, y];
+                    edge[x , y] -= doggroup[x + 1 , y + 1];
+                }
+                else if (x == xgridsize - 1)
+                {
+                    edge[x , y] = 7.0f * doggroup[x , y];
+                    edge[x , y] -= 2.0f * doggroup[x , y + 1];
+                    edge[x , y] -= 2.0f * doggroup[x , y - 1];
+                    edge[x , y] -= doggroup[x - 1 , y - 1];
+                    edge[x , y] -= doggroup[x - 1 , y];
+                    edge[x , y] -= doggroup[x - 1 , y + 1];
                 }
                 else
                 {
-                    dogvalue = 0.0f;
-                    mapvalue = ((heightxy[x , y] - minh) / (maxh - minh));
+                    edge[x , y] = 8.0f * doggroup[x , y];
+                    edge[x , y] -= doggroup[x - 1 , y - 1];
+                    edge[x , y] -= doggroup[x , y - 1];
+                    edge[x , y] -= doggroup[x + 1 , y - 1];
+                    edge[x , y] -= doggroup[x - 1 , y];
+                    edge[x , y] -= doggroup[x + 1 , y];
+                    edge[x , y] -= doggroup[x - 1 , y + 1];
+                    edge[x , y] -= doggroup[x , y + 1];
+                    edge[x , y] -= doggroup[x + 1 , y + 1];
                 }
-                color = new Color(mapvalue , dogvalue , 0.0f);
-                texture.SetPixel(x , y , color);
-            }
-        }
 
-        texture.Apply();
-
-        //encode to png
-        byte[] bytes = texture.EncodeToPNG();
-        Destroy(texture);
-
-        File.WriteAllBytes(Application.dataPath + "/../Assets/MickRendered/selectedMapAndDog" + route + ".png" , bytes);
-    }
-
-    private float findMaxGreen(int width, int height)
-    {
-        float max = 0.0f;
-        for (int x = 0; x < width; x++)
-        {
-            for (int y = 0; y < height; y++)
-            {
-                if (doggroup[x , y] > max)
+                if (edge[x , y] < 0.0f)
                 {
-                    max = doggroup[x , y];
+                    edge[x , y] = 0.0f;
+                }
+                else
+                {
+                    edge[x , y] = 1.0f;
                 }
             }
         }
-        return max;
     }
 
     //(reference: https://en.wikipedia.org/wiki/Multivariate_kernel_density_estimation)
