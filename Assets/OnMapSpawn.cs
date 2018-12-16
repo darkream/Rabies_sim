@@ -22,6 +22,21 @@ public struct LatLonSize
     }
 }
 
+[System.Serializable]
+public struct EvacPoint
+{
+    public int groupid;
+    public int latid;
+    public int lonid;
+
+    public EvacPoint(int gid, int lt, int ln)
+    {
+        groupid = gid;
+        latid = lt;
+        lonid = ln;
+    }
+}
+
 public class OnMapSpawn : MonoBehaviour
 {
     [SerializeField]
@@ -81,15 +96,16 @@ public class OnMapSpawn : MonoBehaviour
     float GridSize; //default: "5", unit: meters
 
     private float startlat = 7.044082f, startlon = 100.4482f; //default_ lat: 7.044082, lon = 100.4482
-    private int xgridsize = 1700, ygridsize = 1000; //default_ xsize = 1700 grid, ysize = 1000 grid
+    private int xgridsize, ygridsize; //default_ xsize = 1700 grid, ysize = 1000 grid
     private float minh, maxh;
     private float[,] heightxy;
 
+    private List<int> factradius;
     private List<float> dogradius;
     private List<LatLonSize> dogdata;
     private float[,] doggroup; //dog group size in 2D-array
     private float[,] tempgroup;
-    private float[,] edge;
+    private int[,] edge;
 
     [SerializeField]
     int loopCriteria = 4;
@@ -101,6 +117,19 @@ public class OnMapSpawn : MonoBehaviour
     [SerializeField]
     int initial_dog_groupsize;
 
+    [SerializeField]
+    float homeRangeMultiplier = 1.8f; //default home range multiplier = x1.8
+
+    [SerializeField]
+    float hordeMoveRate = 0.4f;
+
+    [SerializeField]
+    float exploreMoveRate = 0.4f;
+
+    private bool allowedDogMovement = false;
+    private List<EvacPoint> movepoint;
+    private int[,] walkingHabits;
+
     void Start()
     {
         int initSize = doglocationStrings.Count;
@@ -110,13 +139,15 @@ public class OnMapSpawn : MonoBehaviour
         mappointObjs = new List<GameObject>();
         dogdata = new List<LatLonSize>();
         dogradius = new List<float>();
+        factradius = new List<int>();
+        movepoint = new List<EvacPoint>();
         convergeCountdown = loopCriteria;
         for (int i = 0; i < initSize; i++)
         {
             addDogLocation(doglocationStrings[i]);
+            dogradius.Add(0.0f);
+            factradius.Add(0);
         }
-
-        heightxy = new float[xgridsize , ygridsize];
     }
 
     private void Update()
@@ -151,33 +182,23 @@ public class OnMapSpawn : MonoBehaviour
             setEndLatLon(latlongDelta);
 
             pointToColorMap(startlat , startlon , xgridsize , ygridsize);
-            createImage(0, 0);
+            createImage(0, 0); //Create Height Map
             Debug.Log("Map Array is created with size (" + xgridsize + ", " + ygridsize + ")");
         }
 
-        //Left Click to spawn a dog with a size
-        if (Input.GetMouseButtonUp(1))
+        //Press C to add dog in the map
+        if (Input.GetKeyDown("c"))
         {
             Vector2d latlongDelta = getLatLonFromMousePosition();
             doggroupsize.Add(initial_dog_groupsize); //size is static at 25
             addDogLocation(latlongDelta); //add new dog object from clicked position
         }
 
-        //Press C to initiate dog group
-        if (Input.GetKeyDown("c"))
+        //Press V to initiate dog group
+        if (Input.GetKeyDown("v"))
         {
             Debug.Log("initiate dog group");
             initializeDogGroup();
-        }
-
-        //Press V to start distribution
-        if (Input.GetKeyDown("v"))
-        {
-            dogimageid++;
-            Debug.Log("distribution id: " + dogimageid);
-            normalDistribution(dogimageid);
-            createImage(dogimageid, 1);
-            createImage(dogimageid, 2);
         }
 
         //Press B to start distribution until it converge
@@ -189,15 +210,24 @@ public class OnMapSpawn : MonoBehaviour
                 normalDistribution(dogimageid);
             }
             Debug.Log("distributed until it is converged at " + dogimageid + "-th loop");
-            createImage(0, 1);
-            createImage(0, 2);
+            createImage(0, 1); //Create Dog Map
+            createImage(0, 2); //Create Dog and Height Map
         }
 
         //Press N to start edge detection and home range calculation
-        if (Input.GetKeyDown("b"))
+        if (Input.GetKeyDown("n"))
         {
-            setRadiusFromEachDogGroup();
-            createImage(0 , 3);
+            setDogRadius();
+            createImage(0 , 3); //Create Edge Map
+            Debug.Log("edge map is created");
+        }
+
+        if (Input.GetKeyDown("m"))
+        {
+            //allowedDogMovement = true;
+            kernelDensityEstimation();
+            createImage(0 , 4); //create walking habits image
+            Debug.Log("walking habits map is created");
         }
     }
 
@@ -312,10 +342,11 @@ public class OnMapSpawn : MonoBehaviour
     //create the object to the map location (with default height)
     private void createDogObject()
     {
+        //In Latitude, the map is drawn in vector of (+Lon, -Lat) direction
         int lastIndex = doglocations.Count - 1;
         float lat = (float)doglocations[lastIndex].x;
         float lon = (float)doglocations[lastIndex].y;
-        int at_lat = getLatGridIndex(abs(startlat - lat));
+        int at_lat = ygridsize - getLatGridIndex(abs(startlat - lat));
         int at_lon = getLonGridIndex(abs(startlon - lon));
         dogdata.Add(new LatLonSize(at_lat , at_lon , doggroupsize[lastIndex]));
         spawnDogPrefabWithHeight(lat , lon);
@@ -451,6 +482,7 @@ public class OnMapSpawn : MonoBehaviour
     {
         ygridsize = getLatGridIndex(abs(startlat - (float)latlondelta.x));
         xgridsize = getLonGridIndex(abs(startlon - (float)latlondelta.y));
+        heightxy = new float[xgridsize , ygridsize];
         spawnMapPointer(latlondelta.x , latlondelta.y);
     }
 
@@ -516,7 +548,8 @@ public class OnMapSpawn : MonoBehaviour
     {
         doggroup = new float[xgridsize , ygridsize];
         tempgroup = new float[xgridsize , ygridsize];
-        edge = new float[xgridsize , ygridsize];
+        edge = new int[xgridsize , ygridsize];
+        walkingHabits = new int[xgridsize , ygridsize];
 
         for (int y = 0; y < ygridsize; y++)
         {
@@ -524,6 +557,8 @@ public class OnMapSpawn : MonoBehaviour
             {
                 doggroup[x , y] = 0.0f;
                 tempgroup[x , y] = 0.0f;
+                edge[x , y] = 0;
+                walkingHabits[x , y] = 0;
             }
         }
         for (int i = 0; i < dogdata.Count; i++)
@@ -542,14 +577,14 @@ public class OnMapSpawn : MonoBehaviour
         {
             at_lat = dogdata[i].latid;
             at_lon = dogdata[i].lonid;
-            int up    = inSize(at_lon + round, false), 
-                down  = inSize(at_lon - round, false), 
-                left  = inSize(at_lat - round), 
-                right = inSize(at_lat + round);
+            int right = inSize(at_lon + round, false), 
+                left  = inSize(at_lon - round, false), 
+                down  = inSize(at_lat - round), 
+                up    = inSize(at_lat + round);
 
-            for (int lonid = down; lonid < up; lonid++)
+            for (int lonid = left; lonid < right; lonid++)
             {
-                for (int latid = left; latid < right; latid++)
+                for (int latid = down; latid < up; latid++)
                 {
                     centralDistribution(latid , lonid);
                 }
@@ -559,6 +594,7 @@ public class OnMapSpawn : MonoBehaviour
         trackConvergence();
     }
 
+    //Distributed unit must be inside the array
     private int inSize(int atlatorlon, bool isLat = true)
     {
         if (atlatorlon < 0)
@@ -661,9 +697,13 @@ public class OnMapSpawn : MonoBehaviour
             for (int x = 0; x < xgridsize; x++)
             {
                 tempvalue = tempgroup[x , y];
-                if (doggroup[x , y] == 0.0f && tempvalue > 0.0f)
+                if (tempvalue > 0.0f)
                 {
-                    convergeChangeCount++;
+                    if (doggroup[x , y] == 0.0f)
+                    {
+                        convergeChangeCount++;
+                    }
+                    edge[x , y] = 1;
                 }
                 //update the changes
                 doggroup[x , y] = tempvalue;
@@ -684,6 +724,7 @@ public class OnMapSpawn : MonoBehaviour
         convergeChangeCount = 0;
     }
 
+    //create image by image tag where 0=map, 1=dog, 2=mapanddog, 3=edge, 4=walking
     private void createImage(int route, int imagetype)
     {
         Texture2D texture = new Texture2D(xgridsize , ygridsize , TextureFormat.RGB24 , false);
@@ -705,6 +746,7 @@ public class OnMapSpawn : MonoBehaviour
         File.WriteAllBytes(Application.dataPath + getFileNameTag(imagetype, route) , bytes);
     }
 
+    //get color from image tag where 0=map, 1=dog, 2=mapanddog, 3=edge
     private Color getColorFromColorType(int lat, int lon, int imagetype)
     {
         if(imagetype == 0) //Edge Image
@@ -733,16 +775,32 @@ public class OnMapSpawn : MonoBehaviour
                 return new Color(((heightxy[lon , lat] - minh) / (maxh - minh)) , 0.0f , 0.0f);
             }
         }
-        else if (imagetype == 3)
+        else if (imagetype == 3) //Edge Image
         {
-            if (edge[lon , lat] > 0.0f)
-                return Color.black;
+            if (edge[lon , lat] > 0)
+                return Color.white;
             else
-                return Color.blue;
+                return Color.black;
+        }
+        else if (imagetype == 4) //Walking Habit Image
+        {
+            if (doggroup[lon , lat] > 0.0f)
+            {
+                return new Color(0.0f , 255.0f * (doggroup[lon , lat] / initial_dog_groupsize) , 0.0f);
+            }
+            else if (walkingHabits[lon, lat] != 0)
+            {
+                return new Color(0.0f , 0.0f , 255.0f);
+            }
+            else
+            {
+                return new Color(((heightxy[lon , lat] - minh) / (maxh - minh)) , 0.0f , 0.0f);
+            }
         }
         return Color.black;
     }
 
+    //get file name from image tag where 0=map, 1=dog, 2=mapanddog, 3=edge
     private string getFileNameTag(int imagetype, int route)
     {
         if (imagetype == 0)
@@ -761,29 +819,19 @@ public class OnMapSpawn : MonoBehaviour
         {
             return "/../Assets/MickRendered/selectedEdge" + route + ".png";
         }
+        else if (imagetype == 4)
+        {
+            return "/../Assets/MickRendered/selectedHabits" + route + ".png";
+        }
         return "/../Assets/MickRendered/createdImage" + route + ".png";
     }
 
-    private void setRadiusFromEachDogGroup()
+    //Set dog radius from each group
+    private void setDogRadius()
     {
         //using edge detection on dog group (image processing)
-        edgeDetection();
-
-        //set the radius of each group
-        for (int i = 0; i < dogdata.Count; i++)
-        {
-            findRadiusOfGroup(dogdata[i].latid , dogdata[i].lonid);
-        }
-    }
-
-    private void findRadiusOfGroup(int latid, int lonid)
-    {
-        
-    }
-
-    // kernel is  { [ -1 -1 -1] , [ -1  8 -1], [ -1 -1 -1] }
-    private void edgeDetection()
-    {
+        // kernel is  { [ -1 -1 -1] , [ -1  8 -1], [ -1 -1 -1] }
+        int[,] tempedge = new int[xgridsize , ygridsize];
         for (int y = 0; y < ygridsize; y++)
         {
             for (int x = 0; x < xgridsize; x++)
@@ -792,100 +840,270 @@ public class OnMapSpawn : MonoBehaviour
                 {
                     if (x == 0)
                     {
-                        edge[x , y] = 5.0f * doggroup[x , y];
-                        edge[x , y] -= 2.0f * doggroup[x + 1 , y];
-                        edge[x , y] -= 2.0f * doggroup[x , y + 1];
-                        edge[x , y] -= doggroup[x + 1 , y + 1];
+                        tempedge[x , y] = 5 * edge[x , y];
+                        tempedge[x , y] -= 2 * edge[x + 1 , y];
+                        tempedge[x , y] -= 2 * edge[x , y + 1];
+                        tempedge[x , y] -= edge[x + 1 , y + 1];
                     }
                     else if (x == xgridsize - 1)
                     {
-                        edge[x , y] = 5.0f * doggroup[x , y];
-                        edge[x , y] -= 2.0f * doggroup[x - 1 , y];
-                        edge[x , y] -= 2.0f * doggroup[x , y + 1];
-                        edge[x , y] -= doggroup[x - 1 , y + 1];
+                        tempedge[x , y] = 5 * edge[x , y];
+                        tempedge[x , y] -= 2 * edge[x - 1 , y];
+                        tempedge[x , y] -= 2 * edge[x , y + 1];
+                        tempedge[x , y] -= edge[x - 1 , y + 1];
                     }
                     else
                     {
-                        edge[x , y] = 7.0f * doggroup[x , y];
-                        edge[x , y] -= 2.0f * doggroup[x - 1 , y];
-                        edge[x , y] -= 2.0f * doggroup[x - 1 , y];
-                        edge[x , y] -= doggroup[x - 1 , y + 1];
-                        edge[x , y] -= doggroup[x , y + 1];
-                        edge[x , y] -= doggroup[x + 1 , y + 1];
+                        tempedge[x , y] = 7 * edge[x , y];
+                        tempedge[x , y] -= 2 * edge[x - 1 , y];
+                        tempedge[x , y] -= 2 * edge[x - 1 , y];
+                        tempedge[x , y] -= edge[x - 1 , y + 1];
+                        tempedge[x , y] -= edge[x , y + 1];
+                        tempedge[x , y] -= edge[x + 1 , y + 1];
                     }
                 }
                 else if (y == ygridsize - 1)
                 {
                     if (x == 0)
                     {
-                        edge[x , y] = 5.0f * doggroup[x , y];
-                        edge[x , y] -= 2.0f * doggroup[x + 1 , y];
-                        edge[x , y] -= 2.0f * doggroup[x , y - 1];
-                        edge[x , y] -= doggroup[x + 1 , y - 1];
+                        tempedge[x , y] = 5 * edge[x , y];
+                        tempedge[x , y] -= 2 * edge[x + 1 , y];
+                        tempedge[x , y] -= 2 * edge[x , y - 1];
+                        tempedge[x , y] -= edge[x + 1 , y - 1];
                     }
                     else if (x == xgridsize - 1)
                     {
-                        edge[x , y] = 5.0f * doggroup[x , y];
-                        edge[x , y] -= 2.0f * doggroup[x - 1 , y];
-                        edge[x , y] -= 2.0f * doggroup[x , y - 1];
-                        edge[x , y] -= doggroup[x - 1 , y - 1];
+                        tempedge[x , y] = 5 * edge[x , y];
+                        tempedge[x , y] -= 2 * edge[x - 1 , y];
+                        tempedge[x , y] -= 2 * edge[x , y - 1];
+                        tempedge[x , y] -= edge[x - 1 , y - 1];
                     }
                     else
                     {
-                        edge[x , y] = 7.0f * doggroup[x , y];
-                        edge[x , y] -= 2.0f * doggroup[x - 1 , y];
-                        edge[x , y] -= 2.0f * doggroup[x - 1 , y];
-                        edge[x , y] -= doggroup[x - 1 , y - 1];
-                        edge[x , y] -= doggroup[x , y - 1];
-                        edge[x , y] -= doggroup[x + 1 , y - 1];
+                        tempedge[x , y] = 7 * edge[x , y];
+                        tempedge[x , y] -= 2 * edge[x - 1 , y];
+                        tempedge[x , y] -= 2 * edge[x - 1 , y];
+                        tempedge[x , y] -= edge[x - 1 , y - 1];
+                        tempedge[x , y] -= edge[x , y - 1];
+                        tempedge[x , y] -= edge[x + 1 , y - 1];
                     }
                 }
                 else if (x == 0)
                 {
-                    edge[x , y] = 7.0f * doggroup[x , y];
-                    edge[x , y] -= 2.0f * doggroup[x, y + 1];
-                    edge[x , y] -= 2.0f * doggroup[x, y - 1];
-                    edge[x , y] -= doggroup[x + 1 , y - 1];
-                    edge[x , y] -= doggroup[x + 1, y];
-                    edge[x , y] -= doggroup[x + 1 , y + 1];
+                    tempedge[x , y] = 7 * edge[x , y];
+                    tempedge[x , y] -= 2 * edge[x, y + 1];
+                    tempedge[x , y] -= 2 * edge[x, y - 1];
+                    tempedge[x , y] -= edge[x + 1 , y - 1];
+                    tempedge[x , y] -= edge[x + 1, y];
+                    tempedge[x , y] -= edge[x + 1 , y + 1];
                 }
                 else if (x == xgridsize - 1)
                 {
-                    edge[x , y] = 7.0f * doggroup[x , y];
-                    edge[x , y] -= 2.0f * doggroup[x , y + 1];
-                    edge[x , y] -= 2.0f * doggroup[x , y - 1];
-                    edge[x , y] -= doggroup[x - 1 , y - 1];
-                    edge[x , y] -= doggroup[x - 1 , y];
-                    edge[x , y] -= doggroup[x - 1 , y + 1];
+                    tempedge[x , y] = 7 * edge[x , y];
+                    tempedge[x , y] -= 2 * edge[x , y + 1];
+                    tempedge[x , y] -= 2 * edge[x , y - 1];
+                    tempedge[x , y] -= edge[x - 1 , y - 1];
+                    tempedge[x , y] -= edge[x - 1 , y];
+                    tempedge[x , y] -= edge[x - 1 , y + 1];
                 }
                 else
                 {
-                    edge[x , y] = 8.0f * doggroup[x , y];
-                    edge[x , y] -= doggroup[x - 1 , y - 1];
-                    edge[x , y] -= doggroup[x , y - 1];
-                    edge[x , y] -= doggroup[x + 1 , y - 1];
-                    edge[x , y] -= doggroup[x - 1 , y];
-                    edge[x , y] -= doggroup[x + 1 , y];
-                    edge[x , y] -= doggroup[x - 1 , y + 1];
-                    edge[x , y] -= doggroup[x , y + 1];
-                    edge[x , y] -= doggroup[x + 1 , y + 1];
-                }
-
-                if (edge[x , y] < 0.0f)
-                {
-                    edge[x , y] = 0.0f;
-                }
-                else
-                {
-                    edge[x , y] = 1.0f;
+                    tempedge[x , y] = 8 * edge[x , y];
+                    tempedge[x , y] -= edge[x - 1 , y - 1];
+                    tempedge[x , y] -= edge[x , y - 1];
+                    tempedge[x , y] -= edge[x + 1 , y - 1];
+                    tempedge[x , y] -= edge[x - 1 , y];
+                    tempedge[x , y] -= edge[x + 1 , y];
+                    tempedge[x , y] -= edge[x - 1 , y + 1];
+                    tempedge[x , y] -= edge[x , y + 1];
+                    tempedge[x , y] -= edge[x + 1 , y + 1];
                 }
             }
         }
+
+        //Reapply the detected edge
+        for (int y = 0; y < ygridsize; y++)
+        {
+            for (int x = 0; x < xgridsize; x++)
+            {
+                if (tempedge[x , y] <= 0.0f)
+                {
+                    edge[x , y] = 0;
+                }
+                else
+                {
+                    edge[x , y] = 1;
+                    addAverageRadiusOfGroup(x, y); //Combine (not yet concluded) the radius
+                }
+            }
+        }
+
+        //Conclude the average radius of each dog group
+        for (int i = 0; i < dogdata.Count; i++)
+        {
+            dogradius[i] /= factradius[i];
+            Debug.Log("Dog Group id: " + i + " has radius " + dogradius[i] + " pixels");
+        }
+    }
+
+    private void addAverageRadiusOfGroup(int x, int y)
+    {
+        int selectedgroup = 0;
+        float thisx = abs(dogdata[0].lonid - x), thisy = abs(dogdata[0].latid -y);
+        float distance = (thisx * thisx) + (thisy * thisy);
+        float smallestsize = distance;
+
+        //Find the closest neighbour of the current edge
+        for (int i = 1; i < dogdata.Count; i++)
+        {
+            thisx = abs(dogdata[i].lonid - x);
+            thisy = abs(dogdata[i].latid - y);
+
+            //Euclidean distance while not square rooted
+            distance = (thisx * thisx) + (thisy * thisy);
+            if (distance < smallestsize)
+            {
+                smallestsize = distance;
+                selectedgroup = i;
+            }
+        }
+        //Euclidean distance
+        dogradius[selectedgroup] += Mathf.Sqrt(smallestsize);
+        factradius[selectedgroup]++;
     }
 
     //(reference: https://en.wikipedia.org/wiki/Multivariate_kernel_density_estimation)
     private void kernelDensityEstimation()
     {
+        int thislat, thislon;
+        int mul, curx = 0;
+        for (int i = 0; i < dogdata.Count; i++)
+        {
+            thislat = dogdata[i].latid;
+            thislon = dogdata[i].lonid;
+            mul = (int)(dogradius[i] * homeRangeMultiplier);
 
+            //Add top, bottom, left, and right
+            walkingBehaviour(i , thislat + mul , thislon);
+            walkingBehaviour(i , thislat - mul , thislon);
+            walkingBehaviour(i , thislat , thislon + mul);
+            walkingBehaviour(i , thislat , thislon - mul);
+
+            /*
+            //Draw from bottom to center
+            for (int y = (thislat - mul) + 1; y < thislat; y++)
+            {
+                walkingBehaviour(i , y , thislon - curx);
+                walkingBehaviour(i , y , thislon + curx);
+                curx++;
+            }
+            curx = 0;
+            
+            //Draw from top to center
+            for (int y = (thislat + mul) - 1; y > thislat; y++)
+            {
+                walkingBehaviour(i , y , thislon - curx);
+                walkingBehaviour(i , y , thislon + curx);
+                curx++;
+            }
+            */
+        }
+    }
+
+    private void walkingBehaviour(int d_id, int t_lat, int t_lon)
+    {
+        int d_lat, d_lon;
+        int y_dir = 1, x_dir = 1;
+        float cursize = initial_dog_groupsize;
+        float thisheight, y_dir_eva, x_dir_eva, distance;
+
+        d_lat = dogdata[d_id].latid; //dog lat
+        d_lon = dogdata[d_id].lonid; //dog lon
+
+        walkingHabits[d_lon , d_lat]++;
+
+        if (t_lat > ygridsize)
+        {
+            t_lat = ygridsize - 1;
+        }
+        if (t_lon > xgridsize)
+        {
+            t_lon = xgridsize - 1;
+        }
+        if (t_lat < 0)
+        {
+            t_lat = 0;
+        }
+        if (t_lon < 0)
+        {
+            t_lon = 0;
+        }
+
+        if (d_lat > t_lat) //because lat move in vector -lat
+        {
+            y_dir = -1;
+        }
+        if (d_lon > t_lon)
+        {
+            x_dir = -1;
+        }
+
+        distance = ((d_lat - t_lat) * (d_lat - t_lat)) + ((d_lon - t_lon)* (d_lon - t_lon));
+
+        while (d_lat != t_lat && d_lon != t_lon)
+        {
+            if (cursize <= distribution_criteria)
+            {
+                break;
+            }
+
+            if (d_lat - t_lat == 0)
+            {
+                x_dir_eva = distributeElevationLevel(heightxy[d_lon , d_lat] , heightxy[d_lon + x_dir , d_lat]);
+                cursize *= x_dir_eva;
+                cursize -= initial_dog_groupsize / distance;
+                d_lon += x_dir;
+            }
+            else if (d_lon - t_lon == 0)
+            {
+                y_dir_eva = distributeElevationLevel(heightxy[d_lon , d_lat] , heightxy[d_lon , d_lat + y_dir]);
+                cursize *= y_dir_eva;
+                cursize -= initial_dog_groupsize / distance;
+                d_lat += y_dir;
+            }
+            else
+            {
+                thisheight = heightxy[d_lon , d_lat];
+                y_dir_eva = distributeElevationLevel(thisheight , heightxy[d_lon , d_lat + y_dir]);
+                x_dir_eva = distributeElevationLevel(thisheight , heightxy[d_lon + x_dir , d_lat]);
+
+                if (d_lat - t_lat == 1 || d_lat - t_lat == -1)
+                {
+                    cursize *= y_dir_eva;
+                    cursize -= initial_dog_groupsize / distance;
+                    d_lat += y_dir;
+                }
+                else if (d_lon - t_lon == 1 || d_lon - t_lon == -1)
+                {
+                    cursize *= x_dir_eva;
+                    cursize -= initial_dog_groupsize / distance;
+                    d_lon += x_dir;
+                }
+                else if (y_dir_eva > x_dir_eva)
+                {
+                    cursize *= y_dir_eva;
+                    cursize -= initial_dog_groupsize / distance;
+                    d_lat += y_dir;
+                }
+                else //if (x_dir_eva >= y_dir_eva)
+                {
+                    cursize *= x_dir_eva;
+                    cursize -= initial_dog_groupsize / distance;
+                    d_lon += x_dir;
+                }
+            }
+            walkingHabits[d_lon , d_lat]++;
+        }
+        
     }
 }
