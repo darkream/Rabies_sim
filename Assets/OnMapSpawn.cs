@@ -94,9 +94,11 @@ public class OnMapSpawn : MonoBehaviour
 
     [SerializeField]
     float GridSize; //default: "5", unit: meters
+// private float startlat = 7.044082f, startlon = 100.4482f; //default_ lat: 7.044082, lon = 100.4482
+    public float startlat = 7.044082f, startlon = 100.4482f; //default_ lat: 7.044082, lon = 100.4482
 
-    private float startlat = 7.044082f, startlon = 100.4482f; //default_ lat: 7.044082, lon = 100.4482
-    private int xgridsize, ygridsize; //default_ xsize = 1700 grid, ysize = 1000 grid
+   // private int xgridsize, ygridsize; //default_ xsize = 1700 grid, ysize = 1000 grid
+    public int xgridsize, ygridsize; //default_ xsize = 1700 grid, ysize = 1000 grid
     private float minh, maxh;
     private float[,] heightxy;
 
