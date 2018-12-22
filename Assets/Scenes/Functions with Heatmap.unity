@@ -413,8 +413,15 @@ MonoBehaviour:
   _referenceCamera: {fileID: 1787361574}
   DogLayer: {fileID: 1807989378}
   GridSize: 5
+  startlat: 7.044082
+  startlon: 100.4482
+  xgridsize: 0
+  ygridsize: 0
   loopCriteria: 4
-  initial_dog_groupsize: 625
+  initial_dog_groupsize: 2000
+  homeRangeMultiplier: 1.8
+  hordeMoveRate: 0.4
+  exploreMoveRate: 0.4
 --- !u!114 &555018386
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -130,7 +130,8 @@ public class OnMapSpawn : MonoBehaviour
 
     private bool allowedDogMovement = false;
     private List<EvacPoint> movepoint;
-    private int[,] walkingHabits;
+    private float[,] walkingHabits;
+    private float highest_walking_rate = 0.0f;
 
     void Start()
     {
@@ -226,8 +227,8 @@ public class OnMapSpawn : MonoBehaviour
 
         if (Input.GetKeyDown("m"))
         {
-            //allowedDogMovement = true;
             kernelDensityEstimation();
+            maxWalkColor();
             createImage(0 , 4); //create walking habits image
             Debug.Log("walking habits map is created");
         }
@@ -551,7 +552,7 @@ public class OnMapSpawn : MonoBehaviour
         doggroup = new float[xgridsize , ygridsize];
         tempgroup = new float[xgridsize , ygridsize];
         edge = new int[xgridsize , ygridsize];
-        walkingHabits = new int[xgridsize , ygridsize];
+        walkingHabits = new float[xgridsize , ygridsize];
 
         for (int y = 0; y < ygridsize; y++)
         {
@@ -560,7 +561,7 @@ public class OnMapSpawn : MonoBehaviour
                 doggroup[x , y] = 0.0f;
                 tempgroup[x , y] = 0.0f;
                 edge[x , y] = 0;
-                walkingHabits[x , y] = 0;
+                walkingHabits[x , y] = 0.0f;
             }
         }
         for (int i = 0; i < dogdata.Count; i++)
@@ -786,13 +787,14 @@ public class OnMapSpawn : MonoBehaviour
         }
         else if (imagetype == 4) //Walking Habit Image
         {
-            if (doggroup[lon , lat] > 0.0f)
+            if (walkingHabits[lon , lat] != 0.0f)
+            {
+                float colorvalue = 255.0f * (walkingHabits[lon , lat] / highest_walking_rate);
+                return new Color(0.0f , colorvalue , colorvalue);
+            }
+            else if (doggroup[lon , lat] > 0.0f)
             {
                 return new Color(0.0f , 255.0f * (doggroup[lon , lat] / initial_dog_groupsize) , 0.0f);
-            }
-            else if (walkingHabits[lon, lat] != 0)
-            {
-                return new Color(0.0f , 0.0f , 255.0f);
             }
             else
             {
@@ -983,65 +985,64 @@ public class OnMapSpawn : MonoBehaviour
         {
             thislat = dogdata[i].latid;
             thislon = dogdata[i].lonid;
-            mul = (int)(dogradius[i] * homeRangeMultiplier);
+            mul = (int)(dogradius[i] * homeRangeMultiplier) + 1;
 
-            //Add top, bottom, left, and right
-            walkingBehaviour(i , thislat + mul , thislon);
-            walkingBehaviour(i , thislat - mul , thislon);
-            walkingBehaviour(i , thislat , thislon + mul);
-            walkingBehaviour(i , thislat , thislon - mul);
-
-            /*
             //Draw from bottom to center
-            for (int y = (thislat - mul) + 1; y < thislat; y++)
+            for (int y = (thislat - mul) + 1; y < thislat; y+=2)
             {
-                walkingBehaviour(i , y , thislon - curx);
-                walkingBehaviour(i , y , thislon + curx);
-                curx++;
+                walkingBehaviour(thislat , thislon , y , thislon - curx , mul);
+                walkingBehaviour(thislat , thislon , y , thislon + curx , mul);
+                walkingBehaviour(y , thislon - curx , thislat , thislon , mul);
+                walkingBehaviour(y , thislon + curx , thislat , thislon , mul);
+                walkingHabits[thislon - curx , y] = 0.0f;
+                walkingHabits[thislon + curx , y] = 0.0f;
+                curx+=2;
             }
             curx = 0;
             
             //Draw from top to center
-            for (int y = (thislat + mul) - 1; y > thislat; y++)
+            for (int y = (thislat + mul) - 1; y > thislat; y-=2)
             {
-                walkingBehaviour(i , y , thislon - curx);
-                walkingBehaviour(i , y , thislon + curx);
-                curx++;
+                walkingBehaviour(thislat , thislon , y , thislon - curx , mul);
+                walkingBehaviour(thislat , thislon , y , thislon + curx , mul);
+                walkingBehaviour(y , thislon - curx , thislat , thislon , mul);
+                walkingBehaviour(y , thislon + curx , thislat , thislon , mul);
+                walkingHabits[thislon - curx , y] = 0.0f;
+                walkingHabits[thislon + curx , y] = 0.0f;
+                curx+=2;
             }
-            */
+            curx = 0;
         }
     }
 
-    private void walkingBehaviour(int d_id, int t_lat, int t_lon)
+    private void walkingBehaviour(int d_lat, int d_lon, int t_lat, int t_lon, int mul)
     {
-        int d_lat, d_lon;
         int y_dir = 1, x_dir = 1;
         float cursize = initial_dog_groupsize;
         float thisheight, y_dir_eva, x_dir_eva, distance;
 
-        d_lat = dogdata[d_id].latid; //dog lat
-        d_lon = dogdata[d_id].lonid; //dog lon
+        walkingHabits[d_lon , d_lat] += 1.0f;
 
-        walkingHabits[d_lon , d_lat]++;
-
-        if (t_lat > ygridsize)
+        if (t_lat >= ygridsize)
         {
             t_lat = ygridsize - 1;
         }
-        if (t_lon > xgridsize)
-        {
-            t_lon = xgridsize - 1;
-        }
-        if (t_lat < 0)
+        else if (t_lat < 0)
         {
             t_lat = 0;
         }
-        if (t_lon < 0)
+
+        if (t_lon >= xgridsize)
+        {
+            t_lon = xgridsize - 1;
+        }
+        else if (t_lon < 0)
         {
             t_lon = 0;
         }
+        
 
-        if (d_lat > t_lat) //because lat move in vector -lat
+        if (d_lat > t_lat)
         {
             y_dir = -1;
         }
@@ -1051,6 +1052,7 @@ public class OnMapSpawn : MonoBehaviour
         }
 
         distance = ((d_lat - t_lat) * (d_lat - t_lat)) + ((d_lon - t_lon)* (d_lon - t_lon));
+        float walking_criteria = (initial_dog_groupsize  / Mathf.Sqrt(distance)) / mul;
 
         while (d_lat != t_lat && d_lon != t_lon)
         {
@@ -1063,14 +1065,14 @@ public class OnMapSpawn : MonoBehaviour
             {
                 x_dir_eva = distributeElevationLevel(heightxy[d_lon , d_lat] , heightxy[d_lon + x_dir , d_lat]);
                 cursize *= x_dir_eva;
-                cursize -= initial_dog_groupsize / distance;
+                cursize -= walking_criteria;
                 d_lon += x_dir;
             }
             else if (d_lon - t_lon == 0)
             {
                 y_dir_eva = distributeElevationLevel(heightxy[d_lon , d_lat] , heightxy[d_lon , d_lat + y_dir]);
                 cursize *= y_dir_eva;
-                cursize -= initial_dog_groupsize / distance;
+                cursize -= walking_criteria;
                 d_lat += y_dir;
             }
             else
@@ -1082,30 +1084,50 @@ public class OnMapSpawn : MonoBehaviour
                 if (d_lat - t_lat == 1 || d_lat - t_lat == -1)
                 {
                     cursize *= y_dir_eva;
-                    cursize -= initial_dog_groupsize / distance;
+                    cursize -= walking_criteria;
                     d_lat += y_dir;
                 }
                 else if (d_lon - t_lon == 1 || d_lon - t_lon == -1)
                 {
                     cursize *= x_dir_eva;
-                    cursize -= initial_dog_groupsize / distance;
+                    cursize -= walking_criteria;
                     d_lon += x_dir;
                 }
-                else if (y_dir_eva > x_dir_eva)
+                else
                 {
-                    cursize *= y_dir_eva;
-                    cursize -= initial_dog_groupsize / distance;
-                    d_lat += y_dir;
-                }
-                else //if (x_dir_eva >= y_dir_eva)
-                {
-                    cursize *= x_dir_eva;
-                    cursize -= initial_dog_groupsize / distance;
-                    d_lon += x_dir;
+                    walkingHabits[d_lon , d_lat + y_dir] += x_dir_eva / (y_dir_eva + x_dir_eva + 1.0f);
+                    walkingHabits[d_lon + x_dir , d_lat] += y_dir_eva / (y_dir_eva + x_dir_eva + 1.0f);
+                    walkingHabits[d_lon + x_dir , d_lat + y_dir] += 1.0f / (y_dir_eva + x_dir_eva + 1.0f);
+
+                    if (x_dir_eva > y_dir_eva)
+                    {
+                        d_lon += x_dir;
+                        cursize *= x_dir_eva;
+                    }
+                    else
+                    {
+                        d_lat += y_dir;
+                        cursize *= y_dir_eva;
+                    }
+                    cursize -= walking_criteria;
+                    walkingHabits[d_lon , d_lat] -= 1.0f;
                 }
             }
-            walkingHabits[d_lon , d_lat]++;
+            walkingHabits[d_lon , d_lat] += 1.0f;
         }
-        
+    }
+
+    private void maxWalkColor()
+    {
+        for (int y = 0; y < ygridsize; y++)
+        {
+            for (int x = 0; x < xgridsize; x++)
+            {
+                if (walkingHabits[x,y] > highest_walking_rate)
+                {
+                    highest_walking_rate = walkingHabits[x , y];
+                }
+            }
+        }
     }
 }
