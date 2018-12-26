@@ -418,8 +418,8 @@ MonoBehaviour:
   xgridsize: 0
   ygridsize: 0
   loopCriteria: 4
-  initial_dog_groupsize: 2000
-  homeRangeMultiplier: 1.8
+  initial_dog_groupsize: 625
+  homeRangeMultiplier: 2
   hordeMoveRate: 0.4
   exploreMoveRate: 0.4
 --- !u!114 &555018386

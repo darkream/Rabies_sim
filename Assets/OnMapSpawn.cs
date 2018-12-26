@@ -120,7 +120,7 @@ public class OnMapSpawn : MonoBehaviour
     int initial_dog_groupsize;
 
     [SerializeField]
-    float homeRangeMultiplier = 1.8f; //default home range multiplier = x1.8
+    float homeRangeMultiplier = 2.0f; //default home range multiplier = x1.8
 
     [SerializeField]
     float hordeMoveRate = 0.4f;
@@ -131,7 +131,7 @@ public class OnMapSpawn : MonoBehaviour
     private bool allowedDogMovement = false;
     private List<EvacPoint> movepoint;
     private float[,] walkingHabits;
-    private float highest_walking_rate = 0.0f;
+    private int highest_walking_rate = 0;
 
     void Start()
     {
@@ -220,14 +220,14 @@ public class OnMapSpawn : MonoBehaviour
         //Press N to start edge detection and home range calculation
         if (Input.GetKeyDown("n"))
         {
-            setDogRadius();
+            kernelDensityEstimation();
             createImage(0 , 3); //Create Edge Map
-            Debug.Log("edge map is created");
+            Debug.Log("edge map (pre-LoCoH) is created");
         }
 
         if (Input.GetKeyDown("m"))
         {
-            kernelDensityEstimation();
+            edgeExpansion();
             maxWalkColor();
             createImage(0 , 4); //create walking habits image
             Debug.Log("walking habits map is created");
@@ -787,14 +787,14 @@ public class OnMapSpawn : MonoBehaviour
         }
         else if (imagetype == 4) //Walking Habit Image
         {
-            if (walkingHabits[lon , lat] != 0.0f)
-            {
-                float colorvalue = 255.0f * (walkingHabits[lon , lat] / highest_walking_rate);
-                return new Color(0.0f , colorvalue , colorvalue);
-            }
-            else if (doggroup[lon , lat] > 0.0f)
+            if (doggroup[lon , lat] > 0.0f)
             {
                 return new Color(0.0f , 255.0f * (doggroup[lon , lat] / initial_dog_groupsize) , 0.0f);
+            }
+            else if (edge[lon , lat] > 0)
+            {
+                float colorvalue = (edge[lon , lat] / (float)highest_walking_rate);
+                return new Color(colorvalue , colorvalue , 0.0f);
             }
             else
             {
@@ -830,8 +830,8 @@ public class OnMapSpawn : MonoBehaviour
         return "/../Assets/MickRendered/createdImage" + route + ".png";
     }
 
-    //Set dog radius from each group
-    private void setDogRadius()
+    //(reference: https://en.wikipedia.org/wiki/Multivariate_kernel_density_estimation)
+    private void kernelDensityEstimation()
     {
         //using edge detection on dog group (image processing)
         // kernel is  { [ -1 -1 -1] , [ -1  8 -1], [ -1 -1 -1] }
@@ -937,7 +937,7 @@ public class OnMapSpawn : MonoBehaviour
                 else
                 {
                     edge[x , y] = 1;
-                    addAverageRadiusOfGroup(x, y); //Combine (not yet concluded) the radius
+                    findNearestGroupNeighbour(x, y, true); //Combine (not yet concluded) the radius
                 }
             }
         }
@@ -945,15 +945,16 @@ public class OnMapSpawn : MonoBehaviour
         //Conclude the average radius of each dog group
         for (int i = 0; i < dogdata.Count; i++)
         {
-            dogradius[i] /= factradius[i];
+            dogradius[i] /= factradius[i]; //Set dog radius from each group
             Debug.Log("Dog Group id: " + i + " has radius " + dogradius[i] + " pixels");
         }
     }
 
-    private void addAverageRadiusOfGroup(int x, int y)
+    private int findNearestGroupNeighbour(int x , int y, bool setRadiusSize = false)
     {
         int selectedgroup = 0;
-        float thisx = abs(dogdata[0].lonid - x), thisy = abs(dogdata[0].latid -y);
+        float thisx = abs(dogdata[0].lonid - x);
+        float thisy = abs(dogdata[0].latid - y);
         float distance = (thisx * thisx) + (thisy * thisy);
         float smallestsize = distance;
 
@@ -971,51 +972,93 @@ public class OnMapSpawn : MonoBehaviour
                 selectedgroup = i;
             }
         }
-        //Euclidean distance
-        dogradius[selectedgroup] += Mathf.Sqrt(smallestsize);
-        factradius[selectedgroup]++;
+
+        if (setRadiusSize)
+        {
+            //Euclidean distance
+            dogradius[selectedgroup] += Mathf.Sqrt(smallestsize);
+            factradius[selectedgroup]++;
+        }
+
+        return selectedgroup;
     }
 
     //(reference: https://en.wikipedia.org/wiki/Multivariate_kernel_density_estimation)
-    private void kernelDensityEstimation()
+    private void edgeExpansion()
     {
-        int thislat, thislon;
-        int mul, curx = 0;
-        for (int i = 0; i < dogdata.Count; i++)
-        {
-            thislat = dogdata[i].latid;
-            thislon = dogdata[i].lonid;
-            mul = (int)(dogradius[i] * homeRangeMultiplier) + 1;
+        int radius;
+        int[,] tempedge = new int[xgridsize , ygridsize];
 
-            //Draw from bottom to center
-            for (int y = (thislat - mul) + 1; y < thislat; y+=2)
+        for (int y = 0; y < ygridsize; y++)
+        {
+            for (int x = 0; x < xgridsize; x++)
             {
-                walkingBehaviour(thislat , thislon , y , thislon - curx , mul);
-                walkingBehaviour(thislat , thislon , y , thislon + curx , mul);
-                walkingBehaviour(y , thislon - curx , thislat , thislon , mul);
-                walkingBehaviour(y , thislon + curx , thislat , thislon , mul);
-                walkingHabits[thislon - curx , y] = 0.0f;
-                walkingHabits[thislon + curx , y] = 0.0f;
-                curx+=2;
+                tempedge[x , y] = edge[x , y];
             }
-            curx = 0;
-            
-            //Draw from top to center
-            for (int y = (thislat + mul) - 1; y > thislat; y-=2)
+        }
+
+        for (int y = 0; y < ygridsize; y++)
+        {
+            for (int x = 0; x < xgridsize; x++)
             {
-                walkingBehaviour(thislat , thislon , y , thislon - curx , mul);
-                walkingBehaviour(thislat , thislon , y , thislon + curx , mul);
-                walkingBehaviour(y , thislon - curx , thislat , thislon , mul);
-                walkingBehaviour(y , thislon + curx , thislat , thislon , mul);
-                walkingHabits[thislon - curx , y] = 0.0f;
-                walkingHabits[thislon + curx , y] = 0.0f;
-                curx+=2;
+                if (edge[x , y] > 0)
+                {
+                    radius = (int)dogradius[findNearestGroupNeighbour(x , y)];
+                    int topy = inSize(y + radius + 1);
+                    int boty = inSize(y - radius - 1);
+
+                    int leftx, rightx, curx = 0;
+
+                    for (int i = boty; i < y; i++)
+                    {
+                        leftx = inSize(x - curx, false);
+                        rightx = inSize(x + curx + 1, false);
+                        for (int j = leftx; j < rightx; j++)
+                        {
+                            tempedge[j , i]++;
+                        }
+                        curx++;
+                    }
+                    curx = 0;
+
+                    for (int i = topy; i >= y; i--)
+                    {
+                        leftx = inSize(x - curx , false);
+                        rightx = inSize(x + curx + 1 , false);
+                        for (int j = leftx; j < rightx; j++)
+                        {
+                            tempedge[j , i]++;
+                        }
+                        curx++;
+                    }
+                }
             }
-            curx = 0;
+        }
+
+        for (int y = 0; y < ygridsize; y++)
+        {
+            for (int x = 0; x < xgridsize; x++)
+            {
+                edge[x , y] = tempedge[x , y];
+            }
         }
     }
 
-    private void walkingBehaviour(int d_lat, int d_lon, int t_lat, int t_lon, int mul)
+    private void maxWalkColor()
+    {
+        for (int y = 0; y < ygridsize; y++)
+        {
+            for (int x = 0; x < xgridsize; x++)
+            {
+                if (edge[x , y] > highest_walking_rate)
+                {
+                    highest_walking_rate = edge[x , y];
+                }
+            }
+        }
+    }
+
+    private void walkingBehaviour(int d_lat , int d_lon , int t_lat , int t_lon , int mul)
     {
         int y_dir = 1, x_dir = 1;
         float cursize = initial_dog_groupsize;
@@ -1023,24 +1066,8 @@ public class OnMapSpawn : MonoBehaviour
 
         walkingHabits[d_lon , d_lat] += 1.0f;
 
-        if (t_lat >= ygridsize)
-        {
-            t_lat = ygridsize - 1;
-        }
-        else if (t_lat < 0)
-        {
-            t_lat = 0;
-        }
-
-        if (t_lon >= xgridsize)
-        {
-            t_lon = xgridsize - 1;
-        }
-        else if (t_lon < 0)
-        {
-            t_lon = 0;
-        }
-        
+        t_lat = inSize(t_lat);
+        t_lon = inSize(t_lon , false);
 
         if (d_lat > t_lat)
         {
@@ -1051,8 +1078,8 @@ public class OnMapSpawn : MonoBehaviour
             x_dir = -1;
         }
 
-        distance = ((d_lat - t_lat) * (d_lat - t_lat)) + ((d_lon - t_lon)* (d_lon - t_lon));
-        float walking_criteria = (initial_dog_groupsize  / Mathf.Sqrt(distance)) / mul;
+        distance = ((d_lat - t_lat) * (d_lat - t_lat)) + ((d_lon - t_lon) * (d_lon - t_lon));
+        float walking_criteria = (initial_dog_groupsize / Mathf.Sqrt(distance)) / mul;
 
         while (d_lat != t_lat && d_lon != t_lon)
         {
@@ -1114,20 +1141,6 @@ public class OnMapSpawn : MonoBehaviour
                 }
             }
             walkingHabits[d_lon , d_lat] += 1.0f;
-        }
-    }
-
-    private void maxWalkColor()
-    {
-        for (int y = 0; y < ygridsize; y++)
-        {
-            for (int x = 0; x < xgridsize; x++)
-            {
-                if (walkingHabits[x,y] > highest_walking_rate)
-                {
-                    highest_walking_rate = walkingHabits[x , y];
-                }
-            }
         }
     }
 }
