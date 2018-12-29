@@ -132,6 +132,7 @@ public class OnMapSpawn : MonoBehaviour
     private List<EvacPoint> movepoint;
     private float[,] walkingHabits;
     private int highest_walking_rate = 0;
+    private float highest_home_rate = 0.0f;
 
     void Start()
     {
@@ -213,6 +214,7 @@ public class OnMapSpawn : MonoBehaviour
                 normalDistribution(dogimageid);
             }
             Debug.Log("distributed until it is converged at " + dogimageid + "-th loop");
+            maxHomeColor();
             createImage(0, 1); //Create Dog Map
             createImage(0, 2); //Create Dog and Height Map
         }
@@ -771,7 +773,7 @@ public class OnMapSpawn : MonoBehaviour
         {
             if (doggroup[lon , lat] > 0.0f)
             {
-                return new Color(0.0f , 255.0f * (doggroup[lon , lat] / initial_dog_groupsize) , 0.0f);
+                return new Color(0.0f , doggroup[lon , lat] / highest_home_rate , 0.0f);
             }
             else
             {
@@ -789,11 +791,11 @@ public class OnMapSpawn : MonoBehaviour
         {
             if (doggroup[lon , lat] > 0.0f)
             {
-                return new Color(0.0f , 255.0f * (doggroup[lon , lat] / initial_dog_groupsize) , 0.0f);
+                return new Color(0.0f , doggroup[lon , lat] / highest_home_rate , 0.0f);
             }
             else if (edge[lon , lat] > 0)
             {
-                float colorvalue = (edge[lon , lat] / (float)highest_walking_rate);
+                float colorvalue = edge[lon , lat] / (float)highest_walking_rate;
                 return new Color(colorvalue , colorvalue , 0.0f);
             }
             else
@@ -1007,29 +1009,28 @@ public class OnMapSpawn : MonoBehaviour
                     int topy = inSize(y + radius + 1);
                     int boty = inSize(y - radius - 1);
 
-                    int leftx, rightx, curx = 0;
+                    int leftx, rightx, xsize;
 
                     for (int i = boty; i < y; i++)
                     {
-                        leftx = inSize(x - curx, false);
-                        rightx = inSize(x + curx + 1, false);
+                        xsize = findXSize(x , y , i, radius);
+                        leftx = inSize(x - xsize, false);
+                        rightx = inSize(x + xsize, false);
                         for (int j = leftx; j < rightx; j++)
                         {
                             tempedge[j , i]++;
                         }
-                        curx++;
                     }
-                    curx = 0;
 
                     for (int i = topy; i >= y; i--)
                     {
-                        leftx = inSize(x - curx , false);
-                        rightx = inSize(x + curx + 1 , false);
+                        xsize = findXSize(x , y , i , radius);
+                        leftx = inSize(x - xsize , false);
+                        rightx = inSize(x + xsize , false);
                         for (int j = leftx; j < rightx; j++)
                         {
                             tempedge[j , i]++;
                         }
-                        curx++;
                     }
                 }
             }
@@ -1040,6 +1041,20 @@ public class OnMapSpawn : MonoBehaviour
             for (int x = 0; x < xgridsize; x++)
             {
                 edge[x , y] = tempedge[x , y];
+            }
+        }
+    }
+
+    private void maxHomeColor()
+    {
+        for (int y = 0; y < ygridsize; y++)
+        {
+            for (int x = 0; x < xgridsize; x++)
+            {
+                if (doggroup[x , y] > highest_home_rate)
+                {
+                    highest_home_rate = doggroup[x , y];
+                }
             }
         }
     }
@@ -1056,6 +1071,17 @@ public class OnMapSpawn : MonoBehaviour
                 }
             }
         }
+    }
+
+    //Euclidean Distance: find x2 from d, x1, y1, y2
+    private int findXSize(int x, int y, int dy, float distance)
+    {
+        //distance^2 = (x2 - x1)^2 + (y2 - y1)^2
+        //d^2 - y^2  = (x2 - x1)^2
+        //sqrt(dmy) =  x2 - x1
+        //Therefore, x2 = sqrt(d - y) + x1
+        float dmy = Mathf.Sqrt((distance * distance) - ((dy - y) * (dy - y)));
+        return ((int)(dmy + x) + 1) - x;
     }
 
     private void walkingBehaviour(int d_lat , int d_lon , int t_lat , int t_lon , int mul)
