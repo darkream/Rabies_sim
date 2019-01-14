@@ -122,9 +122,6 @@ public class OnMapSpawn : MonoBehaviour
     float homeRangeMultiplier = 2.0f; //default home range multiplier = x1.8
 
     [SerializeField]
-    bool allowElevation = true;
-
-    [SerializeField]
     float hordeMoveRate = 0.4f;
 
     [SerializeField]
@@ -443,11 +440,6 @@ public class OnMapSpawn : MonoBehaviour
     //since the distribution always equal to GridSize, height difference create the theta elevation
     private float distributeElevationLevel(float height1, float height2)
     {
-        if (!allowElevation)
-        {
-            return 1.0f;
-        }
-            
         float degree = findDegreeSlope(GridSize , abs(height1 - height2));
         if (degree > walkable_degree || degree < -walkable_degree)
         {
@@ -597,11 +589,23 @@ public class OnMapSpawn : MonoBehaviour
     //(reference: https://en.wikipedia.org/wiki/Normal_distribution)
     private void normalDistribution(int round)
     {
-        for (int x = 0; x < xgridsize; x++)
+        int at_lat, at_lon;
+        int initial_size = dogdata.Count;
+        for (int i = 0; i < initial_size; i++)
         {
-            for (int y = 0; y < ygridsize; y++)
+            at_lat = dogdata[i].latid;
+            at_lon = dogdata[i].lonid;
+            int right = inSize(at_lon + round, false), 
+                left  = inSize(at_lon - round, false), 
+                down  = inSize(at_lat - round), 
+                up    = inSize(at_lat + round);
+
+            for (int lonid = left; lonid < right; lonid++)
             {
-                centralDistribution(y , x);
+                for (int latid = down; latid < up; latid++)
+                {
+                    centralDistribution(latid , lonid);
+                }
             }
         }
         extractDistribution();
