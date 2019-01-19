@@ -121,6 +121,9 @@ public class OnMapSpawn : MonoBehaviour
     float homeRangeMultiplier = 2.0f; //default home range multiplier = x1.8
 
     [SerializeField]
+    bool allowElevation = true;
+
+    [SerializeField]
     float hordeMoveRate = 0.4f;
 
     [SerializeField]
@@ -452,6 +455,9 @@ public class OnMapSpawn : MonoBehaviour
     //since the distribution always equal to GridSize, height difference create the theta elevation
     private float distributeElevationLevel(float height1, float height2)
     {
+        if (!allowElevation){
+            return 1.0f;
+        }
         float degree = findDegreeSlope(GridSize , abs(height1 - height2));
         if (degree > walkable_degree || degree < -walkable_degree)
         {
