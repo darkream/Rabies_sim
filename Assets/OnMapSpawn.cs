@@ -1450,7 +1450,7 @@ public class OnMapSpawn : MonoBehaviour
         for (int y = 0 ; y < ygridsize ; y++){
             for (int x = 0 ; x < xgridsize ; x++){
                 if (mapAfford[x , y] > 0){
-                    walkingHabits[x , y] = walkingHabits[x, y] * (((float)highest_afford[groupassign[x, y]] - mapAfford[x , y]) / highest_afford[groupassign[x, y]]);
+                    walkingHabits[x , y] = walkingHabits[x, y] * (abs((float)highest_afford[groupassign[x, y]] - mapAfford[x , y]) / highest_afford[groupassign[x, y]]);
                     totalHabits[groupassign[x , y]] += walkingHabits[x, y];
                 }
             }
