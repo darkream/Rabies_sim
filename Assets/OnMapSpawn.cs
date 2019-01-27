@@ -23,15 +23,13 @@ public struct LatLonSize
 }
 
 [System.Serializable]
-public struct EvacPoint
+public struct AttractSource
 {
-    public int groupid;
     public int latid;
     public int lonid;
 
-    public EvacPoint(int gid, int lt, int ln)
+    public AttractSource(int lt, int ln)
     {
-        groupid = gid;
         latid = lt;
         lonid = ln;
     }
@@ -50,13 +48,13 @@ public class OnMapSpawn : MonoBehaviour
     float _spawnScale = 10f;
 
     [SerializeField]
-    GameObject gridpanel; //Prefabs for grid layer
-
-    [SerializeField]
     GameObject dogpanel; //Prefabs for dog layer
 
     [SerializeField]
-    GameObject mappoint;
+    GameObject attractpanel; //Prefabs for attraction layer
+
+    [SerializeField]
+    GameObject mappanel; //Prefabs for map point layer
 
     [SerializeField]
     float radius_earth = 6378.1f; // Radius of the earth in km (Google Answer)
@@ -82,6 +80,9 @@ public class OnMapSpawn : MonoBehaviour
     List<GameObject> mappointObjs;
     List<Vector2d> mappointlocations;
 
+    List<GameObject> attractObjs;
+    List<Vector2d> attractlocations;
+
     [SerializeField]
     Camera _referenceCamera;
 
@@ -103,7 +104,7 @@ public class OnMapSpawn : MonoBehaviour
     private float[,] tempgroup;
     private int[,] edge;
     private int[,] walk;
-    private int[,] mapAfford;
+    private float[,] mapAfford;
     private int[,] groupassign;
     private float[,] dogfound;
 
@@ -132,23 +133,25 @@ public class OnMapSpawn : MonoBehaviour
     private float singleMoveRate;
 
     private bool allowedDogMovement = false;
-    private List<EvacPoint> movepoint;
+    private List<AttractSource> attracter;
     private float[,] walkingHabits;
     private int highest_walking_rate = 0;
     private float highest_home_rate = 0.0f;
     private float highest_habits_rate = 0.0f;
-    private int[] highest_afford;
+    private float[] highest_afford;
     private int[] count_area;
     void Start()
     {
         doglocations = new List<Vector2d>(); //initialization for the dog object
         mappointlocations = new List<Vector2d>();
+        attractlocations = new List<Vector2d>();
         dogObjs = new List<GameObject>();
         mappointObjs = new List<GameObject>();
+        attractObjs = new List<GameObject>();
         dogdata = new List<LatLonSize>();
         dogradius = new List<float>();
         factradius = new List<int>();
-        movepoint = new List<EvacPoint>();
+        attracter = new List<AttractSource>();
         doggroupsize = new List<int>();
         convergeCountdown = loopCriteria;
         singleMoveRate = 1.0f - (hordeMoveRate + exploreMoveRate);
@@ -172,37 +175,52 @@ public class OnMapSpawn : MonoBehaviour
             mapObject.transform.localScale = new Vector3(_spawnScale , _spawnScale , _spawnScale);
         }
 
+        for (int i = 0; i < attractObjs.Count ; i++) //for each attraction source
+        {
+            var attractObject = attractObjs[i];
+            var location = attractlocations[i];
+            attractObject.transform.localPosition = _map.GeoToWorldPosition(location , true);
+            attractObject.transform.localScale = new Vector3(_spawnScale , _spawnScale , _spawnScale);
+        }
+
         //Press Z to select the initiated map
         if (Input.GetKeyDown("z"))
         {
             //int w = Screen.width();
             //int h = Screen.height();
-            Vector2d latlongDelta = getLatLonFromMousePosition();
-            setStartLatLon(latlongDelta);
+            Vector2d latlonDelta = getLatLonFromMousePosition();
+            setStartLatLon(latlonDelta);
         }
 
         //Press X to select the xsize and ysize of the map
         if (Input.GetKeyDown("x"))
         {
-            Vector2d latlongDelta = getLatLonFromMousePosition();
-            setEndLatLon(latlongDelta);
+            Vector2d latlonDelta = getLatLonFromMousePosition();
+            setEndLatLon(latlonDelta);
 
             pointToColorMap(startlat , startlon , xgridsize , ygridsize);
             createImage(0, 0); //Create Height Map
             Debug.Log("Map Array is created with size (" + xgridsize + ", " + ygridsize + ")");
         }
 
-        //Press C to add dog in the map
+        //Press C to add dog to the map
         if (Input.GetKeyDown("c"))
         {
-            Vector2d latlongDelta = getLatLonFromMousePosition();
+            Vector2d latlonDelta = getLatLonFromMousePosition();
             doggroupsize.Add(initial_dog_groupsize); //size is static at 25
-            addDogLocation(latlongDelta); //add new dog object from clicked position
+            addDogLocation(latlonDelta); //add new dog object from clicked position
+        }
+
+        //Press V to add attract source to the map
+        if (Input.GetKeyDown("v"))
+        {
+            Vector2d latlonDelta = getLatLonFromMousePosition();
+            spawnAttractSource(latlonDelta.x , latlonDelta.y);
         }
 
         //Press V to initiate dog group
         //and start distribution until it converge
-        if (Input.GetKeyDown("v"))
+        if (Input.GetKeyDown("b"))
         {
             Debug.Log("initiate dog group");
             initializeDogGroup();
@@ -220,7 +238,7 @@ public class OnMapSpawn : MonoBehaviour
 
         //Press B to start edge detection and home range calculation
         //and Also using kdb of (LoCoH)
-        if (Input.GetKeyDown("b"))
+        if (Input.GetKeyDown("n"))
         {
             kernelDensityEstimation();
             createImage(0 , 3); //Create Edge Map
@@ -242,10 +260,9 @@ public class OnMapSpawn : MonoBehaviour
         }
 
         //Press N to start simple simulation
-        if (Input.GetKeyDown("n"))
+        if (Input.GetKeyDown("m"))
         {
             highest_habits_rate = 0.0f;
-            maxColor(2);
             initializeWalkingSimulationMap();
             assignGroup();
             Debug.Log("initialize simulation map");
@@ -404,11 +421,28 @@ public class OnMapSpawn : MonoBehaviour
         mappointlocations.Add(new Vector2d(lat , lon));
         Vector3 location = Conversions.GeoToWorldPosition(lat , lon , _map.CenterMercator , _map.WorldRelativeScale).ToVector3xz();
         location = new Vector3(location.x , 0.0f , location.z);
-        var obj = Instantiate(mappoint);
+        var obj = Instantiate(mappanel);
         obj.transform.position = location;
         obj.transform.localScale = new Vector3(_spawnScale , _spawnScale , _spawnScale);
         
         mappointObjs.Add(obj);
+    }
+
+    private void spawnAttractSource(double lat, double lon)
+    {
+        attractlocations.Add(new Vector2d(lat, lon));
+        Vector3 location = Conversions.GeoToWorldPosition(lat, lon, _map.CenterMercator, _map.WorldRelativeScale).ToVector3xz();
+        location = new Vector3(location.x, 0.0f, location.z);
+        var obj = Instantiate(attractpanel);
+        obj.transform.position = location;
+        obj.transform.localScale = new Vector3(_spawnScale, _spawnScale, _spawnScale);
+
+        attractObjs.Add(obj);
+
+        int lastIndex = attractlocations.Count - 1;
+        int at_lat = ygridsize - getLatGridIndex(abs(startlat - (float)attractlocations[lastIndex].x));
+        int at_lon = getLonGridIndex(abs(startlon - (float)attractlocations[lastIndex].y));
+        attracter.Add(new AttractSource(at_lat, at_lon));
     }
 
     //Get the Tile Material from the Mapbox
@@ -586,7 +620,7 @@ public class OnMapSpawn : MonoBehaviour
         edge = new int[xgridsize , ygridsize];
         walk = new int[xgridsize , ygridsize];
         walkingHabits = new float[xgridsize , ygridsize];
-        mapAfford = new int[xgridsize, ygridsize];
+        mapAfford = new float[xgridsize, ygridsize];
         groupassign = new int[xgridsize, ygridsize];
         dogfound = new float[xgridsize, ygridsize];
 
@@ -1040,7 +1074,7 @@ public class OnMapSpawn : MonoBehaviour
                     dir_val[x , y] = 1;
                     if (apply_edge)
                     {
-                        findNearestGroupNeighbour(x , y , true); //Combine (not yet concluded) the radius
+                        findNearestAttractionSource(x , y); //Combine (not yet concluded) the radius
                     }
                 }
             }
@@ -1057,7 +1091,32 @@ public class OnMapSpawn : MonoBehaviour
         }
     }
 
-    private int findNearestGroupNeighbour(int x , int y, bool setRadiusSize = false)
+    private int findNearestAttractionSource(int x, int y){
+        int selectedSource = 0;
+        float thisx = abs(attracter[0].lonid - x);
+        float thisy = abs(attracter[0].latid - y);
+        float distance = (thisx * thisx) + (thisy * thisy);
+        float smallestsize = distance;
+
+        for (int i = 1 ; i < attracter.Count ; i++){
+            thisx = abs(attracter[i].lonid - x);
+            thisy = abs(attracter[i].latid - y);
+
+            distance = (thisx * thisx) + (thisy * thisy);
+            if (distance < smallestsize){
+                smallestsize = distance;
+                selectedSource = i;
+            }
+        }
+
+        //Euclidean distance SQRTed
+        dogradius[selectedSource] += Mathf.Sqrt(smallestsize);
+        factradius[selectedSource]++;
+
+        return 0;
+    }
+
+    private int findNearestGroupNeighbour(int x , int y)
     {
         int selectedgroup = 0;
         float thisx = abs(dogdata[0].lonid - x);
@@ -1078,13 +1137,6 @@ public class OnMapSpawn : MonoBehaviour
                 smallestsize = distance;
                 selectedgroup = i;
             }
-        }
-
-        if (setRadiusSize)
-        {
-            //Euclidean distance SQRTed
-            dogradius[selectedgroup] += Mathf.Sqrt(smallestsize);
-            factradius[selectedgroup]++;
         }
 
         return selectedgroup;
@@ -1358,7 +1410,7 @@ public class OnMapSpawn : MonoBehaviour
 
     private void affordanceCounter(){
         bool isUpdating = true;
-        int b4;
+        float b4;
 
         while (isUpdating){
             isUpdating = false;
@@ -1374,26 +1426,26 @@ public class OnMapSpawn : MonoBehaviour
         }
     }
 
-    private int getAfford(int x, int y){
-        int[] dir = {0, 0, 0, 0}; //move 4 directions
-        int min = xgridsize + ygridsize;
+    private float getAfford(int x, int y){
+        float[] dir = {0.0f, 0.0f, 0.0f, 0.0f}; //move 4 directions
+        float min = 0.0f + xgridsize + ygridsize;
         if (mapAfford[x, y] == 0){ //if it is movable
             if (y >= 1){ //not top most
-                dir[0] = mapAfford[x , y - 1] + 1;
+                dir[0] = mapAfford[x , y - 1] + 1.0f;
                 if (y <= ygridsize - 2){ //not bot most
-                    dir[1] = mapAfford[x , y + 1] + 1;
+                    dir[1] = mapAfford[x , y + 1] + 1.0f;
                 }
             }
             if (x >= 1){ //not left most
-                dir[2] = mapAfford[x - 1 , y] + 1;
+                dir[2] = mapAfford[x - 1 , y] + 1.0f;
                 if (x <= xgridsize - 2){ //not right most
-                    dir[3] = mapAfford[x + 1 , y] + 1;
+                    dir[3] = mapAfford[x + 1 , y] + 1.0f;
                 }
             }
         }
 
         for (int i = 0 ; i < 4 ; i++){ //for each direction
-            if (dir[i] > 1) { //if it is allowed
+            if (dir[i] > 1.0f) { //if it is allowed
                 if (dir[i] < min){
                     min = dir[i];
                 }
@@ -1409,7 +1461,7 @@ public class OnMapSpawn : MonoBehaviour
     }
 
     private void assignGroup(){
-        highest_afford = new int[dogdata.Count];
+        highest_afford = new float[dogdata.Count];
         count_area = new int[dogdata.Count];
         for (int i = 0 ; i < dogdata.Count ; i++){
             highest_afford[i] = 0;
@@ -1431,8 +1483,10 @@ public class OnMapSpawn : MonoBehaviour
     private void decisionTree(){
         singleMoveRate = 1.0f - (hordeMoveRate + exploreMoveRate);
 
+        highest_habits_rate = 0.0f;
         normalizeAfford();
         Debug.Log("create image of afford normalization");
+        maxColor(2);
         createImage(1, 6);
 
         //express the walkable
@@ -1450,7 +1504,7 @@ public class OnMapSpawn : MonoBehaviour
         for (int y = 0 ; y < ygridsize ; y++){
             for (int x = 0 ; x < xgridsize ; x++){
                 if (mapAfford[x , y] > 0){
-                    walkingHabits[x , y] = walkingHabits[x, y] * (abs((float)highest_afford[groupassign[x, y]] - mapAfford[x , y]) / highest_afford[groupassign[x, y]]);
+                    walkingHabits[x , y] = walkingHabits[x, y] * (abs(highest_afford[groupassign[x, y]] - mapAfford[x , y]) / highest_afford[groupassign[x, y]]);
                     totalHabits[groupassign[x , y]] += walkingHabits[x, y];
                 }
             }
@@ -1492,7 +1546,6 @@ public class OnMapSpawn : MonoBehaviour
                     hS = dogdata[groupassign[x,y]].size;
                     dogfound[x , y] = getDogFoundWithWeight(walkingHabits[x , y], hHR, cA, hS, exploreMoveRate);
                 }
-                
             }
         }
     }
