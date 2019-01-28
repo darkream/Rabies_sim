@@ -1074,7 +1074,7 @@ public class OnMapSpawn : MonoBehaviour
                     dir_val[x , y] = 1;
                     if (apply_edge)
                     {
-                        findNearestGroupNeighbour(x , y, true); //Combine (not yet concluded) the radius
+                        findNearestAttractionSource(x , y); //Combine (not yet concluded) the radius
                     }
                 }
             }
@@ -1090,7 +1090,7 @@ public class OnMapSpawn : MonoBehaviour
             }
         }
     }
-    
+
     private int findNearestAttractionSource(int x, int y){
         int selectedSource = 0;
         float thisx = abs(attracter[0].lonid - x);
@@ -1109,10 +1109,14 @@ public class OnMapSpawn : MonoBehaviour
             }
         }
 
+        //Euclidean distance SQRTed
+        dogradius[selectedSource] += Mathf.Sqrt(smallestsize);
+        factradius[selectedSource]++;
+
         return 0;
     }
 
-    private int findNearestGroupNeighbour(int x , int y, bool setRadius = false)
+    private int findNearestGroupNeighbour(int x , int y)
     {
         int selectedgroup = 0;
         float thisx = abs(dogdata[0].lonid - x);
@@ -1135,13 +1139,6 @@ public class OnMapSpawn : MonoBehaviour
             }
         }
 
-        //Euclidean distance SQRTed
-        if (setRadius)
-        {
-            dogradius[selectedSource] += Mathf.Sqrt(smallestsize);
-            factradius[selectedSource]++;
-        }
-        
         return selectedgroup;
     }
 
