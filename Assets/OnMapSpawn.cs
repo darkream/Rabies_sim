@@ -183,36 +183,31 @@ public class OnMapSpawn : MonoBehaviour
             attractObject.transform.localScale = new Vector3(_spawnScale , _spawnScale , _spawnScale);
         }
 
-        //Press Z to select the initiated map
+        //Press Z to select the screen
         if (Input.GetKeyDown("z"))
         {
             //int w = Screen.width();
             //int h = Screen.height();
-            Vector2d latlonDelta = getLatLonFromMousePosition();
-            setStartLatLon(latlonDelta);
-        }
-
-        //Press X to select the xsize and ysize of the map
-        if (Input.GetKeyDown("x"))
-        {
-            Vector2d latlonDelta = getLatLonFromMousePosition();
-            setEndLatLon(latlonDelta);
+            Vector2d latlondelta = getLatLonFromXY(0, Screen.height);
+            setStartLatLon(latlondelta);
+            latlondelta = getLatLonFromXY(Screen.width, 0);
+            setEndLatLon(latlondelta);
 
             pointToColorMap(startlat , startlon , xgridsize , ygridsize);
             createImage(0, 0); //Create Height Map
             Debug.Log("Map Array is created with size (" + xgridsize + ", " + ygridsize + ")");
         }
 
-        //Press C to add dog to the map
-        if (Input.GetKeyDown("c"))
+        //Press X to add dog to the map
+        if (Input.GetKeyDown("x"))
         {
             Vector2d latlonDelta = getLatLonFromMousePosition();
-            doggroupsize.Add(initial_dog_groupsize); //size is static at 25
+            doggroupsize.Add(initial_dog_groupsize); //size is static at 625
             addDogLocation(latlonDelta); //add new dog object from clicked position
         }
 
-        //Press V to add attract source to the map
-        if (Input.GetKeyDown("v"))
+        //Press C to add attract source to the map
+        if (Input.GetKeyDown("c"))
         {
             Vector2d latlonDelta = getLatLonFromMousePosition();
             spawnAttractSource(latlonDelta.x , latlonDelta.y);
@@ -220,7 +215,7 @@ public class OnMapSpawn : MonoBehaviour
 
         //Press V to initiate dog group
         //and start distribution until it converge
-        if (Input.GetKeyDown("b"))
+        if (Input.GetKeyDown("v"))
         {
             Debug.Log("initiate dog group");
             initializeDogGroup();
@@ -238,7 +233,7 @@ public class OnMapSpawn : MonoBehaviour
 
         //Press B to start edge detection and home range calculation
         //and Also using kdb of (LoCoH)
-        if (Input.GetKeyDown("n"))
+        if (Input.GetKeyDown("b"))
         {
             kernelDensityEstimation();
             createImage(0 , 3); //Create Edge Map
@@ -252,15 +247,15 @@ public class OnMapSpawn : MonoBehaviour
             normalizeWalkingExtension();
             kernelDensityEstimation(false);
             walkingWithinHomeRange();
+            walkingToAttracter();
             maxColor(2); //type 2 is walking habits type
             createImage(0 , 5); //create only walking habits
             createImage(0 , 6); //create walking habits and dog group
-            Debug.Log("walking habits map is created");
-            
+            Debug.Log("walking habits map is created");            
         }
 
         //Press N to start simple simulation
-        if (Input.GetKeyDown("m"))
+        if (Input.GetKeyDown("n"))
         {
             highest_habits_rate = 0.0f;
             initializeWalkingSimulationMap();
@@ -279,10 +274,17 @@ public class OnMapSpawn : MonoBehaviour
     //(reference: http://answers.unity3d.com/answers/599100/view.html)
     private Vector2d getLatLonFromMousePosition()
     {
-        //Reminder this is (x, y, 0), so top-left is Screen.height and bot-right is Screen.width
         Vector3 mousePosScreen = Input.mousePosition;   
         mousePosScreen.z = _referenceCamera.transform.localPosition.y;
         Vector3 pos = _referenceCamera.ScreenToWorldPoint(mousePosScreen);
+        return _map.WorldToGeoPosition(pos);
+    }
+
+    private Vector2d getLatLonFromXY(int w, int h){
+        //Reminder this is (x, y, 0), so top-left is Screen.height and bot-right is Screen.width
+        Vector3 posScreen = new Vector3(w , h, 0);
+        posScreen.z = _referenceCamera.transform.localPosition.y;
+        Vector3 pos = _referenceCamera.ScreenToWorldPoint(posScreen);
         return _map.WorldToGeoPosition(pos);
     }
 
@@ -1074,7 +1076,7 @@ public class OnMapSpawn : MonoBehaviour
                     dir_val[x , y] = 1;
                     if (apply_edge)
                     {
-                        findNearestAttractionSource(x , y); //Combine (not yet concluded) the radius
+                        findNearestGroupNeighbour(x , y, true); //Combine (not yet concluded) the radius
                     }
                 }
             }
@@ -1109,14 +1111,10 @@ public class OnMapSpawn : MonoBehaviour
             }
         }
 
-        //Euclidean distance SQRTed
-        dogradius[selectedSource] += Mathf.Sqrt(smallestsize);
-        factradius[selectedSource]++;
-
-        return 0;
+        return selectedSource;
     }
 
-    private int findNearestGroupNeighbour(int x , int y)
+    private int findNearestGroupNeighbour(int x , int y, bool setRadius = false)
     {
         int selectedgroup = 0;
         float thisx = abs(dogdata[0].lonid - x);
@@ -1137,6 +1135,12 @@ public class OnMapSpawn : MonoBehaviour
                 smallestsize = distance;
                 selectedgroup = i;
             }
+        }
+
+        if (setRadius){
+            //Euclidean distance SQRTed
+            dogradius[selectedgroup] += Mathf.Sqrt(smallestsize);
+            factradius[selectedgroup]++;
         }
 
         return selectedgroup;
@@ -1278,6 +1282,29 @@ public class OnMapSpawn : MonoBehaviour
         {
             for (int x = 0; x < xgridsize; x++)
             {
+                if (edge[x , y] > 0) //if the edge is detected
+                {
+                    walkToAllExtensionalRange(x , y);
+                }
+            }
+        }
+    }
+
+    private void walkingToAttracter(){
+        for (int y = 0 ; y < ygridsize ; y++){
+            for (int x = 0 ; x < xgridsize ; x++){
+                walk[x , y] = 0;
+            }
+        }
+
+        for (int i = 0 ; i < attracter.Count ; i++){
+            walk[attracter[i].lonid, attracter[i].latid] = 1;
+        }
+
+        for (int y = 0 ; y < ygridsize ; y++)
+        {
+            for (int x = 0 ; x < xgridsize ; x++)
+            {
                 if (edge[x , y] > 0)
                 {
                     walkToAllExtensionalRange(x , y);
@@ -1297,7 +1324,7 @@ public class OnMapSpawn : MonoBehaviour
                 if (walk[x , y] > 0)
                 {
                     radius = (int)dogradius[findNearestGroupNeighbour(thisx , thisy)];
-                    walkingBehaviour(x , y , thisx , thisy , radius);
+                    walkingBehaviour(thisx , thisy , x , y , radius);
                 }
             }
         }
@@ -1334,14 +1361,14 @@ public class OnMapSpawn : MonoBehaviour
                 break;
             }
 
-            if (d_y - t_y == 0)
+            if (d_y == t_y)
             {
                 x_dir_eva = distributeElevationLevel(heightxy[d_x , d_y] , heightxy[d_x + x_dir , d_y]);
                 cursize *= x_dir_eva;
                 cursize -= walking_criteria;
                 d_x += x_dir;
             }
-            else if (d_y - t_y == 0)
+            else if (d_x == t_x)
             {
                 y_dir_eva = distributeElevationLevel(heightxy[d_x , d_y] , heightxy[d_x , d_y + y_dir]);
                 cursize *= y_dir_eva;
@@ -1383,7 +1410,6 @@ public class OnMapSpawn : MonoBehaviour
                         cursize *= y_dir_eva;
                     }
                     cursize -= walking_criteria;
-                    walkingHabits[d_x , d_y] -= 1.0f;
                 }
             }
             walkingHabits[d_x , d_y] += 1.0f;

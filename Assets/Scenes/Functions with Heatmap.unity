@@ -268,8 +268,8 @@ MonoBehaviour:
   _initializeOnStart: 1
   _options:
     locationOptions:
-      latitudeLongitude: 7.01423933055, 100.48318286555
-      zoom: 13.1425
+      latitudeLongitude: 7.009801539277, 100.511436810216
+      zoom: 15
     extentOptions:
       extentType: 0
       cameraBoundsOptions:
@@ -444,6 +444,7 @@ MonoBehaviour:
   _referenceCamera: {fileID: 1787361574}
   _mapManager: {fileID: 555018383}
   _useDegreeMethod: 0
+  _allowInput: 1
 --- !u!1 &731556100
 GameObject:
   m_ObjectHideFlags: 0

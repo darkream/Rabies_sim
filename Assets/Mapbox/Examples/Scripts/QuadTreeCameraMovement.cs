@@ -25,6 +25,9 @@
 		[SerializeField]
 		bool _useDegreeMethod;
 
+		[SerializeField]
+		bool _allowInput;
+
 		private Vector3 _origin;
 		private Vector3 _mousePosition;
 		private Vector3 _mousePositionPrevious;
@@ -50,13 +53,21 @@
 		{
 			if (!_isInitialized) { return; }
 
-			if (Input.touchSupported && Input.touchCount > 0)
+			if (Input.GetKeyDown("z"))
 			{
-				HandleTouch();
+				_allowInput = !_allowInput;
 			}
-			else
+
+			if (_allowInput)
 			{
-				HandleMouseAndKeyBoard();
+				if (Input.touchSupported && Input.touchCount > 0)
+				{
+					HandleTouch();
+				}
+				else
+				{
+					HandleMouseAndKeyBoard();
+				}
 			}
 		}
 
