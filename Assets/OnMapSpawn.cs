@@ -247,7 +247,6 @@ public class OnMapSpawn : MonoBehaviour
             normalizeWalkingExtension();
             kernelDensityEstimation(false);
             walkingWithinHomeRange();
-            walkingToAttracter();
             maxColor(2); //type 2 is walking habits type
             createImage(0 , 5); //create only walking habits
             createImage(0 , 6); //create walking habits and dog group
@@ -1076,7 +1075,7 @@ public class OnMapSpawn : MonoBehaviour
                     dir_val[x , y] = 1;
                     if (apply_edge)
                     {
-                        findNearestGroupNeighbour(x , y, true); //Combine (not yet concluded) the radius
+                        findNearestAttractionSource(x , y); //Combine (not yet concluded) the radius
                     }
                 }
             }
@@ -1111,10 +1110,14 @@ public class OnMapSpawn : MonoBehaviour
             }
         }
 
+        //Euclidean distance SQRTed
+        dogradius[selectedSource] += Mathf.Sqrt(smallestsize);
+        factradius[selectedSource]++;
+
         return selectedSource;
     }
 
-    private int findNearestGroupNeighbour(int x , int y, bool setRadius = false)
+    private int findNearestGroupNeighbour(int x , int y)
     {
         int selectedgroup = 0;
         float thisx = abs(dogdata[0].lonid - x);
@@ -1135,12 +1138,6 @@ public class OnMapSpawn : MonoBehaviour
                 smallestsize = distance;
                 selectedgroup = i;
             }
-        }
-
-        if (setRadius){
-            //Euclidean distance SQRTed
-            dogradius[selectedgroup] += Mathf.Sqrt(smallestsize);
-            factradius[selectedgroup]++;
         }
 
         return selectedgroup;
@@ -1290,32 +1287,10 @@ public class OnMapSpawn : MonoBehaviour
         }
     }
 
-    private void walkingToAttracter(){
-        for (int y = 0 ; y < ygridsize ; y++){
-            for (int x = 0 ; x < xgridsize ; x++){
-                walk[x , y] = 0;
-            }
-        }
-
-        for (int i = 0 ; i < attracter.Count ; i++){
-            walk[attracter[i].lonid, attracter[i].latid] = 1;
-        }
-
-        for (int y = 0 ; y < ygridsize ; y++)
-        {
-            for (int x = 0 ; x < xgridsize ; x++)
-            {
-                if (edge[x , y] > 0)
-                {
-                    walkToAllExtensionalRange(x , y);
-                }
-            }
-        }
-    }
-
     //For each home point reaching path will move to the end direction of maximum walking range
     private void walkToAllExtensionalRange(int thisx, int thisy)
     {
+        /* 
         int radius;
         for (int y = 0; y < ygridsize; y++)
         {
@@ -1328,6 +1303,12 @@ public class OnMapSpawn : MonoBehaviour
                 }
             }
         }
+        */
+
+        int source, radius;
+        source = findNearestAttractionSource(thisx, thisy);
+        radius = (int)dogradius[findNearestGroupNeighbour(thisx, thisy)];
+        walkingBehaviour(thisx, thisy, attracter[source].lonid, attracter[source].latid, radius);
     }
 
     //The moving behaviour probabilities of normal dog from t (this) point to d (destination) point
