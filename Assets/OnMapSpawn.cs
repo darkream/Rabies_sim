@@ -167,10 +167,10 @@ public class OnMapSpawn : MonoBehaviour
             dogObject.transform.localScale = new Vector3(_spawnScale , _spawnScale , _spawnScale);
         }
 
-        for (int i = 0; i < mappointObjs.Count; i++)
+        for (int i = 0; i < mappointObjs.Count; i++) //for each map points
         {
             var mapObject = mappointObjs[i];
-            var location = mappointlocations[i]; //spawn the object to the dog locations
+            var location = mappointlocations[i];
             mapObject.transform.localPosition = _map.GeoToWorldPosition(location , true);
             mapObject.transform.localScale = new Vector3(_spawnScale , _spawnScale , _spawnScale);
         }
