@@ -268,8 +268,8 @@ MonoBehaviour:
   _initializeOnStart: 1
   _options:
     locationOptions:
-      latitudeLongitude: 7.009801539277, 100.511436810216
-      zoom: 15
+      latitudeLongitude: 7.01125306678015, 100.518001044838
+      zoom: 16.1
     extentOptions:
       extentType: 0
       cameraBoundsOptions:
@@ -422,7 +422,7 @@ MonoBehaviour:
   xgridsize: 0
   ygridsize: 0
   loopCriteria: 4
-  initial_dog_groupsize: 625
+  initial_dog_groupsize: 40
   homeRangeMultiplier: 2
   allowElevation: 1
   hordeMoveRate: 0.4

@@ -35,6 +35,25 @@ public struct AttractSource
     }
 }
 
+[System.Serializable]
+public struct AttractNode
+{
+    public int x;
+    public int y;
+    public float cost;
+    public bool mutable; //0 = down, 1 = up, 2 = left, 3 = right
+    public int parent_dir;
+    public int parent_node;
+    public AttractNode(int atx, int aty, float heuristic_cost, bool isMutable, int dir, int parent){
+        x = atx;
+        y = aty;
+        cost = heuristic_cost;
+        mutable = isMutable;
+        parent_dir = dir;
+        parent_node = parent;
+    }
+}
+
 public class OnMapSpawn : MonoBehaviour
 {
     [SerializeField]
@@ -237,17 +256,25 @@ public class OnMapSpawn : MonoBehaviour
             createImage(0 , 3); //Create Edge Map
             Debug.Log("edge map (pre-LoCoH) is created");
    
-            edgeExpansion();
-            maxColor(1); //type 1 is walk type
-            createImage(0 , 4); //create walk extension image image
-            Debug.Log("walking extension map is created");
-
-            normalizeWalkingExtension();
-            kernelDensityEstimation(false);
-            walkingWithinHomeRange();
-            maxColor(2); //type 2 is walking habits type
-            createImage(0 , 5); //create only walking habits
-            createImage(0 , 6); //create walking habits and dog group
+            if (attracter.Count <= 0){
+                edgeExpansion();
+                maxColor(1); //type 1 is walk type
+                createImage(0 , 4); //create walk extension image image
+                Debug.Log("walking extension map is created");
+                normalizeWalkingExtension();
+                kernelDensityEstimation(false);
+                walkingWithinHomeRange();
+                maxColor(2); //type 2 is walking habits type
+                createImage(0 , 5); //create only walking habits
+                createImage(0 , 6); //create walking habits and dog group
+            }
+            else 
+            {
+                walkToAttraction(); //let the dog walk to the closest attraction
+                Debug.Log("all nodes are extracted to the attraction point(s)");
+                createImage(0 , 5);
+                createImage(0 , 6);
+            }
             Debug.Log("walking habits map is created");            
         }
 
@@ -1083,7 +1110,6 @@ public class OnMapSpawn : MonoBehaviour
         }
 
         //Reapply the detected edge
-        int groupid;
         for (int y = 0; y < ygridsize; y++)
         {
             for (int x = 0; x < xgridsize; x++)
@@ -1097,15 +1123,7 @@ public class OnMapSpawn : MonoBehaviour
                     dir_val[x , y] = 1;
                     if (apply_edge)
                     {
-                        if (attracter.Count > 0)
-                        {
-                            groupid = findNearestGroupNeighbour(x, y);
-                            findNearestAttractionSource(x , y, groupid, true); //Combine (not yet concluded) the radius
-                        }
-                        else 
-                        {
-                            findNearestGroupNeighbour(x, y, true);
-                        }
+                        findNearestGroupNeighbour(x, y, true);
                     }
                 }
             }
@@ -1120,33 +1138,6 @@ public class OnMapSpawn : MonoBehaviour
                 Debug.Log("Dog Group id: " + i + " has radius " + dogradius[i] + " pixels");
             }
         }
-    }
-
-    private int findNearestAttractionSource(int x, int y, int groupid = 0, bool setRadius = false){
-        int selectedSource = 0;
-        float thisx = abs(attracter[0].lonid - x);
-        float thisy = abs(attracter[0].latid - y);
-        float distance = (thisx * thisx) + (thisy * thisy);
-        float smallestsize = distance;
-
-        for (int i = 1 ; i < attracter.Count ; i++){
-            thisx = abs(attracter[i].lonid - x);
-            thisy = abs(attracter[i].latid - y);
-
-            distance = (thisx * thisx) + (thisy * thisy);
-            if (distance < smallestsize){
-                smallestsize = distance;
-                selectedSource = i;
-            }
-        }
-
-        //Euclidean distance SQRTed
-        if (setRadius){
-            dogradius[groupid] += Mathf.Sqrt(smallestsize);
-            factradius[groupid]++;
-        }
-
-        return selectedSource;
     }
 
     private int findNearestGroupNeighbour(int x , int y, bool setRadius = false)
@@ -1317,8 +1308,7 @@ public class OnMapSpawn : MonoBehaviour
         {
             for (int x = 0; x < xgridsize; x++)
             {
-                if (edge[x , y] > 0) //if the edge is detected
-                {
+                if (edge[x , y] > 0){
                     walkToAllExtensionalRange(x , y);
                 }
             }
@@ -1328,52 +1318,25 @@ public class OnMapSpawn : MonoBehaviour
     //For each home point reaching path will move to the end direction of maximum walking range
     private void walkToAllExtensionalRange(int thisx, int thisy)
     {
-        if (attracter.Count > 0)
+        int radius;
+        for (int y = 0; y < ygridsize; y++)
         {
-            int source, radius;
-
-            //TO BE SOLVED UNDERWHELMING HERE
-            /*
-            for (int y = 0 ; y < ygridsize ; y++)
+            for (int x = 0; x < xgridsize; x++)
             {
-                for (int x = 0 ; x < xgridsize ; x++)
+                if (walk[x , y] > 0)
                 {
-                    if (walk[x, y] > 0) {
-                        source = findNearestAttractionSource(thisx, thisy);
-                        radius = (int)dogradius[findNearestGroupNeighbour(thisx, thisy)];
-                        walkingBehaviour(thisx , thisy , attracter[source].lonid, attracter[source].latid, radius);
-                        walkingBehaviour(x , y , attracter[source].lonid, attracter[source].latid, radius);
-                    }
-                }
-            } 
-            */
-
-            source = findNearestAttractionSource(thisx, thisy);
-            radius = (int)dogradius[findNearestGroupNeighbour(thisx, thisy)];
-            walkingBehaviour(thisx , thisy , attracter[source].lonid , attracter[source].latid , radius);
-        }
-        else 
-        {
-            int radius;
-            for (int y = 0; y < ygridsize; y++)
-            {
-                for (int x = 0; x < xgridsize; x++)
-                {
-                    if (walk[x , y] > 0)
-                    {
-                        radius = (int)dogradius[findNearestGroupNeighbour(thisx , thisy)];
-                        walkingBehaviour(thisx , thisy , x , y , radius);
-                    }
+                    radius = (int)dogradius[findNearestGroupNeighbour(thisx , thisy)];
+                    walkingBehaviour(thisx , thisy , x , y , radius);
                 }
             }
-        }    
+        }       
     }
 
     //The moving behaviour probabilities of normal dog from t (this) point to d (destination) point
     private void walkingBehaviour(int d_x , int d_y , int t_x , int t_y , int mul)
     {
         int y_dir = 1, x_dir = 1;
-        float cursize = initial_dog_groupsize;
+        float cursize = initial_dog_groupsize; //TO BE CHANGED
         float thisheight, y_dir_eva, x_dir_eva, distance;
 
         walkingHabits[d_x , d_y] += 1.0f;
@@ -1617,5 +1580,132 @@ public class OnMapSpawn : MonoBehaviour
 
     private float getDogFoundWithWeight(float walkHabit, float maxHabit, int weight, float horde_size, float behaviour_rate) {
         return (horde_size * (walkHabit * maxHabit) * behaviour_rate) / weight;
+    }
+
+    List<AttractNode> node;
+    private void walkToAttraction(){
+        node = new List<AttractNode>();
+        int source, endx, endy;
+        for (int y = 0 ; y < ygridsize ; y++){
+            for (int x = 0 ; x < xgridsize ; x++){
+                if (edge[x , y] > 0){
+                    source = findNearestAttractionSource(x, y);
+                    endx = attracter[source].lonid;
+                    endy = attracter[source].latid;
+                    //Walking from edge to attraction point
+                    inclineHeuristic(x , y, endx, endy);
+                    heuristicBackTrack(node.Count - 1);
+                    node = new List<AttractNode>();
+                    //Walking back from attraction point to edge
+                    inclineHeuristic(endx , endy, x, y);
+                    heuristicBackTrack(node.Count - 1);
+                    node = new List<AttractNode>();
+                }
+            }
+        }
+        highest_habits_rate = 0.0f;
+        maxColor(2);
+    }
+
+    private void inclineHeuristic(int startx, int starty, int endx, int endy){
+        //HEURISTICS MODEL FROM A TO B, where moved_distance = GridSize * distributeElevationLevel per Grid
+        node.Add(new AttractNode(startx, starty, 0, true, -1, -1));
+        bool reachEndPoint = false;
+        int selected_node;
+        while (!reachEndPoint){
+            selected_node = findLowestCostNode();
+            reachEndPoint = extractShortest(selected_node, endx, endy);
+        }
+    }
+
+    private bool extractShortest(int n_id, int to_x, int to_y){
+        int curx = node[n_id].x;
+        int cury = node[n_id].y;
+        float cost = node[n_id].cost;
+        int parentNode = node[n_id].parent_node;
+        node[n_id] = new AttractNode(curx , cury , cost , false , node[n_id].parent_dir, parentNode);
+        float distance, hardReach;
+
+        int[] dirx = {0 , 0 , -1 , 1};
+        int[] diry = {-1 , 1 , 0 , 0};
+        for (int i = 0 ; i < 4 ; i++){
+            if ((i == 0 && cury > 0) || (i == 1 && cury < ygridsize - 1) || (i == 2 && curx > 0) || (i == 3 && curx < xgridsize - 1)) 
+            {
+                if (!isHeuristicReturn(curx + dirx[i], cury + diry[i])){
+                    distance = abs(to_x - (curx + dirx[i])) + abs(to_y - (cury + diry[i]));
+                    hardReach = distributeElevationLevel(heightxy[curx , cury], heightxy[curx + dirx[i] , cury + diry[i]]);
+                    if (hardReach < 0.1f) hardReach = 0.1f;
+                    node.Add(new AttractNode(curx + dirx[i] , cury + diry[i], cost + (distance / hardReach), true, i, n_id));
+                    if (distance == 0.0f) return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private int findLowestCostNode(){
+        int min_node = 0;
+        float min_cost = -1.0f;
+        for (int i = 1 ;  i < node.Count ; i++){
+            if ((node[i].cost < min_cost || min_cost == -1.0f) && node[i].mutable){
+                min_cost = node[i].cost;
+                min_node = i;
+            }
+        }
+        return min_node;
+    }
+
+    private int findNearestAttractionSource(int x, int y){
+        int selectedSource = 0;
+        float thisx = abs(attracter[0].lonid - x);
+        float thisy = abs(attracter[0].latid - y);
+        float distance = (thisx * thisx) + (thisy * thisy);
+        float smallestsize = distance;
+
+        for (int i = 1 ; i < attracter.Count ; i++){
+            thisx = abs(attracter[i].lonid - x);
+            thisy = abs(attracter[i].latid - y);
+
+            distance = (thisx * thisx) + (thisy * thisy);
+            if (distance < smallestsize){
+                smallestsize = distance;
+                selectedSource = i;
+            }
+        }
+
+        return selectedSource;
+    }
+
+    private bool isHeuristicReturn(int x , int y){
+        for (int i = 0 ; i < node.Count ; i++){
+            if(node[i].x == x && node[i].y == y){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void heuristicBackTrack(int node_id){
+        int dir = node[node_id].parent_dir;;
+        int curx = node[node_id].x;
+        int cury = node[node_id].y;
+        walkingHabits[curx, cury] += 1.0f;
+        while (dir != -1 && node_id != -1) {
+            dir = node[node_id].parent_dir;
+            if (dir == 0){
+                cury++;
+            }
+            else if (dir == 1){
+                cury--;
+            }
+            else if (dir == 2){
+                curx++;
+            }
+            else if (dir == 3){
+                curx--;
+            }
+            walkingHabits[curx, cury] += 1.0f;
+            node_id = node[node_id].parent_node;
+        }
     }
 }
