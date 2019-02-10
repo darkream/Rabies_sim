@@ -149,14 +149,31 @@ public class OnMapSpawn : MonoBehaviour
     [SerializeField]
     float exploreMoveRate = 0.2f;
 
+    [SerializeField]
+    float highest_activity_rate = 0.99f; //1.0 is maximum, 0.0 is minimum
+
+    [SerializeField]
+    float lowest_activity_rate = 0.2f;
+
+    [SerializeField]
+    int time_length = 5; //5 minutes for each activity
+
+    [SerializeField]
+    int time_cycle = 4; //4 cycles for each day
+
     private float singleMoveRate;
     private List<AttractSource> attracter;
+    private List<AttractNode> node;
     private float[,] walkingHabits;
     private int highest_walking_rate = 0;
     private float highest_home_rate = 0.0f;
     private float highest_habits_rate = 0.0f;
     private float[] highest_afford;
     private int[] count_area;
+    private float[] timeScaleFactor;
+    private float[,] wh;
+    private float affordScale = 1.25f; //afford scale increasion is at 25% if it is 1.25f
+
     void Start()
     {
         doglocations = new List<Vector2d>(); //initialization for the dog object
@@ -172,6 +189,7 @@ public class OnMapSpawn : MonoBehaviour
         doggroupsize = new List<int>();
         convergeCountdown = loopCriteria;
         singleMoveRate = 1.0f - (hordeMoveRate + exploreMoveRate);
+        initialTimeScaleFactor();
     }
 
     private void Update()
@@ -278,7 +296,7 @@ public class OnMapSpawn : MonoBehaviour
             Debug.Log("walking habits map is created");            
         }
 
-        //Press N to start simple simulation
+        //Press N to initialize walking habits for controlled simulation
         if (Input.GetKeyDown("n"))
         {
             highest_habits_rate = 0.0f;
@@ -290,6 +308,13 @@ public class OnMapSpawn : MonoBehaviour
             highest_habits_rate = 0.0f;
             maxColor(2);
             decisionTree();
+        }
+
+        //Press M to create sequence of dog habits in a day
+        if (Input.GetKeyDown("m"))
+        {
+            createDogSequence();
+            Debug.Log("Dog sequence is created");
         }
     }
 
@@ -961,6 +986,11 @@ public class OnMapSpawn : MonoBehaviour
                 return new Color(((heightxy[lon , lat] - minh) / (maxh - minh)) , 0.0f , 0.0f);
             }
         }
+        else if (imagetype == 8)
+        {
+            float colorvalue = wh[lon, lat] / highest_estimate_simulation_dog_color;
+            return new Color(colorvalue, 1.0f - colorvalue, 1.0f - colorvalue);
+        }
         return Color.black;
     }
 
@@ -998,6 +1028,10 @@ public class OnMapSpawn : MonoBehaviour
         else if (imagetype == 7)
         {
             return "/../Assets/MickRendered/selectedAfford" + route + ".png";
+        }
+        else if (imagetype == 8)
+        {
+            return "/../Assets/MickRendered/SingleDay/" + route + ".png";
         }
         return "/../Assets/MickRendered/createdImage" + route + ".png";
     }
@@ -1581,8 +1615,6 @@ public class OnMapSpawn : MonoBehaviour
     private float getDogFoundWithWeight(float walkHabit, float maxHabit, int weight, float horde_size, float behaviour_rate) {
         return (horde_size * (walkHabit * maxHabit) * behaviour_rate) / weight;
     }
-
-    List<AttractNode> node;
     private void walkToAttraction(){
         node = new List<AttractNode>();
         int source, endx, endy;
@@ -1706,6 +1738,93 @@ public class OnMapSpawn : MonoBehaviour
             }
             walkingHabits[curx, cury] += 1.0f;
             node_id = node[node_id].parent_node;
+        }
+    }
+
+    private void initialTimeScaleFactor(){
+        int timescalesize = (24 * 60) / time_length; //The size of time scale based on minutes in a day
+        timescalesize += timescalesize % time_cycle; //The interval time is separated into 4 time cycles
+        timeScaleFactor = new float[timescalesize];
+        setDogTimeCycle(timescalesize);
+    }
+
+    private void setDogTimeCycle(int time_scale_size){
+        //The changing of dog activity rate based on temporal
+        float activity_difference = -1.0f * (highest_activity_rate - lowest_activity_rate) / (time_scale_size / time_cycle);
+
+        float current_activity_rate = highest_activity_rate; //Dog activity rate starts from 6:00 am + time_cycle
+        
+        int count = 0;
+        int cycle = 0;
+
+        for (int t = 0 ; t < time_scale_size ; t++){ // Active 6 hours + Less Active 6 hours :: cycle
+            current_activity_rate += activity_difference;
+            timeScaleFactor[count] = current_activity_rate;
+            count++;
+            cycle++;
+
+            if (cycle > (time_scale_size / time_cycle)){
+                current_activity_rate = lowest_activity_rate;
+                activity_difference *= -1.0f;
+            }
+        }
+    }
+
+    private float highest_estimate_simulation_dog_color;
+    private void createDogSequence(){
+        wh = new float[xgridsize, ygridsize];
+        int atTime = 0;
+        float affordable, oh2e, oh2s;
+        float h2s = hordeMoveRate / 2.0f;
+        float h2e = h2s;
+        int scount = 0, ecount = 0;
+
+        for (int i = 0 ; i < timeScaleFactor.Length ; i++)
+        {
+            highest_estimate_simulation_dog_color = 0.01f;
+            for (int y = 0 ; y < ygridsize ; y++){
+                for (int x = 0 ; x < xgridsize ; x++){
+                    if (doggroup[x , y] > 0.0f){
+                        wh[x , y] = doggroup[x , y] * (singleMoveRate + h2s);
+                        scount++;
+                    }
+                    else if (walkingHabits[x , y] > 0.0f){
+                        affordable = timeScaleFactor[atTime] * highest_afford[groupassign[x, y]];
+                        if (mapAfford[x , y] <= affordable){
+                            wh[x , y] = walkingHabits[x , y] * (exploreMoveRate + h2e);
+                            ecount++;
+                        }
+                    }
+                    else {
+                        wh[x , y] = 0.0f;
+                    }
+
+                    if (wh[x , y] > highest_estimate_simulation_dog_color)
+                    {
+                        highest_estimate_simulation_dog_color = wh[x , y];
+                    }
+                }
+            }
+            /* The changing of behaviour will not occurred for many reasons
+            oh2s = h2s;
+            oh2e = h2e;
+            h2s = singleMoveRate * (exploreMoveRate + oh2e);
+            h2e = exploreMoveRate * (singleMoveRate + oh2s);
+            singleMoveRate -= h2s;
+            exploreMoveRate -= h2e;
+            singleMoveRate += (1.0f / 3.0f) * (h2s + h2e);
+            exploreMoveRate += (1.0f / 3.0f) * (h2s + h2e);
+            h2s = (1.0f / 6.0f) * (h2s + h2e);
+            h2e = h2s;
+            oh2s = (h2s + h2e) - (hordeMoveRate * 2.0f);
+            if (oh2s > 0){
+                singleMoveRate += oh2s / 2.0f;
+                exploreMoveRate += oh2s / 2.0f;
+                h2s -= oh2s / 2.0f;
+                h2e -= oh2s / 2.0f;
+            }
+            */
+            createImage(i, 8);
         }
     }
 }

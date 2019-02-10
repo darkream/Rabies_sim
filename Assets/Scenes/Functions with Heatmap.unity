@@ -422,11 +422,15 @@ MonoBehaviour:
   xgridsize: 0
   ygridsize: 0
   loopCriteria: 4
-  initial_dog_groupsize: 40
+  initial_dog_groupsize: 625
   homeRangeMultiplier: 2
   allowElevation: 1
   hordeMoveRate: 0.4
   exploreMoveRate: 0.4
+  highest_activity_rate: 0.99
+  lowest_activity_rate: 0.2
+  time_length: 5
+  time_cycle: 4
 --- !u!114 &555018386
 MonoBehaviour:
   m_ObjectHideFlags: 0
