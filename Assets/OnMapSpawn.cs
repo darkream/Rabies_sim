@@ -161,6 +161,9 @@ public class OnMapSpawn : MonoBehaviour
     [SerializeField]
     int time_cycle = 4; //4 cycles for each day
 
+    [SerializeField]
+    UIController uicontroller;
+
     private float singleMoveRate;
     private List<AttractSource> attracter;
     private List<AttractNode> node;
@@ -173,6 +176,10 @@ public class OnMapSpawn : MonoBehaviour
     private float[] timeScaleFactor;
     private float[,] wh;
     private float affordScale = 1.25f; //afford scale increasion is at 25% if it is 1.25f
+    private int currentprogress = 0;
+    private bool startPreDataRegister = false;
+    private int atAttract = 0;
+    private int atTime = 0;
 
     void Start()
     {
@@ -190,6 +197,8 @@ public class OnMapSpawn : MonoBehaviour
         convergeCountdown = loopCriteria;
         singleMoveRate = 1.0f - (hordeMoveRate + exploreMoveRate);
         initialTimeScaleFactor();
+        uicontroller.initialValue();
+        uicontroller.setTotalProcess(8);
     }
 
     private void Update()
@@ -248,73 +257,127 @@ public class OnMapSpawn : MonoBehaviour
             spawnAttractSource(latlonDelta.x , latlonDelta.y);
         }
 
-        //Press V to initiate dog group
-        //and start distribution until it converge
         if (Input.GetKeyDown("v"))
         {
-            Debug.Log("initiate dog group");
-            initializeDogGroup();
-
-            while (convergeCountdown > 0)
-            {
-                dogimageid++;
-                normalDistribution(dogimageid);
-            }
-            Debug.Log("distributed until it is converged at " + dogimageid + "-th loop");
-            maxColor(0); //type 0 is home type
-            createImage(0 , 1); //Create Dog Map
-            createImage(0 , 2); //Create Dog and Height Map
+            startPreDataRegister = true;
+            uicontroller.setupActivation(true);
         }
 
-        //Press B to start edge detection and home range calculation
-        //and Also using kdb of (LoCoH)
-        if (Input.GetKeyDown("b"))
+        if (startPreDataRegister)
         {
-            kernelDensityEstimation();
-            createImage(0 , 3); //Create Edge Map
-            Debug.Log("edge map (pre-LoCoH) is created");
-   
-            if (attracter.Count <= 0){
-                edgeExpansion();
-                maxColor(1); //type 1 is walk type
-                createImage(0 , 4); //create walk extension image image
-                Debug.Log("walking extension map is created");
-                normalizeWalkingExtension();
-                kernelDensityEstimation(false);
-                walkingWithinHomeRange();
-                maxColor(2); //type 2 is walking habits type
-                createImage(0 , 5); //create only walking habits
-                createImage(0 , 6); //create walking habits and dog group
+            //to initiate dog group
+            if (uicontroller.getCompletedProcess() == 0){
+                initializeDogGroup();
+                uicontroller.updateProcessDetail("initializing dog group");
+                uicontroller.triggerCompleteProcess();
             }
-            else 
-            {
-                walkToAttraction(); //let the dog walk to the closest attraction
-                Debug.Log("all nodes are extracted to the attraction point(s)");
-                createImage(0 , 5);
-                createImage(0 , 6);
+            //and start distribution until it converge
+            else if (uicontroller.getCompletedProcess() == 1){
+                if (convergeCountdown > 0)
+                {
+                    dogimageid++;
+                    normalDistribution(dogimageid);
+                    uicontroller.updateProcessDetail("normal distribution at " + dogimageid + "-th loop");
+                    if (dogimageid < initial_dog_groupsize / 4){
+                        uicontroller.updateCurrentProgress((dogimageid / (initial_dog_groupsize/4.0f)));
+                    }
+                    else {
+                        uicontroller.updateCurrentProgress(1.0f);
+                    }
+                }
+                else {
+                    uicontroller.triggerCompleteProcess();
+                }
             }
-            Debug.Log("walking habits map is created");            
-        }
-
-        //Press N to initialize walking habits for controlled simulation
-        if (Input.GetKeyDown("n"))
-        {
-            highest_habits_rate = 0.0f;
-            initializeWalkingSimulationMap();
-            assignGroup();
-            Debug.Log("initialize simulation map");
-            createImage(0, 7);
-
-            highest_habits_rate = 0.0f;
-            maxColor(2);
-            decisionTree();
-        }
-
-        //Press M to create sequence of dog habits in a day
-        if (Input.GetKeyDown("m"))
-        {
-            createDogSequence();
-            Debug.Log("Dog sequence is created");
+            //to create image
+            else if (uicontroller.getCompletedProcess() == 2){
+                uicontroller.updateProcessDetail("creating image for distribution");
+                uicontroller.updateCurrentProgress(0.0f);
+                maxColor(0);
+                createImage(0, 1);
+                createImage(0, 2);
+                uicontroller.triggerCompleteProcess();
+            }
+            //to apply kernel density
+            else if (uicontroller.getCompletedProcess() == 3){
+                uicontroller.updateProcessDetail("apply kernel density");
+                kernelDensityEstimation();
+                createImage(0 , 3);
+                uicontroller.triggerCompleteProcess();
+            }
+            //to start edge detection and home range calculation
+            else if (uicontroller.getCompletedProcess() == 4){
+                uicontroller.updateProcessDetail("apply walking extension, selection, and nodes attraction");
+                if (attracter.Count <= 0){
+                    edgeExpansion();
+                    maxColor(1); //type 1 is walk type
+                    createImage(0 , 4); //create walk extension image image
+                    Debug.Log("walking extension map is created");
+                    normalizeWalkingExtension();
+                    kernelDensityEstimation(false);
+                    walkingWithinHomeRange();
+                    maxColor(2); //type 2 is walking habits type
+                    createImage(0 , 5); //create only walking habits
+                    createImage(0 , 6); //create walking habits and dog group
+                }
+                uicontroller.triggerCompleteProcess();
+            }
+            //and Also using kdb of (LoCoH)
+            else if (uicontroller.getCompletedProcess() == 5){
+                uicontroller.updateProcessDetail("apply extracted nodes to the attraction points");
+                if (attracter.Count > 0){
+                    walkToAttraction();
+                }
+                uicontroller.triggerCompleteProcess();
+            }
+            //let the dog walk to the closest attraction
+            else if (uicontroller.getCompletedProcess() == 6){
+                uicontroller.updateProcessDetail("extract attraction point");
+                if (attracter.Count > 0){
+                    if (atAttract < heuristic_init.Count){
+                        uicontroller.updateProcessDetail("attraction point: " + atAttract + " is being extracted");
+                        applyAttraction(heuristic_init[atAttract].lonid, heuristic_init[atAttract].latid);
+                        atAttract++;
+                        uicontroller.updateCurrentProgress((float)atAttract / heuristic_init.Count);
+                    }
+                    else {
+                        highest_habits_rate = 0.0f;
+                        maxColor(2);
+                        createImage(0 , 5);
+                        createImage(0 , 6);
+                        uicontroller.triggerCompleteProcess();
+                    }
+                }
+                else {
+                    uicontroller.triggerCompleteProcess();
+                }
+            }
+            //to initialize walking habits for controlled simulation
+            else if (uicontroller.getCompletedProcess() == 7){
+                uicontroller.updateProcessDetail("initialize simulation map");
+                uicontroller.updateCurrentProgress(0.0f);
+                highest_habits_rate = 0.0f;
+                initializeWalkingSimulationMap();
+                assignGroup();
+                createImage(0, 7);
+                highest_habits_rate = 0.0f;
+                maxColor(2);
+                decisionTree();
+                uicontroller.triggerCompleteProcess();
+            }
+            //to create sequence of dog habits in a day
+            else if (uicontroller.getCompletedProcess() == 8){
+                if (atTime < timeScaleFactor.Length){
+                    uicontroller.updateProcessDetail("Dog sequence at "+ atTime + " is being created");
+                    uicontroller.updateCurrentProgress((float)atTime / timeScaleFactor.Length);
+                    createDogSequence(atTime);
+                    atTime++;
+                }
+                else {
+                    uicontroller.setupActivation(false);
+                    startPreDataRegister = false;
+                }
+            }
         }
     }
 
@@ -1615,28 +1678,31 @@ public class OnMapSpawn : MonoBehaviour
     private float getDogFoundWithWeight(float walkHabit, float maxHabit, int weight, float horde_size, float behaviour_rate) {
         return (horde_size * (walkHabit * maxHabit) * behaviour_rate) / weight;
     }
+
+    List<AttractSource> heuristic_init;
     private void walkToAttraction(){
         node = new List<AttractNode>();
-        int source, endx, endy;
         for (int y = 0 ; y < ygridsize ; y++){
             for (int x = 0 ; x < xgridsize ; x++){
                 if (edge[x , y] > 0){
-                    source = findNearestAttractionSource(x, y);
-                    endx = attracter[source].lonid;
-                    endy = attracter[source].latid;
-                    //Walking from edge to attraction point
-                    inclineHeuristic(x , y, endx, endy);
-                    heuristicBackTrack(node.Count - 1);
-                    node = new List<AttractNode>();
-                    //Walking back from attraction point to edge
-                    inclineHeuristic(endx , endy, x, y);
-                    heuristicBackTrack(node.Count - 1);
-                    node = new List<AttractNode>();
+                    heuristic_init.Add(new AttractSource(y , x));
                 }
             }
         }
-        highest_habits_rate = 0.0f;
-        maxColor(2);
+    }
+
+    private void applyAttraction(int x, int y){
+        int source = findNearestAttractionSource(x, y);
+        int endx = attracter[source].lonid;
+        int endy = attracter[source].latid;
+        //Walking from edge to attraction point
+        inclineHeuristic(x , y, endx, endy);
+        heuristicBackTrack(node.Count - 1);
+        node = new List<AttractNode>();
+        //Walking back from attraction point to edge
+        inclineHeuristic(endx , endy, x, y);
+        heuristicBackTrack(node.Count - 1);
+        node = new List<AttractNode>();
     }
 
     private void inclineHeuristic(int startx, int starty, int endx, int endy){
@@ -1771,60 +1837,56 @@ public class OnMapSpawn : MonoBehaviour
     }
 
     private float highest_estimate_simulation_dog_color;
-    private void createDogSequence(){
+    private void createDogSequence(int current_time){
         wh = new float[xgridsize, ygridsize];
-        int atTime = 0;
         float affordable, oh2e, oh2s;
         float h2s = hordeMoveRate / 2.0f;
         float h2e = h2s;
         int scount = 0, ecount = 0;
 
-        for (int i = 0 ; i < timeScaleFactor.Length ; i++)
-        {
-            highest_estimate_simulation_dog_color = 0.01f;
-            for (int y = 0 ; y < ygridsize ; y++){
-                for (int x = 0 ; x < xgridsize ; x++){
-                    if (doggroup[x , y] > 0.0f){
-                        wh[x , y] = doggroup[x , y] * (singleMoveRate + h2s);
-                        scount++;
-                    }
-                    else if (walkingHabits[x , y] > 0.0f){
-                        affordable = timeScaleFactor[atTime] * highest_afford[groupassign[x, y]];
-                        if (mapAfford[x , y] <= affordable){
-                            wh[x , y] = walkingHabits[x , y] * (exploreMoveRate + h2e);
-                            ecount++;
-                        }
-                    }
-                    else {
-                        wh[x , y] = 0.0f;
-                    }
-
-                    if (wh[x , y] > highest_estimate_simulation_dog_color)
-                    {
-                        highest_estimate_simulation_dog_color = wh[x , y];
+        highest_estimate_simulation_dog_color = 0.01f;
+        for (int y = 0 ; y < ygridsize ; y++){
+            for (int x = 0 ; x < xgridsize ; x++){
+                if (doggroup[x , y] > 0.0f){
+                    wh[x , y] = doggroup[x , y] * (singleMoveRate + h2s);
+                    scount++;
+                }
+                else if (walkingHabits[x , y] > 0.0f){
+                    affordable = timeScaleFactor[current_time] * highest_afford[groupassign[x, y]];
+                    if (mapAfford[x , y] <= affordable){
+                        wh[x , y] = walkingHabits[x , y] * (exploreMoveRate + h2e);
+                        ecount++;
                     }
                 }
+                else {
+                    wh[x , y] = 0.0f;
+                }
+
+                if (wh[x , y] > highest_estimate_simulation_dog_color)
+                {
+                    highest_estimate_simulation_dog_color = wh[x , y];
+                }
             }
-            /* The changing of behaviour will not occurred for many reasons
-            oh2s = h2s;
-            oh2e = h2e;
-            h2s = singleMoveRate * (exploreMoveRate + oh2e);
-            h2e = exploreMoveRate * (singleMoveRate + oh2s);
-            singleMoveRate -= h2s;
-            exploreMoveRate -= h2e;
-            singleMoveRate += (1.0f / 3.0f) * (h2s + h2e);
-            exploreMoveRate += (1.0f / 3.0f) * (h2s + h2e);
-            h2s = (1.0f / 6.0f) * (h2s + h2e);
-            h2e = h2s;
-            oh2s = (h2s + h2e) - (hordeMoveRate * 2.0f);
-            if (oh2s > 0){
-                singleMoveRate += oh2s / 2.0f;
-                exploreMoveRate += oh2s / 2.0f;
-                h2s -= oh2s / 2.0f;
-                h2e -= oh2s / 2.0f;
-            }
-            */
-            createImage(i, 8);
         }
+        /* The changing of behaviour will not occurred for many reasons
+        oh2s = h2s;
+        oh2e = h2e;
+        h2s = singleMoveRate * (exploreMoveRate + oh2e);
+        h2e = exploreMoveRate * (singleMoveRate + oh2s);
+        singleMoveRate -= h2s;
+        exploreMoveRate -= h2e;
+        singleMoveRate += (1.0f / 3.0f) * (h2s + h2e);
+        exploreMoveRate += (1.0f / 3.0f) * (h2s + h2e);
+        h2s = (1.0f / 6.0f) * (h2s + h2e);
+        h2e = h2s;
+        oh2s = (h2s + h2e) - (hordeMoveRate * 2.0f);
+        if (oh2s > 0){
+            singleMoveRate += oh2s / 2.0f;
+            exploreMoveRate += oh2s / 2.0f;
+            h2s -= oh2s / 2.0f;
+            h2e -= oh2s / 2.0f;
+        }
+        */
+        createImage(current_time, 8);
     }
 }
