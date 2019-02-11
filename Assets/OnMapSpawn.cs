@@ -150,16 +150,16 @@ public class OnMapSpawn : MonoBehaviour
     float exploreMoveRate = 0.2f;
 
     [SerializeField]
-    float highest_activity_rate = 0.99f; //1.0 is maximum, 0.0 is minimum
+    float highest_activity_rate; //1.0 is maximum, 0.0 is minimum
 
     [SerializeField]
-    float lowest_activity_rate = 0.2f;
+    float lowest_activity_rate;
 
     [SerializeField]
-    int time_length = 5; //5 minutes for each activity
+    int time_length; //5 minutes for each activity
 
     [SerializeField]
-    int time_cycle = 4; //4 cycles for each day
+    int time_cycle; //4 cycles for each day
 
     [SerializeField]
     UIController uicontroller;
@@ -198,7 +198,7 @@ public class OnMapSpawn : MonoBehaviour
         singleMoveRate = 1.0f - (hordeMoveRate + exploreMoveRate);
         initialTimeScaleFactor();
         uicontroller.initialValue();
-        uicontroller.setTotalProcess(8);
+        uicontroller.setTotalProcess(9);
     }
 
     private void Update()
@@ -312,7 +312,7 @@ public class OnMapSpawn : MonoBehaviour
                     edgeExpansion();
                     maxColor(1); //type 1 is walk type
                     createImage(0 , 4); //create walk extension image image
-                    Debug.Log("walking extension map is created");
+
                     normalizeWalkingExtension();
                     kernelDensityEstimation(false);
                     walkingWithinHomeRange();
@@ -335,7 +335,7 @@ public class OnMapSpawn : MonoBehaviour
                 uicontroller.updateProcessDetail("extract attraction point");
                 if (attracter.Count > 0){
                     if (atAttract < heuristic_init.Count){
-                        uicontroller.updateProcessDetail("attraction point: " + atAttract + " is being extracted");
+                        uicontroller.updateProcessDetail("attraction point: " + atAttract + " / " + heuristic_init.Count + " is being extracted");
                         applyAttraction(heuristic_init[atAttract].lonid, heuristic_init[atAttract].latid);
                         atAttract++;
                         uicontroller.updateCurrentProgress((float)atAttract / heuristic_init.Count);
@@ -365,10 +365,17 @@ public class OnMapSpawn : MonoBehaviour
                 decisionTree();
                 uicontroller.triggerCompleteProcess();
             }
-            //to create sequence of dog habits in a day
+            //to normalize dog group and walking habits
             else if (uicontroller.getCompletedProcess() == 8){
+                uicontroller.updateProcessDetail("normalize dog groups and habits");
+                normalizeDogGroup();
+                normalizeWalkingHabits();
+                uicontroller.triggerCompleteProcess();
+            }
+            //to create sequence of dog habits in a day
+            else if (uicontroller.getCompletedProcess() == 9){
                 if (atTime < timeScaleFactor.Length){
-                    uicontroller.updateProcessDetail("Dog sequence at "+ atTime + " is being created");
+                    uicontroller.updateProcessDetail("Dog sequence at "+ atTime + " is being created\nat activity rate " + timeScaleFactor[atTime]);
                     uicontroller.updateCurrentProgress((float)atTime / timeScaleFactor.Length);
                     createDogSequence(atTime);
                     atTime++;
@@ -1052,7 +1059,7 @@ public class OnMapSpawn : MonoBehaviour
         else if (imagetype == 8)
         {
             float colorvalue = wh[lon, lat] / highest_estimate_simulation_dog_color;
-            return new Color(colorvalue, 1.0f - colorvalue, 1.0f - colorvalue);
+            return new Color(colorvalue, colorvalue, colorvalue);
         }
         return Color.black;
     }
@@ -1433,7 +1440,7 @@ public class OnMapSpawn : MonoBehaviour
     private void walkingBehaviour(int d_x , int d_y , int t_x , int t_y , int mul)
     {
         int y_dir = 1, x_dir = 1;
-        float cursize = initial_dog_groupsize; //TO BE CHANGED
+        float cursize = doggroupsize[findNearestGroupNeighbour(t_x, t_y)]; //TO BE CHANGED
         float thisheight, y_dir_eva, x_dir_eva, distance;
 
         walkingHabits[d_x , d_y] += 1.0f;
@@ -1451,7 +1458,7 @@ public class OnMapSpawn : MonoBehaviour
         }
 
         distance = ((d_y - t_y) * (d_y - t_y)) + ((d_x - t_x) * (d_x - t_x));
-        float walking_criteria = (initial_dog_groupsize / Mathf.Sqrt(distance)) / mul;
+        float walking_criteria = (cursize / Mathf.Sqrt(distance)) / mul;
 
         while (d_y != t_y && d_x != t_x)
         {
@@ -1519,16 +1526,16 @@ public class OnMapSpawn : MonoBehaviour
         for (int y = 0 ; y < ygridsize;  y++){
             for (int x = 0; x < xgridsize; x++){
                 if (doggroup[x , y] > 0.0f || walkingHabits[x , y] > 0.0f){
-                    mapAfford[x , y] = 0; //movable slot
+                    mapAfford[x , y] = 0.0f; //movable slot
                 }
                 else {
-                    mapAfford[x , y] = -1; //unmovable slot
+                    mapAfford[x , y] = -1.0f; //unmovable slot
                 }
             }
         }
 
         for (int i = 0 ; i < dogdata.Count ; i++){
-            mapAfford[dogdata[i].lonid, dogdata[i].latid] = 1;
+            mapAfford[dogdata[i].lonid, dogdata[i].latid] = 1.0f;
         }
         affordanceCounter();
     }
@@ -1609,15 +1616,15 @@ public class OnMapSpawn : MonoBehaviour
         singleMoveRate = 1.0f - (hordeMoveRate + exploreMoveRate);
 
         highest_habits_rate = 0.0f;
-        normalizeAfford();
-        Debug.Log("create image of afford normalization");
+        normalizeAfford(); //create image of afford normalization
+
         maxColor(2);
         createImage(1, 6);
 
         //express the walkable
         findBehaviouricRatio();
-        normalizeReach();
-        Debug.Log("create image of afford combination");
+        normalizeReach(); //create image of afford combination
+
         createImage(2, 6);
     }
 
@@ -1682,6 +1689,7 @@ public class OnMapSpawn : MonoBehaviour
     List<AttractSource> heuristic_init;
     private void walkToAttraction(){
         node = new List<AttractNode>();
+        heuristic_init = new List<AttractSource>();
         for (int y = 0 ; y < ygridsize ; y++){
             for (int x = 0 ; x < xgridsize ; x++){
                 if (edge[x , y] > 0){
@@ -1689,6 +1697,7 @@ public class OnMapSpawn : MonoBehaviour
                 }
             }
         }
+        assignGroup();
     }
 
     private void applyAttraction(int x, int y){
@@ -1808,8 +1817,8 @@ public class OnMapSpawn : MonoBehaviour
     }
 
     private void initialTimeScaleFactor(){
-        int timescalesize = (24 * 60) / time_length; //The size of time scale based on minutes in a day
-        timescalesize += timescalesize % time_cycle; //The interval time is separated into 4 time cycles
+        int timescalesize = ((24 * 60 * 60) / time_length); //The size of time scale based on seconds in a day
+        timescalesize += (timescalesize % time_cycle); //The interval time is separated into 4 time cycles
         timeScaleFactor = new float[timescalesize];
         setDogTimeCycle(timescalesize);
     }
@@ -1830,7 +1839,7 @@ public class OnMapSpawn : MonoBehaviour
             cycle++;
 
             if (cycle > (time_scale_size / time_cycle)){
-                current_activity_rate = lowest_activity_rate;
+                cycle = 0;
                 activity_difference *= -1.0f;
             }
         }
@@ -1842,20 +1851,20 @@ public class OnMapSpawn : MonoBehaviour
         float affordable, oh2e, oh2s;
         float h2s = hordeMoveRate / 2.0f;
         float h2e = h2s;
-        int scount = 0, ecount = 0;
 
-        highest_estimate_simulation_dog_color = 0.01f;
+        highest_estimate_simulation_dog_color = 0.0001f;
         for (int y = 0 ; y < ygridsize ; y++){
             for (int x = 0 ; x < xgridsize ; x++){
                 if (doggroup[x , y] > 0.0f){
-                    wh[x , y] = doggroup[x , y] * (singleMoveRate + h2s);
-                    scount++;
+                    wh[x , y] = doggroup[x , y] * (doggroupsize[groupassign[x , y]]) * (singleMoveRate + h2s);
                 }
                 else if (walkingHabits[x , y] > 0.0f){
                     affordable = timeScaleFactor[current_time] * highest_afford[groupassign[x, y]];
                     if (mapAfford[x , y] <= affordable){
-                        wh[x , y] = walkingHabits[x , y] * (exploreMoveRate + h2e);
-                        ecount++;
+                        wh[x , y] = walkingHabits[x , y] * (exploreMoveRate + h2e) * timeScaleFactor[current_time] * (doggroupsize[groupassign[x , y]]);
+                    }
+                    else {
+                        wh[x , y] = 0.0f;
                     }
                 }
                 else {
@@ -1868,7 +1877,7 @@ public class OnMapSpawn : MonoBehaviour
                 }
             }
         }
-        /* The changing of behaviour will not occurred for many reasons
+        // The changing of behaviour will not occurred for many reasons
         oh2s = h2s;
         oh2e = h2e;
         h2s = singleMoveRate * (exploreMoveRate + oh2e);
@@ -1886,7 +1895,40 @@ public class OnMapSpawn : MonoBehaviour
             h2s -= oh2s / 2.0f;
             h2e -= oh2s / 2.0f;
         }
-        */
         createImage(current_time, 8);
+    }
+
+    private void normalizeDogGroup(){
+        float[] totaldoggroup = new float[dogdata.Count];
+        for (int i = 0 ; i < dogdata.Count ; i++){
+            totaldoggroup[i] = 0.0f;
+        }
+        for (int y = 0 ; y < ygridsize ; y++){
+            for (int x = 0 ; x < xgridsize ; x++){
+                totaldoggroup[groupassign[x , y]] += doggroup[x, y];
+            }
+        }
+        for (int y = 0 ; y < ygridsize ; y++){
+            for (int x = 0 ; x < xgridsize ; x++){
+                doggroup[x, y] /= totaldoggroup[groupassign[x , y]];
+            }
+        }
+    }
+
+    private void normalizeWalkingHabits(){
+        float[] totalhabits = new float[dogdata.Count];
+        for (int i = 0 ; i < dogdata.Count ; i++){
+            totalhabits[i] = 0.0f;
+        }
+        for (int y = 0 ; y < ygridsize ; y++){
+            for (int x = 0 ; x < xgridsize ; x++){
+                totalhabits[groupassign[x , y]] += walkingHabits[x, y];
+            }
+        }
+        for (int y = 0 ; y < ygridsize ; y++){
+            for (int x = 0 ; x < xgridsize ; x++){
+                walkingHabits[x, y] /= totalhabits[groupassign[x , y]];
+            }
+        }
     }
 }
