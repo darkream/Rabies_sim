@@ -7,117 +7,23 @@ using Mapbox.Unity.MeshGeneration.Data;
 using System.IO;
 using System.Collections.Generic;
 
-[System.Serializable]
-public struct LatLonSize
-{
-    public int latid;
-    public int lonid;
-    public float size;
-
-    public LatLonSize(int lt, int ln, float sz)
-    {
-        latid = lt;
-        lonid = ln;
-        size = sz;
-    }
-}
-
-[System.Serializable]
-public struct AttractSource
-{
-    public int latid;
-    public int lonid;
-
-    public AttractSource(int lt, int ln)
-    {
-        latid = lt;
-        lonid = ln;
-    }
-}
-
-[System.Serializable]
-public struct AttractNode
-{
-    public int x;
-    public int y;
-    public float cost;
-    public bool mutable; //0 = down, 1 = up, 2 = left, 3 = right
-    public int parent_dir;
-    public int parent_node;
-    public AttractNode(int atx, int aty, float heuristic_cost, bool isMutable, int dir, int parent){
-        x = atx;
-        y = aty;
-        cost = heuristic_cost;
-        mutable = isMutable;
-        parent_dir = dir;
-        parent_node = parent;
-    }
-}
-
 public class OnMapSpawn : MonoBehaviour
 {
     [SerializeField]
-    AbstractMap _map;
+    MapboxInheritance _mbfunction;
 
-    //List<string> doglocationStrings; //list of dogs == 7.03169034704473, 100.478511282507 default
-    List<Vector2d> doglocations;
     List<int> doggroupsize; //initial group size of the list of dogs above
-
-    [SerializeField]
-    float _spawnScale = 10f;
-
-    [SerializeField]
-    GameObject dogpanel; //Prefabs for dog layer
-
-    [SerializeField]
-    GameObject attractpanel; //Prefabs for attraction layer
-
-    [SerializeField]
-    GameObject mappanel; //Prefabs for map point layer
-
-    [SerializeField]
-    float radius_earth = 6378.1f; // Radius of the earth in km (Google Answer)
-
-    [SerializeField]
-    float walkable_degree = 60.0f; //Range is between 0.0f to 90.0f degrees
 
     [SerializeField]
     float distribution_criteria = 0.5f; //0.5 dog means at least 1 dog
 
-    //(reference: http://www.longitudestore.com/how-big-is-one-gps-degree.html)
-    private float rough_sphere_per_degree = 111111.0f;
-    private float equator_latitude_per_degree = 110570.0f; //110 km per degree
-    private float pole_latitude_per_degree = 111690.0f; //111.69 km per degree
-    private float widest_longitude_per_degree = 111321.0f; //111.321 km longitude per degree at equator (while 0 at pole)
-    private float one_degree_per_radian = 0.0174532925f; //PI divided by 180
-
-
-    //Data List of dog objects
-    List<GameObject> dogObjs;
-
-    //Data List of map point objects
-    List<GameObject> mappointObjs;
-    List<Vector2d> mappointlocations;
-
-    List<GameObject> attractObjs;
-    List<Vector2d> attractlocations;
-
     [SerializeField]
     Camera _referenceCamera;
 
-    [SerializeField]
-    GameObject DogLayer; //Dog Layer, their child elements are in here
-
-    [SerializeField]
-    float GridSize; //default: "5", unit: meters
-
-    public float startlat = 7.044082f, startlon = 100.4482f; //default_ lat: 7.044082, lon = 100.4482
+    private float startlat = 7.044082f, startlon = 100.4482f; //default_ lat: 7.044082, lon = 100.4482
     public int xgridsize, ygridsize; //default_ xsize = 1700 grid, ysize = 1000 grid
     private float minh, maxh;
     private float[,] heightxy;
-
-    private List<int> factradius;
-    private List<float> dogradius;
     private List<LatLonSize> dogdata;
     private float[,] doggroup; //dog group size in 2D-array
     private float[,] tempgroup;
@@ -183,15 +89,8 @@ public class OnMapSpawn : MonoBehaviour
 
     void Start()
     {
-        doglocations = new List<Vector2d>(); //initialization for the dog object
-        mappointlocations = new List<Vector2d>();
-        attractlocations = new List<Vector2d>();
-        dogObjs = new List<GameObject>();
-        mappointObjs = new List<GameObject>();
-        attractObjs = new List<GameObject>();
+        _mbfunction.initializeLocations();
         dogdata = new List<LatLonSize>();
-        dogradius = new List<float>();
-        factradius = new List<int>();
         attracter = new List<AttractSource>();
         doggroupsize = new List<int>();
         convergeCountdown = loopCriteria;
@@ -203,28 +102,28 @@ public class OnMapSpawn : MonoBehaviour
 
     private void Update()
     {
-        for (int i = 0; i < dogObjs.Count; i++) //for each spawn object
+        for (int i = 0; i < _mbfunction.dogObjs.Count; i++) //for each spawn object
         {
-            var dogObject = dogObjs[i];
-            var location = doglocations[i]; //spawn the object to the dog locations
-            dogObject.transform.localPosition = _map.GeoToWorldPosition(location , true);
-            dogObject.transform.localScale = new Vector3(_spawnScale , _spawnScale , _spawnScale);
+            var dogObject = _mbfunction.dogObjs[i];
+            var location = _mbfunction.doglocations[i]; //spawn the object to the dog locations
+            dogObject.transform.localPosition = _mbfunction._map.GeoToWorldPosition(location , true);
+            dogObject.transform.localScale = new Vector3(_mbfunction._spawnScale , _mbfunction._spawnScale , _mbfunction._spawnScale);
         }
 
-        for (int i = 0; i < mappointObjs.Count; i++)
+        for (int i = 0; i < _mbfunction.mappointObjs.Count; i++)
         {
-            var mapObject = mappointObjs[i];
-            var location = mappointlocations[i]; //spawn the object to the dog locations
-            mapObject.transform.localPosition = _map.GeoToWorldPosition(location , true);
-            mapObject.transform.localScale = new Vector3(_spawnScale , _spawnScale , _spawnScale);
+            var mapObject = _mbfunction.mappointObjs[i];
+            var location = _mbfunction.mappointlocations[i]; //spawn the object to the dog locations
+            mapObject.transform.localPosition = _mbfunction._map.GeoToWorldPosition(location , true);
+            mapObject.transform.localScale = new Vector3(_mbfunction._spawnScale , _mbfunction._spawnScale , _mbfunction._spawnScale);
         }
 
-        for (int i = 0; i < attractObjs.Count ; i++) //for each attraction source
+        for (int i = 0; i < _mbfunction.attractObjs.Count ; i++) //for each attraction source
         {
-            var attractObject = attractObjs[i];
-            var location = attractlocations[i];
-            attractObject.transform.localPosition = _map.GeoToWorldPosition(location , true);
-            attractObject.transform.localScale = new Vector3(_spawnScale , _spawnScale , _spawnScale);
+            var attractObject = _mbfunction.attractObjs[i];
+            var location = _mbfunction.attractlocations[i];
+            attractObject.transform.localPosition = _mbfunction._map.GeoToWorldPosition(location , true);
+            attractObject.transform.localScale = new Vector3(_mbfunction._spawnScale , _mbfunction._spawnScale , _mbfunction._spawnScale);
         }
 
         //Press Z to select the screen
@@ -232,11 +131,15 @@ public class OnMapSpawn : MonoBehaviour
         {
             //int w = Screen.width();
             //int h = Screen.height();
-            Vector2d latlondelta = getLatLonFromXY(0, Screen.height);
-            setStartLatLon(latlondelta);
-            latlondelta = getLatLonFromXY(Screen.width, 0);
-            setEndLatLon(latlondelta);
-
+            Vector2d latlondelta = _mbfunction.getLatLonFromXY(0, Screen.height);
+            _mbfunction.setStartLatLon(latlondelta);
+            latlondelta = _mbfunction.getLatLonFromXY(Screen.width, 0);
+            _mbfunction.setEndLatLon(latlondelta);
+            startlat = _mbfunction.s_lat;
+            startlon = _mbfunction.s_lon;
+            xgridsize = _mbfunction.x_gsize;
+            ygridsize = _mbfunction.y_gsize;
+            heightxy = new float[xgridsize, ygridsize];
             pointToColorMap(startlat , startlon , xgridsize , ygridsize);
             createImage(0, 0); //Create Height Map
             Debug.Log("Map Array is created with size (" + xgridsize + ", " + ygridsize + ")");
@@ -245,16 +148,18 @@ public class OnMapSpawn : MonoBehaviour
         //Press X to add dog to the map
         if (Input.GetKeyDown("x"))
         {
-            Vector2d latlonDelta = getLatLonFromMousePosition();
+            Vector2d latlonDelta = _mbfunction.getLatLonFromMousePosition();
             doggroupsize.Add(initial_dog_groupsize); //size is static at 625
-            addDogLocation(latlonDelta); //add new dog object from clicked position
+            _mbfunction.addDogLocation(latlonDelta, initial_dog_groupsize); //add new dog object from clicked position
+            dogdata.Add(_mbfunction.getNewDog());
         }
 
         //Press C to add attract source to the map
         if (Input.GetKeyDown("c"))
         {
-            Vector2d latlonDelta = getLatLonFromMousePosition();
-            spawnAttractSource(latlonDelta.x , latlonDelta.y);
+            Vector2d latlonDelta = _mbfunction.getLatLonFromMousePosition();
+            _mbfunction.spawnAttractSource(latlonDelta.x , latlonDelta.y);
+            attracter.Add(_mbfunction.getNewAttracter());
         }
 
         if (Input.GetKeyDown("v"))
@@ -388,242 +293,22 @@ public class OnMapSpawn : MonoBehaviour
         }
     }
 
-    //assign distance of camera to ground plane to z, 
-    //otherwise ScreenToWorldPoint() will always return the position of the camera
-    //(reference: http://answers.unity3d.com/answers/599100/view.html)
-    private Vector2d getLatLonFromMousePosition()
-    {
-        Vector3 mousePosScreen = Input.mousePosition;   
-        mousePosScreen.z = _referenceCamera.transform.localPosition.y;
-        Vector3 pos = _referenceCamera.ScreenToWorldPoint(mousePosScreen);
-        return _map.WorldToGeoPosition(pos);
-    }
-
-    private Vector2d getLatLonFromXY(int w, int h){
-        //Reminder this is (x, y, 0), so top-left is Screen.height and bot-right is Screen.width
-        Vector3 posScreen = new Vector3(w , h, 0);
-        posScreen.z = _referenceCamera.transform.localPosition.y;
-        Vector3 pos = _referenceCamera.ScreenToWorldPoint(posScreen);
-        return _map.WorldToGeoPosition(pos);
-    }
-
-    //Harversine Formula, 
-    //(reference: https://stackoverflow.com/questions/639695/how-to-convert-latitude-or-longitude-to-meters)
-    private float getDistanceFromLatLonInKm(float lat1 , float lon1 , float lat2 , float lon2)
-    {
-        float dLat = (lat2 - lat1) * one_degree_per_radian;  // deg2rad below
-        float dLon = (lon2 - lon1) * one_degree_per_radian;
-        float a =
-          Mathf.Sin(dLat / 2.0f) * Mathf.Sin(dLat / 2.0f) +
-          Mathf.Cos((lat1 * one_degree_per_radian)) * Mathf.Cos((lat2 * one_degree_per_radian)) *
-          Mathf.Sin(dLon / 2.0f) * Mathf.Sin(dLon / 2.0f)
-          ;
-        float c = 2.0f * Mathf.Atan2(Mathf.Sqrt(a) , Mathf.Sqrt(1.0f - a));
-        float d = radius_earth * c; // Distance = Radius.km x coefficient
-        return d;
-    }
-
-    //Directions of this function indicate by +/- of meter value
-    private float addLatByMeters(float meter) //return the increased or decreased Lat by meter
-    {
-        return meter / rough_sphere_per_degree; // because sin(90 degree) is 1
-    }
-
-    //Directions of this function indicate by +/- of meter value
-    private float addLonByMeters(float meter) //return the increased or decreased Lon by meter
-    {
-        return meter / rough_sphere_per_degree; //because cos(0 degree) is 1
-    }
-
-    //Original [lat, long] add meter conversion
-    private float addLatByMeters(float meter , float theta)
-    {
-        return (meter / rough_sphere_per_degree) * Mathf.Sin(theta);
-    }
-
-    private float addLonByMeters(float meter , float theta)
-    {
-        return (meter / rough_sphere_per_degree) * Mathf.Cos(theta);
-    }
-
-    //Earth is oblate sphere, so if we're getting taking it seriously we have to do this
-    private float addLatByMetersOS(float meter , float currentlat)
-    {
-        //the difference length between equator and the pole
-        float difference = pole_latitude_per_degree - equator_latitude_per_degree;
-        float latitude_length = ((currentlat / 90.0f) * difference) + equator_latitude_per_degree;
-        return meter / latitude_length;
-    } 
-
-    //(reference: https://gis.stackexchange.com/questions/142326/calculating-longitude-length-in-miles)
-    private float addLonByMetersOS(float meter , float currentlat)
-    {
-        //The length of longitude depends on the current latitude
-        float latitude_degree_radian = currentlat * one_degree_per_radian;
-        float longitude_length = widest_longitude_per_degree * latitude_degree_radian;
-        return meter / longitude_length;
-    }
-
-    //using Mapbox Conversion return length of meter in lat, lon distance
-    private float addLatByMetersMapbox(float meter)
-    {
-        float vy = (meter / one_degree_per_radian) * radius_earth;
-        float assoc = (2 * Mathf.Atan(Mathf.Exp(vy * one_degree_per_radian)) - (one_degree_per_radian * 180.0f) / 2);
-        return assoc / one_degree_per_radian;
-    }
-
-    private float addLonByMetersMapbox(float meter)
-    {
-        return (meter / one_degree_per_radian) * radius_earth;
-    }
-
-    private Vector2d addLatLonByMetersMapbox(Vector2d latlonvector)
-    {
-        return Conversions.MetersToLatLon(latlonvector);
-    }
-
-    //Add new dog location by float lat lon
-    private void addDogLocation(float lat , float lon)
-    {
-        doglocations.Add(new Vector2d(lat,lon));
-        createDogObject();
-    }
-
-    //Add new doglocation by location string of vector lat lon, Formula: "lat, long"
-    private void addDogLocation(string locationstring)
-    {
-        doglocations.Add(spawnLatLonWithinGrid(Conversions.StringToLatLon(locationstring)));
-        createDogObject();
-    }
-
-    //Add new doglocation by location vector lat lon
-    private void addDogLocation(Vector2d latlonvector)
-    {
-        doglocations.Add(spawnLatLonWithinGrid(latlonvector));
-        createDogObject();
-    }
-
-    //create the object to the map location (with default height)
-    private void createDogObject()
-    {
-        //In Latitude, the map is drawn in vector of (+Lon, -Lat) direction
-        int lastIndex = doglocations.Count - 1;
-        float lat = (float)doglocations[lastIndex].x;
-        float lon = (float)doglocations[lastIndex].y;
-        int at_lat = ygridsize - getLatGridIndex(abs(startlat - lat));
-        int at_lon = getLonGridIndex(abs(startlon - lon));
-        dogdata.Add(new LatLonSize(at_lat , at_lon , doggroupsize[lastIndex]));
-        spawnDogPrefabWithHeight(lat , lon);
-    }
-
-    /// create the object to the map location (with calculated map height)
-    /// (reference: https://github.com/mapbox/mapbox-unity-sdk/issues/222)
-    private void spawnDogPrefabWithHeight(double lat , double lon)
-    {
-        UnityTile tile = getTileAt(lat , lon);
-        float h = getHeightAt((float)lat,(float)lon);
-
-        Vector3 location = Conversions.GeoToWorldPosition(lat , lon , _map.CenterMercator , _map.WorldRelativeScale).ToVector3xz();
-        location = new Vector3(location.x , h * tile.TileScale, location.z);
-
-        var obj = Instantiate(dogpanel);
-        obj.transform.position = location;
-        obj.transform.localScale = new Vector3(_spawnScale , _spawnScale , _spawnScale);
-        obj.transform.parent = DogLayer.transform; //let the dog becomes the child of DogLayer game object
-        
-        dogObjs.Add(obj);
-        dogradius.Add(0.0f);
-        factradius.Add(0);
-    }
-
-    //Add map point reference to the world
-    private void spawnMapPointer(double lat, double lon)
-    {
-        mappointlocations.Add(new Vector2d(lat , lon));
-        Vector3 location = Conversions.GeoToWorldPosition(lat , lon , _map.CenterMercator , _map.WorldRelativeScale).ToVector3xz();
-        location = new Vector3(location.x , 0.0f , location.z);
-        var obj = Instantiate(mappanel);
-        obj.transform.position = location;
-        obj.transform.localScale = new Vector3(_spawnScale , _spawnScale , _spawnScale);
-        
-        mappointObjs.Add(obj);
-    }
-
-    private void spawnAttractSource(double lat, double lon)
-    {
-        attractlocations.Add(new Vector2d(lat, lon));
-        Vector3 location = Conversions.GeoToWorldPosition(lat, lon, _map.CenterMercator, _map.WorldRelativeScale).ToVector3xz();
-        location = new Vector3(location.x, 0.0f, location.z);
-        var obj = Instantiate(attractpanel);
-        obj.transform.position = location;
-        obj.transform.localScale = new Vector3(_spawnScale, _spawnScale, _spawnScale);
-
-        attractObjs.Add(obj);
-
-        int lastIndex = attractlocations.Count - 1;
-        int at_lat = ygridsize - getLatGridIndex(abs(startlat - (float)attractlocations[lastIndex].x));
-        int at_lon = getLonGridIndex(abs(startlon - (float)attractlocations[lastIndex].y));
-        attracter.Add(new AttractSource(at_lat, at_lon));
-    }
-
-    //Get the Tile Material from the Mapbox
-    private UnityTile getTileAt(double lat, double lon)
-    {
-        //get tile ID
-        var tileIDUnwrapped = TileCover.CoordinateToTileId(new Vector2d(lat , lon) , (int)_map.Zoom);
-
-        //get tile
-        return _map.MapVisualizer.GetUnityTileFromUnwrappedTileId(tileIDUnwrapped);
-    }
-
-    private Vector2d spawnLatLonWithinGrid(float lat , float lon)
-    {
-        lat -= lat % (GridSize / rough_sphere_per_degree);
-        lon -= lon % (GridSize / rough_sphere_per_degree);
-        return new Vector2d(lat,lon);
-    }
-
-    private Vector2d spawnLatLonWithinGrid(Vector2d latlonvector)
-    {
-        latlonvector.x -= latlonvector.x % (GridSize / rough_sphere_per_degree);
-        latlonvector.y -= latlonvector.y % (GridSize / rough_sphere_per_degree);
-        return latlonvector;
-    }
-
-    private Vector2d spawnLatLonWithinGridMapbox(float lat, float lon)
-    {
-        Vector2d meter_conversion = Conversions.LatLonToMeters(lat,lon);
-        meter_conversion.x += meter_conversion.x % GridSize;
-        meter_conversion.y += meter_conversion.y % GridSize;
-        return Conversions.MetersToLatLon(meter_conversion);
-    }
-
-    private Vector2d spawnLatLonWithinGridMapbox(Vector2d latlonvector)
-    {
-        Vector2d meter_conversion = Conversions.LatLonToMeters(latlonvector);
-        meter_conversion.x += meter_conversion.x % GridSize;
-        meter_conversion.y += meter_conversion.y % GridSize;
-        return Conversions.MetersToLatLon(meter_conversion);
-    }
-
-    //The level of distribution
-    //since the distribution always equal to GridSize, height difference create the theta elevation
     private float distributeElevationLevel(float height1, float height2)
     {
         if (!allowElevation){
             return 1.0f;
         }
-        float degree = findDegreeSlope(GridSize , abs(height1 - height2));
-        if (degree > walkable_degree || degree < -walkable_degree)
+        float degree = findDegreeSlope(_mbfunction.GridSize , abs(height1 - height2));
+        if (degree > _mbfunction.walkable_degree || degree < -_mbfunction.walkable_degree)
         {
-            degree = walkable_degree;
+            degree = _mbfunction.walkable_degree;
         }
-        return abs(Mathf.Cos(degree * 90.0f / walkable_degree));
+        return abs(Mathf.Cos(degree * 90.0f / _mbfunction.walkable_degree));
     }
 
     private float findDegreeSlope(float x , float y)
     {
-        return Mathf.Atan2(y , x) / one_degree_per_radian;
+        return Mathf.Atan2(y , x) / _mbfunction.one_degree_per_radian;
     }
 
     private float abs(float h)
@@ -632,72 +317,6 @@ public class OnMapSpawn : MonoBehaviour
             return -h;
         else
             return h;
-    }
-
-    private float getHeightAt(float lat , float lon)
-    {
-        UnityTile tile = getTileAt(lat,lon);
-
-        //lat lon to meters because the tiles rect is also in meters
-        Vector2d v2d = Conversions.LatLonToMeters(new Vector2d(lat , lon));
-        //get the origin of the tile in meters
-        Vector2d v2dcenter = tile.Rect.Center - new Vector2d(tile.Rect.Size.x / 2.0 , tile.Rect.Size.y / 2.0);
-        //offset between the tile origin and the lat lon point
-        Vector2d diff = v2d - v2dcenter;
-
-        //maping the diffetences to (0-1)
-        float Dx = (float)(diff.x / tile.Rect.Size.x);
-        float Dy = (float)(diff.y / tile.Rect.Size.y);
-
-        //height in unity units
-        float h = tile.QueryHeightData(Dx , Dy);
-
-        return h / tile.TileScale; //return height_in_meter
-    }
-
-    //Initialize the top-left array index
-    private void setStartLatLon(Vector2d latlondelta)
-    {
-        destroyAllMapPoints();
-        destroyAllDogs();
-        startlat = (float)latlondelta.x;
-        startlon = (float)latlondelta.y;
-        spawnMapPointer(startlat , startlon);
-    }
-
-    //Initialize the bottom-right array index
-    private void setEndLatLon(Vector2d latlondelta)
-    {
-        ygridsize = getLatGridIndex(abs(startlat - (float)latlondelta.x));
-        xgridsize = getLonGridIndex(abs(startlon - (float)latlondelta.y));
-        heightxy = new float[xgridsize , ygridsize];
-        spawnMapPointer(latlondelta.x , latlondelta.y);
-    }
-
-    //Reset dog values
-    private void destroyAllDogs()
-    {
-        int count = dogObjs.Count;
-        for (int i = 0; i < count; i++)
-        {
-            Destroy(dogObjs[0]);
-            dogObjs.RemoveAt(0);
-            doglocations.RemoveAt(0);
-            doggroupsize.RemoveAt(0);
-            dogdata.RemoveAt(0);
-        }
-    }
-
-    //Reset Map Point
-    private void destroyAllMapPoints()
-    {
-        int count = mappointObjs.Count;
-        for (int i = 0; i < count; i++)
-        {
-            Destroy(mappointObjs[0]);
-            mappointObjs.RemoveAt(0);
-            mappointlocations.RemoveAt(0);
-        }
     }
 
     //Set height in the heatmap
@@ -711,26 +330,16 @@ public class OnMapSpawn : MonoBehaviour
         {
             for (int y = 0; y < ysize; y++)
             {
-                currlat -= addLatByMeters(GridSize);
-                heightxy[x , y] = getHeightAt(currlat , currlon);
+                currlat -= _mbfunction.addLatByMeters(_mbfunction.GridSize);
+                heightxy[x , y] = _mbfunction.getHeightAt(currlat , currlon);
                 if (heightxy[x , y] < minh)
                     minh = heightxy[x , y];
                 if (heightxy[x,y] > maxh)
                     maxh = heightxy[x , y];
             }
             currlat = firstlat;
-            currlon += addLonByMeters(GridSize);
+            currlon += _mbfunction.addLonByMeters(_mbfunction.GridSize);
         }
-    }
-
-    private int getLatGridIndex(float moved_lat)
-    {
-        return (int)(moved_lat / addLatByMeters(GridSize));
-    }
-
-    private int getLonGridIndex(float moved_lon)
-    {
-        return (int)(moved_lon / addLonByMeters(GridSize));
     }
 
     //(reference: https://en.wikipedia.org/wiki/Home_range)
@@ -1238,8 +847,8 @@ public class OnMapSpawn : MonoBehaviour
             //Conclude the average radius of each dog group
             for (int i = 0; i < dogdata.Count; i++)
             {
-                dogradius[i] /= factradius[i]; //Set dog radius from each group
-                Debug.Log("Dog Group id: " + i + " has radius " + dogradius[i] + " pixels");
+                _mbfunction.dogradius[i] /= _mbfunction.factradius[i]; //Set dog radius from each group
+                Debug.Log("Dog Group id: " + i + " has radius " + _mbfunction.dogradius[i] + " pixels");
             }
         }
     }
@@ -1269,8 +878,8 @@ public class OnMapSpawn : MonoBehaviour
 
         if (setRadius)
         {
-            dogradius[selectedgroup] += Mathf.Sqrt(smallestsize);
-            factradius[selectedgroup]++;
+            _mbfunction.dogradius[selectedgroup] += Mathf.Sqrt(smallestsize);
+            _mbfunction.factradius[selectedgroup]++;
         }
 
         return selectedgroup;
@@ -1300,7 +909,7 @@ public class OnMapSpawn : MonoBehaviour
             {
                 if (edge[x , y] > 0) //If the edge exists
                 {
-                    radius = (int)dogradius[findNearestGroupNeighbour(x , y)];
+                    radius = (int)_mbfunction.dogradius[findNearestGroupNeighbour(x , y)];
                     int topy = inSize(y + radius + 1);
                     int boty = inSize(y - radius - 1);
 
@@ -1429,7 +1038,7 @@ public class OnMapSpawn : MonoBehaviour
             {
                 if (walk[x , y] > 0)
                 {
-                    radius = (int)dogradius[findNearestGroupNeighbour(thisx , thisy)];
+                    radius = (int)_mbfunction.dogradius[findNearestGroupNeighbour(thisx , thisy)];
                     walkingBehaviour(thisx , thisy , x , y , radius);
                 }
             }
@@ -1877,7 +1486,7 @@ public class OnMapSpawn : MonoBehaviour
                 }
             }
         }
-        // The changing of behaviour will not occurred for many reasons
+        /*  The changing of behaviour will not occurred for many reasons
         oh2s = h2s;
         oh2e = h2e;
         h2s = singleMoveRate * (exploreMoveRate + oh2e);
@@ -1895,6 +1504,7 @@ public class OnMapSpawn : MonoBehaviour
             h2s -= oh2s / 2.0f;
             h2e -= oh2s / 2.0f;
         }
+        */
         createImage(current_time, 8);
     }
 
