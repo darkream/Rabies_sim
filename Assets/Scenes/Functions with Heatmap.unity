@@ -443,7 +443,6 @@ GameObject:
   - component: {fileID: 555018383}
   - component: {fileID: 555018386}
   - component: {fileID: 555018385}
-  - component: {fileID: 555018387}
   m_Layer: 0
   m_Name: Map
   m_TagString: Untagged
@@ -603,11 +602,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b0c51331e99eab041839e6ba3cbdfff1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _mbfunction: {fileID: 555018387}
+  _map: {fileID: 555018383}
+  _spawnScale: 10
+  dogpanel: {fileID: 1718596337844594, guid: ec6387168a43fe24dbaada47522f0c9a, type: 3}
+  attractpanel: {fileID: 496376647150847390, guid: 3f8dcf9347405c2469b0d3764af266dc,
+    type: 3}
+  mappanel: {fileID: 1637165751344374, guid: 3d43ad30600b85c44b52c6a6ebb5a4ef, type: 3}
+  radius_earth: 6378.1
+  walkable_degree: 60
   distribution_criteria: 0.5
   _referenceCamera: {fileID: 1787361574}
-  xgridsize: 1
-  ygridsize: 1
+  DogLayer: {fileID: 1807989378}
+  GridSize: 5
+  startlat: 7.044082
+  startlon: 100.4482
+  xgridsize: 0
+  ygridsize: 0
   loopCriteria: 4
   initial_dog_groupsize: 625
   homeRangeMultiplier: 2
@@ -637,46 +647,6 @@ MonoBehaviour:
   _mapManager: {fileID: 555018383}
   _useDegreeMethod: 0
   _allowInput: 1
---- !u!114 &555018387
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 555018382}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7e051ced04316cb4d8ff92d9be7f61ac, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _referenceCamera: {fileID: 1787361574}
-  radius_earth: 6378.1
-  walkable_degree: 60
-  _map: {fileID: 555018383}
-  rough_sphere_per_degree: 111111
-  equator_latitude_per_degree: 110570
-  pole_latitude_per_degree: 111690
-  widest_longitude_per_degree: 111321
-  one_degree_per_radian: 0.017453292
-  s_lat: 7.044082
-  s_lon: 100.4482
-  x_gsize: 0
-  y_gsize: 0
-  dogpanel: {fileID: 1718596337844594, guid: ec6387168a43fe24dbaada47522f0c9a, type: 3}
-  attractpanel: {fileID: 496376647150847390, guid: 3f8dcf9347405c2469b0d3764af266dc,
-    type: 3}
-  mappanel: {fileID: 1637165751344374, guid: 3d43ad30600b85c44b52c6a6ebb5a4ef, type: 3}
-  _spawnScale: 10
-  DogLayer: {fileID: 1807989378}
-  GridSize: 5
-  dogObjs: []
-  doglocations: []
-  mappointObjs: []
-  mappointlocations: []
-  attractObjs: []
-  attractlocations: []
-  factradius: 
-  dogradius: []
 --- !u!1 &633857137
 GameObject:
   m_ObjectHideFlags: 0
@@ -1333,7 +1303,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.23529412, g: 0.56078434, b: 0.8666667, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
@@ -2239,7 +2209,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.23529412, g: 0.56078434, b: 0.8666667, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
