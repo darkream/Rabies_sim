@@ -98,6 +98,7 @@ public class OnMapSpawn : MonoBehaviour
         initialTimeScaleFactor();
         uicontroller.initialValue();
         uicontroller.setTotalProcess(9);
+        pixelReaderAndFileWritten();
     }
 
     private void Update()
@@ -1540,5 +1541,27 @@ public class OnMapSpawn : MonoBehaviour
                 walkingHabits[x, y] /= totalhabits[groupassign[x , y]];
             }
         }
+    }
+
+    [SerializeField]
+    Texture2D thaimap;
+
+    private void pixelReaderAndFileWritten(){
+        Debug.Log(thaimap);
+        StreamWriter writer = new StreamWriter("Assets/test.txt", false);
+
+        string thisline = "";
+
+        for (int i = 0; i < thaimap.width; i++)
+        {
+            for (int j = 0; j < thaimap.height; j++)
+            { 
+                Color pixel = thaimap.GetPixel(i, j);
+                thisline += "("+ pixel.r + "," + pixel.g + "," + pixel.b + ") ";
+            }
+            writer.WriteLine(thisline);
+            thisline = "";
+        }
+        writer.Close();
     }
 }
