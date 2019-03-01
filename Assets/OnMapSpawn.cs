@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿// add at create image and color getFileNameTag
+using UnityEngine;
 using Mapbox.Utils;
 using Mapbox.Unity.Map;
 using Mapbox.Unity.Utilities;
@@ -87,6 +88,8 @@ public class OnMapSpawn : MonoBehaviour
     private int atAttract = 0;
     private int atTime = 0;
 
+
+    private float[] dogstate_proposion;
     void Start()
     {
         _mbfunction.initializeLocations();
@@ -98,6 +101,15 @@ public class OnMapSpawn : MonoBehaviour
         initialTimeScaleFactor();
         uicontroller.initialValue();
         uicontroller.setTotalProcess(9);
+        //add
+        dogstate_proposion = new float[5]; //0:S ,1:E,2:I,3:R,4:V
+        dogstate_proposion[0] = 0.5f;
+        dogstate_proposion[1] = 0.1f;
+        dogstate_proposion[2] = 0.1f;
+        dogstate_proposion[3] = 0.1f;
+        dogstate_proposion[4] = 0.2f;
+        //0:S ,1:E,2:I,3:R,4:V
+        //end add
     }
 
     private void Update()
@@ -200,6 +212,12 @@ public class OnMapSpawn : MonoBehaviour
                 uicontroller.updateCurrentProgress(0.0f);
                 maxColor(0);
                 createImage(0, 1);
+                //add
+                createImage(0, 9);
+                createImage(0, 10);
+                 createImage(0, 11);
+                createImage(0, 12);
+                //end add
                 createImage(0, 2);
                 uicontroller.triggerCompleteProcess();
             }
@@ -670,6 +688,64 @@ public class OnMapSpawn : MonoBehaviour
             float colorvalue = wh[lon, lat] / highest_estimate_simulation_dog_color;
             return new Color(colorvalue, colorvalue, colorvalue);
         }
+
+        //show dog S state
+        else if (imagetype == 9)
+        {
+             if (doggroup[lon , lat]* dogstate_proposion[0] > 0.0f)
+            {
+                return new Color(doggroup[lon , lat] / highest_home_rate , doggroup[lon , lat] / highest_home_rate , doggroup[lon , lat] / highest_home_rate);
+            }
+            else
+            {
+                return Color.black;
+            }
+        }
+
+        //show dog S state //full white when at 5+
+        else if (imagetype == 10)
+        {
+            float passlimitdog ;
+             if (doggroup[lon , lat]* dogstate_proposion[0] > 0.0f)
+            {
+                passlimitdog = ( doggroup[lon , lat]* dogstate_proposion[0]) / 5.0f;
+                if ( passlimitdog > 1.0f ) passlimitdog=1.0f;
+                return new Color(passlimitdog ,passlimitdog  ,passlimitdog);
+            }
+            else
+            {
+                return Color.black;
+            }
+        }
+
+         //show dog E state 
+        else if (imagetype == 11)
+        {
+            if (doggroup[lon , lat]* dogstate_proposion[1] > 0.0f)
+            {
+                return new Color(doggroup[lon , lat] / highest_home_rate , doggroup[lon , lat] / highest_home_rate ,0.0f);
+            }
+            else
+            {
+                return Color.black;
+            }
+        }
+         //show dog E state //full yellow when at 5+
+        else if (imagetype == 12)
+        {
+           float passlimitdog ;
+             if (doggroup[lon , lat]* dogstate_proposion[1] > 0.0f)
+            {
+                passlimitdog = ( doggroup[lon , lat]* dogstate_proposion[1]) / 5.0f;
+                if ( passlimitdog > 1.0f ) passlimitdog=1.0f;
+                return new Color(passlimitdog ,passlimitdog  ,0.0f);
+            }
+            else
+            {
+                return Color.black;
+            }
+        }
+
         return Color.black;
     }
 
@@ -682,7 +758,7 @@ public class OnMapSpawn : MonoBehaviour
         }
         else if (imagetype == 1)
         {
-            return "/../Assets/MickRendered/selectedDogTerrain" + route + ".png";
+            return "/../Assets/P2render/selectedDogTerrain" + route + ".png";
         }
         else if (imagetype == 2)
         {
@@ -711,6 +787,22 @@ public class OnMapSpawn : MonoBehaviour
         else if (imagetype == 8)
         {
             return "/../Assets/MickRendered/SingleDay/" + route + ".png";
+        }
+         else if (imagetype == 9)
+        {
+            return "/../Assets/P2render/state_s_dog" + route + ".png";
+        }
+         else if (imagetype == 10)
+        {
+            return "/../Assets/P2render/state_s_dogmax5" + route + ".png";
+        }
+         else if (imagetype == 11)
+        {
+            return "/../Assets/P2render/state_e_dog" + route + ".png";
+        }
+         else if (imagetype == 12)
+        {
+            return "/../Assets/P2render/state_w_dogmax5" + route + ".png";
         }
         return "/../Assets/MickRendered/createdImage" + route + ".png";
     }

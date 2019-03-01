@@ -1,4 +1,18 @@
-﻿using System.Collections;
+﻿/*
+Temporaly cration list
+
+Latlonsize variation (add each state dog's size)
+
+    ^ Ref from above
+    |
+    |
+Createdogobject fucntion (add each state dog size) (at 275 line)
+
+
+
+ */
+
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -34,11 +48,22 @@ public struct LatLonSize
     public int lonid;
     public float size;
 
-    public LatLonSize(int lt, int ln, float sz)
+    public float Dog_S_size;
+    public float Dog_E_size;
+    public float Dog_I_size;
+    public float Dog_R_size;
+    public float Dog_V_size;
+
+    public LatLonSize(int lt, int ln, float sz, float szs, float sze, float szi, float szr,float szv)
     {
         latid = lt;
         lonid = ln;
         size = sz;
+        Dog_S_size = szs;
+        Dog_E_size = sze;
+        Dog_I_size = szi;
+        Dog_R_size = szr;
+        Dog_V_size = szv;
     }
 }
 
@@ -247,7 +272,13 @@ public class MapboxInheritance : MonoBehaviour
         float lon = (float)doglocations[lastIndex].y;
         int at_lat = y_gsize - getLatGridIndex(abs(s_lat - lat));
         int at_lon = getLonGridIndex(abs(s_lon - lon));
-        tempdoglocation = new LatLonSize(at_lat , at_lon , groupsize);
+        //temporaly 
+        
+
+        tempdoglocation = new LatLonSize(at_lat , at_lon , groupsize, groupsize/5,groupsize/5,groupsize/5,groupsize/5,groupsize/5);
+
+
+        //
         spawnDogPrefabWithHeight(lat , lon);
     }
 
