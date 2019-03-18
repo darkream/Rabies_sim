@@ -245,7 +245,7 @@ public class MapboxInheritance : MonoBehaviour
         int lastIndex = doglocations.Count - 1;
         float lat = (float)doglocations[lastIndex].x;
         float lon = (float)doglocations[lastIndex].y;
-        int at_lat = y_gsize - getLatGridIndex(abs(s_lat - lat));
+        int at_lat = getLatGridIndex(abs(s_lat - lat));
         int at_lon = getLonGridIndex(abs(s_lon - lon));
         tempdoglocation = new LatLonSize(at_lat , at_lon , groupsize);
         spawnDogPrefabWithHeight(lat , lon);

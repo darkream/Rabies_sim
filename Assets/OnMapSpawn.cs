@@ -563,7 +563,7 @@ public class OnMapSpawn : MonoBehaviour
         {
             for (int lon = 0; lon < xgridsize; lon++)
             {
-                texture.SetPixel(lon , lat , getColorFromColorType(lat , lon , imagetype));
+                texture.SetPixel(lon , lat , getColorFromColorType((ygridsize - 1) - lat , lon , imagetype));
             }
         }
 
