@@ -9,7 +9,6 @@ Latlonsize variation (add each state dog's size)
 Createdogobject fucntion (add each state dog size) (at 275 line)
 
 
-
  */
 
 using System.Collections;
@@ -125,6 +124,9 @@ public class MapboxInheritance : MonoBehaviour
 
     //Data List of dog objects
     public List<GameObject> dogObjs;
+
+
+
     public List<Vector2d> doglocations;  //List<string> doglocationStrings; //list of dogs == 7.03169034704473, 100.478511282507 default
 
     //Data List of map point objects
@@ -146,6 +148,8 @@ public class MapboxInheritance : MonoBehaviour
         attractObjs = new List<GameObject>();
         dogradius = new List<float>();
         factradius = new List<int>();
+
+      
     }
 
     //assign distance of camera to ground plane to z, 
@@ -270,7 +274,7 @@ public class MapboxInheritance : MonoBehaviour
         int lastIndex = doglocations.Count - 1;
         float lat = (float)doglocations[lastIndex].x;
         float lon = (float)doglocations[lastIndex].y;
-        int at_lat = y_gsize - getLatGridIndex(abs(s_lat - lat));
+        int at_lat = getLatGridIndex(abs(s_lat - lat));
         int at_lon = getLonGridIndex(abs(s_lon - lon));
         //temporaly 
         

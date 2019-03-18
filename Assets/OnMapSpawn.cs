@@ -161,17 +161,21 @@ public class OnMapSpawn : MonoBehaviour
             
              quadmap= GameObject.CreatePrimitive(PrimitiveType.Quad);
 		    // quadmap.transform.position = new Vector3(0, 90, 0);
-		     quadmap.transform.localScale = new Vector3(424.4671f, 226.8704f, 8.131554f);
+		     quadmap.transform.localScale = new Vector3(68.43009f, 36.5747f, 1.310921f);
 		     quadmap.transform.eulerAngles = new Vector3(90.0f,0.0f,0.0f);
 	
-		    renA=quadmap.GetComponent<Renderer>();
-		    renA.material = Matref;
+
+
+            Material quadMaterial = (Material)Resources.Load( "Mapmat" );
+		   renA=quadmap.GetComponent<Renderer>();
+		   renA.material = quadMaterial;
+           Texture2D myTexture = Resources.Load( "test/plainSelectedTerrainA" ) as Texture2D;
             Vector2d latlondelta = _mbfunction.getLatLonFromXY(Screen.width/2, Screen.height/2);
             Vector3 location = Conversions.GeoToWorldPosition(latlondelta.x , latlondelta.y , _mbfunction._map.CenterMercator , _mbfunction._map.WorldRelativeScale).ToVector3xz();
-            quadmap.transform.position = new Vector3(location.x ,151.7f , location.z);//fixed map
+            quadmap.transform.position = new Vector3(location.x ,172.0f , location.z);//fixed map
             quadlocation = new Vector2d(location.x,location.z);
-            renA.material.mainTexture =Resources.Load<Texture2D>("plainSelectedTerrain.png");
-            //quad creation
+            renA.material.mainTexture = myTexture;
+          
 
         }
 //end
@@ -619,7 +623,7 @@ public class OnMapSpawn : MonoBehaviour
         {
             for (int lon = 0; lon < xgridsize; lon++)
             {
-                texture.SetPixel(lon , lat , getColorFromColorType(lat , lon , imagetype));
+                texture.SetPixel( lon ,lat , getColorFromColorType((ygridsize-1) -lat , lon , imagetype));
             }
         }
         texture.Apply();
