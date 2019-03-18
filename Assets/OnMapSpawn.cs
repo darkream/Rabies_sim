@@ -1,4 +1,5 @@
-﻿// add at create image and color getFileNameTag
+﻿//add quad+qaudlocation in gloabal var list
+// add at create image and color getFileNameTag
 using UnityEngine;
 using Mapbox.Utils;
 using Mapbox.Unity.Map;
@@ -90,6 +91,14 @@ public class OnMapSpawn : MonoBehaviour
 
 
     private float[] dogstate_proposion;
+    public Material Matref;
+    public GameObject quadmap;
+    Vector2d quadlocation;
+    Renderer renA;
+
+    Texture2D quadmaptexture;
+
+
     void Start()
     {
         _mbfunction.initializeLocations();
@@ -103,11 +112,11 @@ public class OnMapSpawn : MonoBehaviour
         uicontroller.setTotalProcess(9);
         //add
         dogstate_proposion = new float[5]; //0:S ,1:E,2:I,3:R,4:V
-        dogstate_proposion[0] = 0.5f;
-        dogstate_proposion[1] = 0.1f;
-        dogstate_proposion[2] = 0.1f;
-        dogstate_proposion[3] = 0.1f;
-        dogstate_proposion[4] = 0.2f;
+        dogstate_proposion[0] = 1;
+        dogstate_proposion[1] = 0.0f;
+        dogstate_proposion[2] = 0.0f;
+        dogstate_proposion[3] = 0.0f;
+        dogstate_proposion[4] = 0.0f;
         //0:S ,1:E,2:I,3:R,4:V
         //end add
     }
@@ -137,6 +146,36 @@ public class OnMapSpawn : MonoBehaviour
             attractObject.transform.localPosition = _mbfunction._map.GeoToWorldPosition(location , true);
             attractObject.transform.localScale = new Vector3(_mbfunction._spawnScale , _mbfunction._spawnScale , _mbfunction._spawnScale);
         }
+
+//add for quad
+       // for (int i = 0; i < 1 ; i++) //for quad
+       // {
+       //    quadmap.transform.localPosition = _mbfunction._map.GeoToWorldPosition(quadlocation , true);
+            //quadObject.transform.localScale = new Vector3(_mbfunction._spawnScale , _mbfunction._spawnScale , _mbfunction._spawnScale);
+       // }
+
+
+        //Press Q to after z to create onsite heatmap
+        if (Input.GetKeyDown("q"))
+        {
+            
+             quadmap= GameObject.CreatePrimitive(PrimitiveType.Quad);
+		    // quadmap.transform.position = new Vector3(0, 90, 0);
+		     quadmap.transform.localScale = new Vector3(424.4671f, 226.8704f, 8.131554f);
+		     quadmap.transform.eulerAngles = new Vector3(90.0f,0.0f,0.0f);
+	
+		    renA=quadmap.GetComponent<Renderer>();
+		    renA.material = Matref;
+            Vector2d latlondelta = _mbfunction.getLatLonFromXY(Screen.width/2, Screen.height/2);
+            Vector3 location = Conversions.GeoToWorldPosition(latlondelta.x , latlondelta.y , _mbfunction._map.CenterMercator , _mbfunction._map.WorldRelativeScale).ToVector3xz();
+            quadmap.transform.position = new Vector3(location.x ,151.7f , location.z);//fixed map
+            quadlocation = new Vector2d(location.x,location.z);
+            renA.material.mainTexture =Resources.Load<Texture2D>("plainSelectedTerrain.png");
+            //quad creation
+
+        }
+//end
+
 
         //Press Z to select the screen
         if (Input.GetKeyDown("z"))
@@ -583,8 +622,8 @@ public class OnMapSpawn : MonoBehaviour
                 texture.SetPixel(lon , lat , getColorFromColorType(lat , lon , imagetype));
             }
         }
-
         texture.Apply();
+        
 
         //encode to png
         byte[] bytes = texture.EncodeToPNG();

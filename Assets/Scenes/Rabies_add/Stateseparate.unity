@@ -619,6 +619,8 @@ MonoBehaviour:
   time_length: 300
   time_cycle: 4
   uicontroller: {fileID: 990755673}
+  Matref: {fileID: 2100000, guid: e365e86158bb6ba4981717f3c3df1a90, type: 2}
+  quadmap: {fileID: 0}
 --- !u!114 &555018386
 MonoBehaviour:
   m_ObjectHideFlags: 0
