@@ -12,6 +12,9 @@ public class OnMapSpawn : MonoBehaviour
     [SerializeField]
     MapboxInheritance _mbfunction;
 
+    [SerializeField]
+    ColorStreamClustering clustering;
+
     List<int> doggroupsize; //initial group size of the list of dogs above
 
     [SerializeField]
@@ -98,7 +101,8 @@ public class OnMapSpawn : MonoBehaviour
         initialTimeScaleFactor();
         uicontroller.initialValue();
         uicontroller.setTotalProcess(9);
-        pixelReaderAndFileWritten("Assets/mapcolor.txt");
+        clustering.pixelReaderAndFileWritten("Assets/mapcolor.txt");
+        clustering.kMeanClustering();
     }
 
     private void Update()
@@ -1541,55 +1545,5 @@ public class OnMapSpawn : MonoBehaviour
                 walkingHabits[x, y] /= totalhabits[groupassign[x , y]];
             }
         }
-    }
-
-    [SerializeField]
-    Texture2D thaimap;
-
-    List<string> mapcolorlist;
-
-    private void pixelReaderAndFileWritten(string path){
-        Debug.Log(thaimap);
-        StreamWriter writer = new StreamWriter(path, false);
-
-        string thisline = "";
-
-        for (int i = 0; i < thaimap.width; i++)
-        {
-            for (int j = 0; j < thaimap.height; j++)
-            { 
-                Color pixel = thaimap.GetPixel(i, j);
-                thisline += pixel.r + "," + pixel.g + "," + pixel.b + " ";
-            }
-            writer.WriteLine(thisline);
-            thisline = "";
-        }
-        writer.Close();
-        mapcolorlist = new List<string>();
-
-        StreamReader reader = new StreamReader(path);
-        string line = "", thiscolor;
-        string[] x;
-        while (!reader.EndOfStream){
-            line = reader.ReadLine();
-            x = line.Split(' ');
-            for (int i = 0 ; i < x.Length - 1 ; i++){
-                thiscolor = x[i];
-                if(!colorRepetitionCheck(thiscolor)){
-                    mapcolorlist.Add(thiscolor);
-                }
-            }
-        }
-        Debug.Log("There are " + mapcolorlist.Count + " distinct colors");
-        reader.Close();
-    }
-
-    private bool colorRepetitionCheck(string target_color){
-        for (int i = 0 ; i < mapcolorlist.Count ; i++){
-            if (target_color.Equals(mapcolorlist[i])){
-                return true;
-            }
-        }
-        return false;
     }
 }

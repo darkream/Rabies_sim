@@ -444,6 +444,7 @@ GameObject:
   - component: {fileID: 555018386}
   - component: {fileID: 555018385}
   - component: {fileID: 555018387}
+  - component: {fileID: 555018388}
   m_Layer: 0
   m_Name: Map
   m_TagString: Untagged
@@ -604,6 +605,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _mbfunction: {fileID: 555018387}
+  clustering: {fileID: 555018388}
   distribution_criteria: 0.5
   _referenceCamera: {fileID: 1787361574}
   xgridsize: 1
@@ -619,7 +621,6 @@ MonoBehaviour:
   time_length: 300
   time_cycle: 4
   uicontroller: {fileID: 990755673}
-  thaimap: {fileID: 2800000, guid: 392fa62c53adb0a47bb62b99367e898d, type: 3}
 --- !u!114 &555018386
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -678,6 +679,19 @@ MonoBehaviour:
   attractlocations: []
   factradius: 
   dogradius: []
+--- !u!114 &555018388
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 555018382}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 03a90aa59f5019e48a172b662d693898, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  thaimap: {fileID: 2800000, guid: 392fa62c53adb0a47bb62b99367e898d, type: 3}
 --- !u!1 &633857137
 GameObject:
   m_ObjectHideFlags: 0
