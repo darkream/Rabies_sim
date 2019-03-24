@@ -98,7 +98,7 @@ public class OnMapSpawn : MonoBehaviour
         initialTimeScaleFactor();
         uicontroller.initialValue();
         uicontroller.setTotalProcess(9);
-        pixelReaderAndFileWritten();
+        pixelReaderAndFileWritten("Assets/mapcolor.txt");
     }
 
     private void Update()
@@ -1546,9 +1546,11 @@ public class OnMapSpawn : MonoBehaviour
     [SerializeField]
     Texture2D thaimap;
 
-    private void pixelReaderAndFileWritten(){
+    List<string> mapcolorlist;
+
+    private void pixelReaderAndFileWritten(string path){
         Debug.Log(thaimap);
-        StreamWriter writer = new StreamWriter("Assets/test.txt", false);
+        StreamWriter writer = new StreamWriter(path, false);
 
         string thisline = "";
 
@@ -1557,11 +1559,37 @@ public class OnMapSpawn : MonoBehaviour
             for (int j = 0; j < thaimap.height; j++)
             { 
                 Color pixel = thaimap.GetPixel(i, j);
-                thisline += "("+ pixel.r + "," + pixel.g + "," + pixel.b + ") ";
+                thisline += pixel.r + "," + pixel.g + "," + pixel.b + " ";
             }
             writer.WriteLine(thisline);
             thisline = "";
         }
         writer.Close();
+        mapcolorlist = new List<string>();
+
+        StreamReader reader = new StreamReader(path);
+        string line = "", thiscolor;
+        string[] x;
+        while (!reader.EndOfStream){
+            line = reader.ReadLine();
+            x = line.Split(' ');
+            for (int i = 0 ; i < x.Length - 1 ; i++){
+                thiscolor = x[i];
+                if(!colorRepetitionCheck(thiscolor)){
+                    mapcolorlist.Add(thiscolor);
+                }
+            }
+        }
+        Debug.Log("There are " + mapcolorlist.Count + " distinct colors");
+        reader.Close();
+    }
+
+    private bool colorRepetitionCheck(string target_color){
+        for (int i = 0 ; i < mapcolorlist.Count ; i++){
+            if (target_color.Equals(mapcolorlist[i])){
+                return true;
+            }
+        }
+        return false;
     }
 }
