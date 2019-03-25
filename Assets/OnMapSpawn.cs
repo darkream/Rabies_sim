@@ -99,11 +99,36 @@ public class OnMapSpawn : MonoBehaviour
     Texture2D quadmaptexture;
 
 
+    //Rabies test zone
+    private List<LatLonSize> infectdogdata;
+
+    private float[,] infectamount; //array is destination
+
+   
+
+    private float[,] vaccineamount; //array is destination
+   
+
+    private float[,,] exposeamount; //array is destination
+
+    private float biterate=1.0f; //100%
+    private float infectedrate=1.0f; //100% for test
+
+    float maxexpose=0.0f;
+
+    int e_to_i_date = 10 ; //30 days
+
+    Texture2D[] runtexture = new Texture2D[100];
+
+    bool runanimate=false;
+    //end test zone
+
     void Start()
     {
         _mbfunction.initializeLocations();
         dogdata = new List<LatLonSize>();
         attracter = new List<AttractSource>();
+        infectdogdata = new List<LatLonSize> ();
         doggroupsize = new List<int>();
         convergeCountdown = loopCriteria;
         singleMoveRate = 1.0f - (hordeMoveRate + exploreMoveRate);
@@ -147,6 +172,17 @@ public class OnMapSpawn : MonoBehaviour
             attractObject.transform.localScale = new Vector3(_mbfunction._spawnScale , _mbfunction._spawnScale , _mbfunction._spawnScale);
         }
 
+        //infected obj/
+        for (int i = 0; i < _mbfunction.infectObjs.Count ; i++) //for each infected dog
+        {
+            var infectObject = _mbfunction.infectObjs[i];
+            var location = _mbfunction.infectedlocations[i];
+            infectObject.transform.localPosition = _mbfunction._map.GeoToWorldPosition(location , true);
+            infectObject.transform.localScale = new Vector3(_mbfunction._spawnScale , _mbfunction._spawnScale , _mbfunction._spawnScale);
+        }
+
+
+
 //add for quad
        // for (int i = 0; i < 1 ; i++) //for quad
        // {
@@ -163,20 +199,53 @@ public class OnMapSpawn : MonoBehaviour
 		    // quadmap.transform.position = new Vector3(0, 90, 0);
 		     quadmap.transform.localScale = new Vector3(68.43009f, 36.5747f, 1.310921f);
 		     quadmap.transform.eulerAngles = new Vector3(90.0f,0.0f,0.0f);
-	
-
-
             Material quadMaterial = (Material)Resources.Load( "Mapmat" );
 		   renA=quadmap.GetComponent<Renderer>();
 		   renA.material = quadMaterial;
-           Texture2D myTexture = Resources.Load( "test/plainSelectedTerrainA" ) as Texture2D;
+           Texture2D myTexture = Resources.Load( "test/selectedMapAndDog0" ) as Texture2D;
             Vector2d latlondelta = _mbfunction.getLatLonFromXY(Screen.width/2, Screen.height/2);
             Vector3 location = Conversions.GeoToWorldPosition(latlondelta.x , latlondelta.y , _mbfunction._map.CenterMercator , _mbfunction._map.WorldRelativeScale).ToVector3xz();
             quadmap.transform.position = new Vector3(location.x ,172.0f , location.z);//fixed map
             quadlocation = new Vector2d(location.x,location.z);
             renA.material.mainTexture = myTexture;
-          
 
+           
+        }
+//end
+
+//rotate running animate
+         if (Input.GetKeyDown("r"))
+        {
+             //add generate run animate
+            string tempstr;
+            for(int i = 0;i<100;i++)
+            {
+                tempstr = "test/run" + i  ;
+                runtexture[i]=Resources.Load( tempstr ) as Texture2D;
+            }
+
+            runanimate = true;
+        }
+
+         if (runanimate)
+         {
+            float framepersec=10.0f;
+            int animateindex = (int)((Time.time * framepersec) % runtexture.Length);
+            renA.material.mainTexture = runtexture[animateindex];
+         }
+//end
+       
+
+
+
+//add for infected
+         //Press E to add dog to the map
+        if (Input.GetKeyDown("e"))
+        {
+            Vector2d latlonDelta = _mbfunction.getLatLonFromMousePosition();
+           // doggroupsize.Add(1); //size is static at 625
+            _mbfunction.addInfectedLocation(latlonDelta, 1); //add new dog object from clicked position
+            infectdogdata.Add(_mbfunction.getNewInfect());
         }
 //end
 
@@ -347,13 +416,142 @@ public class OnMapSpawn : MonoBehaviour
                     atTime++;
                 }
                 else {
-                    uicontroller.setupActivation(false);
-                    startPreDataRegister = false;
+                 uicontroller.triggerCompleteProcess();
                 }
             }
+            //test rabies run
+             else if (uicontroller.getCompletedProcess() == 10){
+                 uicontroller.updateProcessDetail("Rabies is running");
+                    rabiespreading();
+                 uicontroller.setupActivation(false);
+                startPreDataRegister = false;
+             }
         }
     }
 
+//add for rabies testing
+private void  rabiespreading()
+{
+         infectamount = new float[xgridsize , ygridsize];
+         exposeamount = new float[xgridsize , ygridsize,e_to_i_date];
+         float[ , , ] plusamount= new float[xgridsize , ygridsize,e_to_i_date];
+         //let's set environment
+         for (int i = 0; i < infectdogdata.Count; i++)
+        {
+            infectamount[ infectdogdata[i].lonid ,  infectdogdata[i].latid] = infectdogdata[i].size;
+        }
+        //test run
+         for (int i = 0; i < infectdogdata.Count; i++)
+        {
+            for (int j = 0; j < 100; j++)
+            {
+            infectamount[ infectdogdata[i].lonid -j ,  infectdogdata[i].latid] = 0;
+            infectamount[ infectdogdata[i].lonid -(j+1) ,  infectdogdata[i].latid] = 1; //run from right to left
+            //old exposed spread
+            for(int d=0; d< e_to_i_date;d++)
+            {
+            for (int m = 0; m < xgridsize; m++)
+            {
+                for (int n = 0; n < ygridsize; n++)
+                {
+                    if (exposeamount[m,n,d]>0.0f) //eqaully distribute
+                    {
+                        if(m>0&&m<xgridsize-1)
+                        {
+                            plusamount[m-1,n,d]+= 0.20f*exposeamount[m,n,d];
+                            plusamount[m+1,n,d]+= 0.20f*exposeamount[m,n,d];
+                            plusamount[m,n,d]-= 0.4f*exposeamount[m,n,d];
+                        }
+                        else if (m==0)
+                        {
+                            plusamount[m+1,n,d]+= 0.20f*exposeamount[m,n,d];
+                            plusamount[m,n,d]-= 0.2f*exposeamount[m,n,d];
+                        }
+                        else if (m==xgridsize-1)
+                        {
+                            plusamount[m-1,n,d]+= 0.20f*exposeamount[m,n,d];
+                            plusamount[m,n,d]-= 0.2f*exposeamount[m,n,d];
+                        }
+
+
+                        if(n>0&&n<ygridsize-1)
+                        {
+                            plusamount[m,n-1,d]+= 0.20f*exposeamount[m,n,d];
+                            plusamount[m,n+1,d]+= 0.20f*exposeamount[m,n,d];
+                            plusamount[m,n,d]-= 0.4f*exposeamount[m,n,d];
+                        }
+                        else if (n==0)
+                        {
+                            plusamount[m,n+1,d]+= 0.20f*exposeamount[m,n,d];
+                            plusamount[m,n,d]-= 0.2f*exposeamount[m,n,d];
+                        }
+                        else if (n==ygridsize-1)
+                        {
+                            plusamount[m,n-1,d]+= 0.20f*exposeamount[m,n,d];
+                            plusamount[m,n,d]-= 0.2f*exposeamount[m,n,d];
+                        }
+                    }
+                }
+            }
+            
+            
+                //plus any amount from distribute
+                 for (int m = 0; m < xgridsize; m++)
+                 {
+                    for (int n = 0; n < ygridsize; n++)
+                     {
+                          exposeamount[m,n,d]+=plusamount[m,n,d];
+                         if(exposeamount[m,n,d]>maxexpose)
+                         {
+                              maxexpose=exposeamount[m,n,d];
+                         }
+                         plusamount[m,n,d]=0.0f;
+                     }   
+                 }
+            }
+
+            //day of expose change
+            float[,] temp=new float [xgridsize,ygridsize];
+            for(int d=e_to_i_date-1; d>=0;d--)
+            {
+            for (int m = 0; m < xgridsize; m++)
+                 {
+                    for (int n = 0; n < ygridsize; n++)
+                     {
+
+                         if(d==e_to_i_date-1)
+                         {
+                            infectamount[m,n]+= exposeamount[m,n,d];
+                         }
+
+                         if(d!=0)
+                        {
+                         exposeamount[m,n,d]=exposeamount[m,n,d-1];
+                        }
+                        else
+                        {
+                            exposeamount[m,n,d]=0.0f;
+                        }  
+                     }
+                 }
+            }
+
+            //
+
+             //if run rabies found normal dog,bite
+            if(doggroup[infectdogdata[i].lonid -j,infectdogdata[i].latid] > 0.0f)
+            {
+                exposeamount[infectdogdata[i].lonid -j,infectdogdata[i].latid,0] += doggroup[infectdogdata[i].lonid -j,infectdogdata[i].latid] * biterate * infectedrate * 1.0f; // 1 is infectamount
+            }
+
+            createImage(j,100);
+            }
+        }
+
+
+}
+
+//end 
     private float distributeElevationLevel(float height1, float height2)
     {
         if (!allowElevation){
@@ -789,6 +987,45 @@ public class OnMapSpawn : MonoBehaviour
             }
         }
 
+
+        else if (imagetype == 100)
+        {
+
+            //plus all expose day to be expose amount
+            float allexposeamount = 0.0f;
+                     for(int d=0;d<e_to_i_date;d++)
+                    {
+                        allexposeamount += exposeamount[lon,lat,d];
+                    }
+                 
+           
+        
+
+
+           if (infectamount[lon , lat] > 0.0f)
+            {
+                 if(infectamount[lon , lat]<=0.5f)
+                return new Color(255.0f *(infectamount[lon,lat]/0.5f) , 255.0f * (allexposeamount/(infectamount[lon,lat]+allexposeamount))*(infectamount[lon,lat]/0.5f) , 0.0f);
+                else
+                return new Color(255.0f , 255.0f * (allexposeamount/(infectamount[lon,lat]+allexposeamount)) , 0.0f);
+            }
+            else if(allexposeamount > 0.0f)
+            {
+                if(allexposeamount<=0.5f)
+                return new Color(255.0f * (allexposeamount / 0.5f) , 255.0f * (allexposeamount / 0.5f) , 0.0f);
+                else
+                return new Color(255.0f  , 255.0f  , 0.0f);
+            }
+            else if(doggroup[lon , lat] > 0.0f)
+            {
+                return new Color(0.0f , 255.0f , 0.0f);
+            }
+            else
+            {
+                return Color.black;
+            }
+        }
+
         return Color.black;
     }
 
@@ -801,11 +1038,11 @@ public class OnMapSpawn : MonoBehaviour
         }
         else if (imagetype == 1)
         {
-            return "/../Assets/P2render/selectedDogTerrain" + route + ".png";
+            return "/../Assets/Resources/test/selectedDogTerrain" + route + ".png";
         }
         else if (imagetype == 2)
         {
-            return "/../Assets/MickRendered/selectedMapAndDog" + route + ".png";
+            return "/../Assets/Resources/test/selectedMapAndDog" + route + ".png";
         }
         else if (imagetype == 3)
         {
@@ -846,6 +1083,11 @@ public class OnMapSpawn : MonoBehaviour
          else if (imagetype == 12)
         {
             return "/../Assets/P2render/state_w_dogmax5" + route + ".png";
+        }
+
+         else if (imagetype == 100)
+        {
+            return "/../Assets/Resources/test/run" + route + ".png";
         }
         return "/../Assets/MickRendered/createdImage" + route + ".png";
     }
