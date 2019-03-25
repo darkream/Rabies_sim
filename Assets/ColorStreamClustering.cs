@@ -56,37 +56,60 @@ public class ColorStreamClustering : MonoBehaviour
         return false;
     }
 
-    private List<Color> k_list;
+    private List<Color> k_average;
     private List<Color> colorlists;
+    private List<float> k_variance;
 
-    private float mean = 0.0f, variance = 0.0f;
     public void kMeanClustering(){
         int runnable_k = 3, selected_k = 3;
-        randomSelectInitColor(runnable_k);
+        int average_converge = 4;
+        int cur_average_converge = 0;
+        bool average_isChanged = false;
+
+        randomSelectInitColor(runnable_k); //Start with Random Numbers
+        findClosestKListColor(runnable_k);
+        findNewAverageRGB();
+
+        //Run with the new average until converge
+        while (cur_average_converge < average_converge){
+            findClosestKListColor(runnable_k);
+            average_isChanged = findNewAverageRGB();
+            if (average_isChanged){
+                cur_average_converge = 0;
+            }
+            else {
+                cur_average_converge++;
+            }
+            Debug.Log("This is converge id : " + cur_average_converge);
+            findNewVariance(); //Find the variance of the sample
+        }
     }
 
     private void randomSelectInitColor(int k){
         createColorLists();
-        k_list = new List<Color>();
+
+        //Initiate Variables
+        k_average = new List<Color>();
         int rd_index = 0;
         Color thatcolor = Color.red;
         bool retry_random = true;
+
         for (int i = 0 ; i < k ; i++){
+            //RANDOM THE DIFFERENT INITIAL UNIT
             while(retry_random){
                 retry_random = false;
                 rd_index = Random.Range(0, colorlists.Count - 1);
                 thatcolor = colorlists[rd_index];
-                for (int j = 0 ; j < k_list.Count ; j++){
-                    if (thatcolor.Equals(k_list[j])){
+                for (int j = 0 ; j < k_average.Count ; j++){
+                    if (thatcolor.Equals(k_average[j])){
                         retry_random = true;
                     }
                 }
             }
             retry_random = true;
-            k_list.Add(thatcolor);
+            k_average.Add(thatcolor);
             Debug.Log(rd_index);
         }
-        findClosestKListColor(k);
     }
 
     List<int> colorgroup;
@@ -108,12 +131,14 @@ public class ColorStreamClustering : MonoBehaviour
         float closest_distance = 0.0f;
         float candidate_distance;
         int closest_k;
+
+        //Find Nearest Neighbour
         for (int i = 0 ; i < colorlists.Count ; i++){
-            closest_distance = findDistanceBetweenColors(colorlists[i], k_list[0]);
+            closest_distance = findDistanceBetweenColors(colorlists[i], k_average[0]);
             candidate_distance = closest_distance;
             closest_k = 0;
-            for (int at_list = 1 ; at_list < k_list.Count ; at_list++){
-                candidate_distance = findDistanceBetweenColors(colorlists[i], k_list[at_list]);
+            for (int at_list = 1 ; at_list < k_average.Count ; at_list++){
+                candidate_distance = findDistanceBetweenColors(colorlists[i], k_average[at_list]);
                 if (candidate_distance < closest_distance){
                     closest_distance = candidate_distance;
                     closest_k = at_list;
@@ -123,8 +148,71 @@ public class ColorStreamClustering : MonoBehaviour
         }
     }
 
-    //3-dimensional euclidean distance
+    //3-dimensional euclidean distance without Square Root
     private float findDistanceBetweenColors(Color a, Color b){
         return ((b.r - a.r) * (b.r - a.r)) + ((b.g - a.g) * (b.g - a.g)) + ((b.b - a.b) * (b.b - a.b));
+    }
+
+    float color_average_difference_criteria = 0.1f; //Difference must be at least in (criteria, default: 0.1f = 10%)
+    private bool findNewAverageRGB(){
+        float[] r = new float[k_average.Count];
+        float[] g = new float[k_average.Count];
+        float[] b = new float[k_average.Count];
+        int[] gcount = new int[k_average.Count];
+        bool isChanged = false;
+
+        for (int i = 0 ; i < k_average.Count ; i++){
+            r[i] = 0.0f;
+            g[i] = 0.0f;
+            b[i] = 0.0f;
+            gcount[i] = 0;
+        }
+
+        //Sum all colors that assign to the group
+        for (int i = 0 ; i < colorlists.Count ; i++){
+            r[colorgroup[i]] += colorlists[i].r;
+            g[colorgroup[i]] += colorlists[i].g;
+            b[colorgroup[i]] += colorlists[i].b;
+            gcount[colorgroup[i]]++;
+        }
+
+        //Divide all to find average and reassign to k_average
+        Color col_container;
+        for (int i = 0 ; i < k_average.Count ; i++){
+            r[i] /= gcount[i];
+            g[i] /= gcount[i];
+            b[i] /= gcount[i];
+            
+            col_container = new Color(r[i], g[i], b[i]);
+            if (findColorDifference(col_container , k_average[i]) > color_average_difference_criteria) {
+                isChanged = true;
+            }
+            k_average[i] = col_container;
+        }
+        return isChanged;
+    }
+
+    private float findColorDifference(Color a, Color b){
+        return ((Mathf.Abs(a.r - b.r) / a.r) + (Mathf.Abs(a.g - b.g) / a.g) + (Mathf.Abs(a.b - b.b) / a.b)) / 3.0f;
+    }
+
+    private void findNewVariance(){
+        k_variance = new List<float>();
+        int[] variance_count = new int[k_average.Count];
+
+        for (int i = 0 ; i < k_average.Count ; i++){
+            variance_count[i] = 0;
+            k_variance.Add(0.0f);
+        }
+
+        for (int i = 0 ; i < colorlists.Count ; i++){
+            k_variance[colorgroup[i]] += findDistanceBetweenColors(k_average[colorgroup[i]] , colorlists[i]);
+            variance_count[colorgroup[i]]++;
+        }
+
+        for (int i = 0 ; i < k_average.Count ; i++){
+            k_variance[i] /= variance_count[i];
+            Debug.Log(k_average[i] + " with variance: " + k_variance[i]);
+        }
     }
 }
