@@ -29,7 +29,9 @@ public class ColorStreamClustering : MonoBehaviour
         }
         writer.Close();
         stringcolorlist = new List<string>();
+    }
 
+    public void createStringColorListFromReadFile(string path){
         StreamReader reader = new StreamReader(path);
         string line = "", thiscolor;
         string[] x;
@@ -61,7 +63,7 @@ public class ColorStreamClustering : MonoBehaviour
     private List<float> k_variance;
 
     public void kMeanClustering(){
-        int runnable_k = 3, selected_k = 3;
+        int runnable_k = 3;
         int average_converge = 4;
         int cur_average_converge = 0;
         bool average_isChanged = false;
@@ -213,6 +215,108 @@ public class ColorStreamClustering : MonoBehaviour
         for (int i = 0 ; i < k_average.Count ; i++){
             k_variance[i] /= variance_count[i];
             Debug.Log(k_average[i] + " with variance: " + k_variance[i]);
+        }
+    }
+
+    private float[] color_max;
+    private float[] color_min;
+    private bool[] color_vec; //true = positive, false = negative number
+
+    public void findColorVector(Color a, Color b){
+        color_vec = new bool[3];
+        if (a.r < b.r){
+            color_vec[0] = true;
+        }
+        else {
+            color_vec[0] = false;
+        }
+        if (a.g < b.g){
+            color_vec[1] = true;
+        }
+        else {
+            color_vec[1] = false;
+        }
+        if (a.b < b.b){
+            color_vec[2] = true;
+        }
+        else {
+            color_vec[2] = false;
+        }
+    }
+
+    public void readFileToFindMinMax(string path){
+        StreamReader reader = new StreamReader(path);
+        string line;
+        string[] x;
+        Color thiscolor;
+
+        color_max = new float[3];
+        color_min = new float[3];
+        bool firstInput = true;
+
+        while (!reader.EndOfStream){
+            line = reader.ReadLine();
+            x = line.Split(' ');
+            for (int i = 0 ; i < x.Length - 1 ; i++){
+                if (!x[i].Equals("1,1,1") && !x[i].Equals("0,0,0")){ //The color must not be pure white or black
+                    thiscolor = stringToColor(x[i]);
+                    if (firstInput){
+                        firstInput = false;
+                        color_max[0] = thiscolor.r;
+                        color_min[0] = thiscolor.r;
+                        color_max[1] = thiscolor.g;
+                        color_min[1] = thiscolor.g;
+                        color_max[2] = thiscolor.b;
+                        color_max[2] = thiscolor.b;
+                    }
+                    else
+                    {
+                        if (thiscolor.r > color_max[0]){
+                            color_max[0] = thiscolor.r;
+                        }
+                        if (thiscolor.r < color_min[0]){
+                            color_min[0] = thiscolor.r;
+                        }
+                        if (thiscolor.g > color_max[1]){
+                            color_max[1] = thiscolor.g;
+                        }
+                        if (thiscolor.g < color_min[1]){
+                            color_min[1] = thiscolor.g;
+                        }
+                        if (thiscolor.b > color_min[2]){
+                            color_max[2] = thiscolor.b;
+                        }
+                        if (thiscolor.b < color_min[2]){
+                            color_min[2] = thiscolor.b;
+                        }
+                    }
+                }
+            }
+        }
+
+        Debug.Log("Max: " + color_max[0] + ", " + color_max[1] + ", " + color_max[2]);
+        Debug.Log("Min: " + color_min[0] + ", " + color_min[1] + ", " + color_min[2]);
+        reader.Close();
+    }
+
+    public float getNumberFromIntensity(Color thatcolor, char channel){
+        if (channel == 'b'){
+            if (color_vec[2] == true) //if the vector of blue is positive
+                return (thatcolor.b - color_min[2]) / (color_max[2] - color_min[2]);
+            else
+                return (thatcolor.b - color_max[2]) / (color_min[2] - color_max[2]);
+        }
+        else if (channel == 'g'){
+            if (color_vec[1] == true) //if the vector of green is positive
+                return (thatcolor.g - color_min[1]) / (color_max[1] - color_min[1]);
+            else
+                return (thatcolor.g - color_max[1]) / (color_min[1] - color_max[1]);
+        }
+        else {
+            if (color_vec[0] == true) //if the vector of red is positive
+                return (thatcolor.r - color_min[0]) / (color_max[0] - color_min[0]);
+            else
+                return (thatcolor.r - color_max[0]) / (color_min[0] - color_max[0]);
         }
     }
 }

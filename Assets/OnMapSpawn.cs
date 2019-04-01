@@ -102,7 +102,9 @@ public class OnMapSpawn : MonoBehaviour
         uicontroller.initialValue();
         uicontroller.setTotalProcess(9);
         clustering.pixelReaderAndFileWritten("Assets/mapcolor.txt");
-        clustering.kMeanClustering();
+        //clustering.createStringColorListFromReadFile("Assets/mapcolor.txt");
+        //clustering.kMeanClustering();
+        clustering.readFileToFindMinMax("Assets/mapcolor.txt");
     }
 
     private void Update()
@@ -1462,7 +1464,7 @@ public class OnMapSpawn : MonoBehaviour
     private float highest_estimate_simulation_dog_color;
     private void createDogSequence(int current_time){
         wh = new float[xgridsize, ygridsize];
-        float affordable, oh2e, oh2s;
+        float affordable;
         float h2s = hordeMoveRate / 2.0f;
         float h2e = h2s;
 
@@ -1492,6 +1494,7 @@ public class OnMapSpawn : MonoBehaviour
             }
         }
         /*  The changing of behaviour will not occurred for many reasons
+        float oh2e, oh2s;
         oh2s = h2s;
         oh2e = h2e;
         h2s = singleMoveRate * (exploreMoveRate + oh2e);
