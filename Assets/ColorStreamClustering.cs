@@ -250,45 +250,32 @@ public class ColorStreamClustering : MonoBehaviour
         string[] x;
         Color thiscolor;
 
-        color_max = new float[3];
-        color_min = new float[3];
-        bool firstInput = true;
+        color_max = new float[] {0.0f, 0.0f, 0.0f};
+        color_min = new float[] {1.0f, 1.0f, 1.0f};
 
         while (!reader.EndOfStream){
             line = reader.ReadLine();
             x = line.Split(' ');
             for (int i = 0 ; i < x.Length - 1 ; i++){
                 if (!x[i].Equals("1,1,1") && !x[i].Equals("0,0,0")){ //The color must not be pure white or black
-                    thiscolor = stringToColor(x[i]);
-                    if (firstInput){
-                        firstInput = false;
+                    thiscolor = stringToColor(x[i]);         
+                    if (thiscolor.r > color_max[0]){
                         color_max[0] = thiscolor.r;
+                    }
+                    if (thiscolor.r < color_min[0]){
                         color_min[0] = thiscolor.r;
+                    }
+                    if (thiscolor.g > color_max[1]){
                         color_max[1] = thiscolor.g;
+                    }
+                    if (thiscolor.g < color_min[1]){
                         color_min[1] = thiscolor.g;
-                        color_max[2] = thiscolor.b;
+                    }
+                    if (thiscolor.b > color_min[2]){
                         color_max[2] = thiscolor.b;
                     }
-                    else
-                    {
-                        if (thiscolor.r > color_max[0]){
-                            color_max[0] = thiscolor.r;
-                        }
-                        if (thiscolor.r < color_min[0]){
-                            color_min[0] = thiscolor.r;
-                        }
-                        if (thiscolor.g > color_max[1]){
-                            color_max[1] = thiscolor.g;
-                        }
-                        if (thiscolor.g < color_min[1]){
-                            color_min[1] = thiscolor.g;
-                        }
-                        if (thiscolor.b > color_min[2]){
-                            color_max[2] = thiscolor.b;
-                        }
-                        if (thiscolor.b < color_min[2]){
-                            color_min[2] = thiscolor.b;
-                        }
+                    if (thiscolor.b < color_min[2]){
+                        color_min[2] = thiscolor.b;
                     }
                 }
             }
@@ -297,6 +284,50 @@ public class ColorStreamClustering : MonoBehaviour
         Debug.Log("Max: " + color_max[0] + ", " + color_max[1] + ", " + color_max[2]);
         Debug.Log("Min: " + color_min[0] + ", " + color_min[1] + ", " + color_min[2]);
         reader.Close();
+    }
+
+    private float map_x1, map_x2, map_y1, map_y2;
+    public string[] coordTag = new string[] {"north" , "south" , "east" , "west"};
+    public void readAndAssignMapCoordinates(string path){
+        StreamReader reader = new StreamReader(path);
+        string line;
+
+        while(!reader.EndOfStream){
+            line = reader.ReadLine();
+            extractMapCoordFromPossibleString(line);
+        }
+    }
+
+    public void extractMapCoordFromPossibleString(string thatline){
+        string startTag, endTag, thatvalue;
+        int startIndex, endIndex;
+        for (int i = 0 ; i < coordTag.Length ; i++){
+            startTag = "<" + coordTag[i] + ">";
+            endTag = "</" + coordTag[i] + ">";
+            if (thatline.IndexOf(startTag) != -1){
+                startIndex = thatline.IndexOf(startTag) + startTag.Length;
+                endIndex = thatline.IndexOf(endTag, startIndex);
+                thatvalue = thatline.Substring(startIndex, endIndex - startIndex);
+                assignMapCoordValue(i , thatvalue);
+                Debug.Log(coordTag[i] + ": " + thatvalue);
+            }
+        }
+    }
+
+    private void assignMapCoordValue(int dir, string value){
+        float val = float.Parse(value);
+        if (dir == 0) { //north
+            map_y2 = val;
+        } 
+        else if (dir == 1) { //south
+            map_y1 = val;
+        }
+        else if (dir == 2) { //east
+            map_x2 = val;
+        }
+        else if (dir == 3) { //west
+            map_x1 = val;
+        }
     }
 
     public float getNumberFromIntensity(Color thatcolor, char channel){
