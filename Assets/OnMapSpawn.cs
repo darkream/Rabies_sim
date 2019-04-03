@@ -111,8 +111,8 @@ public class OnMapSpawn : MonoBehaviour
 
     private float[,,] exposeamount; //array is destination
 
-    private float biterate=1.0f; //100%
-    private float infectedrate=1.0f; //100% for test
+    private float biterate=0.1f; //100%
+    private float infectedrate=0.2f; //100% for test
 
     float maxexpose=0.0f;
 
@@ -443,53 +443,61 @@ private void  rabiespreading()
         //test run
          for (int i = 0; i < infectdogdata.Count; i++)
         {
-            for (int j = 0; j < 100; j++)
+            for (int j = 0; j < 200; j++)
             {
             infectamount[ infectdogdata[i].lonid -j ,  infectdogdata[i].latid] = 0;
-            infectamount[ infectdogdata[i].lonid -(j+1) ,  infectdogdata[i].latid] = 1; //run from right to left
+            if(infectdogdata[i].lonid -(j+1)!=0)infectamount[ infectdogdata[i].lonid -(j+1) ,  infectdogdata[i].latid] = 1; //run from right to left
+
+
             //old exposed spread
+
+            //for incline
+            float up_incdis=0.0f,down_incdis=0.0f,left_incdis=0.0f,right_incdis=0.0f;
+            float exposecriteria=distribution_criteria*(exposesum()/625.0f);
             for(int d=0; d< e_to_i_date;d++)
             {
             for (int m = 0; m < xgridsize; m++)
             {
                 for (int n = 0; n < ygridsize; n++)
                 {
-                    if (exposeamount[m,n,d]>0.0f) //eqaully distribute
+                    if (exposeamount[m,n,d]>0.0f) //eqaully distribute+incline
                     {
-                        if(m>0&&m<xgridsize-1)
+
+                        up_incdis =distributeElevationLevel(heightxy[m , n] , heightxy[m , n + 1]) *0.20f*exposeamount[m,n,d];
+                        down_incdis =distributeElevationLevel(heightxy[m , n] , heightxy[m , n - 1])*0.20f*exposeamount[m,n,d];
+                        left_incdis = distributeElevationLevel(heightxy[m , n] , heightxy[m-1 , n ])*0.20f*exposeamount[m,n,d];
+                        right_incdis = distributeElevationLevel(heightxy[m , n] , heightxy[m+1 , n ])*0.20f*exposeamount[m,n,d];
+
+                        
+                        if (m==0 )
                         {
-                            plusamount[m-1,n,d]+= 0.20f*exposeamount[m,n,d];
-                            plusamount[m+1,n,d]+= 0.20f*exposeamount[m,n,d];
-                            plusamount[m,n,d]-= 0.4f*exposeamount[m,n,d];
-                        }
-                        else if (m==0)
-                        {
-                            plusamount[m+1,n,d]+= 0.20f*exposeamount[m,n,d];
-                            plusamount[m,n,d]-= 0.2f*exposeamount[m,n,d];
+                            left_incdis=0.0f;
                         }
                         else if (m==xgridsize-1)
                         {
-                            plusamount[m-1,n,d]+= 0.20f*exposeamount[m,n,d];
-                            plusamount[m,n,d]-= 0.2f*exposeamount[m,n,d];
+                           right_incdis=0.0f;
+                        }
+                       
+                        if (n==0 )
+                        {
+                            down_incdis =0.0f;
+                        }
+                        else if (n==ygridsize-1 )
+                        {
+                           up_incdis =0.0f;
                         }
 
+                        if(up_incdis<exposecriteria) up_incdis=0.0f;
+                        if(down_incdis<exposecriteria) down_incdis=0.0f;
+                        if(left_incdis<exposecriteria) left_incdis=0.0f;
+                        if(right_incdis<exposecriteria) right_incdis=0.0f;
 
-                        if(n>0&&n<ygridsize-1)
-                        {
-                            plusamount[m,n-1,d]+= 0.20f*exposeamount[m,n,d];
-                            plusamount[m,n+1,d]+= 0.20f*exposeamount[m,n,d];
-                            plusamount[m,n,d]-= 0.4f*exposeamount[m,n,d];
-                        }
-                        else if (n==0)
-                        {
-                            plusamount[m,n+1,d]+= 0.20f*exposeamount[m,n,d];
-                            plusamount[m,n,d]-= 0.2f*exposeamount[m,n,d];
-                        }
-                        else if (n==ygridsize-1)
-                        {
-                            plusamount[m,n-1,d]+= 0.20f*exposeamount[m,n,d];
-                            plusamount[m,n,d]-= 0.2f*exposeamount[m,n,d];
-                        }
+                        plusamount[m,n,d]-=(left_incdis+right_incdis+down_incdis+up_incdis);
+                        plusamount[m,n+1,d]+=up_incdis;
+                        plusamount[m,n-1,d]+=down_incdis;
+                        plusamount[m+1,n,d]+=right_incdis;
+                        plusamount[m-1,n,d]+= left_incdis;
+                        
                     }
                 }
             }
@@ -509,7 +517,7 @@ private void  rabiespreading()
                      }   
                  }
             }
-
+            /* 
             //day of expose change
             float[,] temp=new float [xgridsize,ygridsize];
             for(int d=e_to_i_date-1; d>=0;d--)
@@ -521,10 +529,13 @@ private void  rabiespreading()
 
                          if(d==e_to_i_date-1)
                          {
-                            infectamount[m,n]+= exposeamount[m,n,d];
+                            //infectamount[m,n]+= exposeamount[m,n,d];
+                            //not change anyshit for test
+                            if (exposeamount[m,n,d-1]==0.0f) //stack
+                            exposeamount[m,n,d]+=exposeamount[m,n,d-1];
                          }
 
-                         if(d!=0)
+                         else if(d!=0)
                         {
                          exposeamount[m,n,d]=exposeamount[m,n,d-1];
                         }
@@ -535,7 +546,7 @@ private void  rabiespreading()
                      }
                  }
             }
-
+            */
             //
 
              //if run rabies found normal dog,bite
@@ -546,10 +557,37 @@ private void  rabiespreading()
 
             createImage(j,100);
             }
+
+          /*   //debug checking
+            for (int m = 0; m < xgridsize; m++)
+            {
+                for (int n = 0; n < ygridsize; n++)
+                {
+                    if(exposeamount[m,n,0]>0.0f)
+                    Debug.Log("WTF expose amout at [" + m + " " + n+ "] is "+exposeamount[m,n,0] + " DG : " +doggroup[m,n]);
+                }
+            }*/
         }
 
 
 }
+
+//add for check expose sum
+ private float exposesum()
+ {
+     float sum=0.0f;
+    for(int d=0; d< e_to_i_date;d++)
+        {
+            for (int m = 0; m < xgridsize; m++)
+            {
+                for (int n = 0; n < ygridsize; n++)
+                {
+                    sum+=exposeamount[m,n,d];
+                }
+            }
+        }
+     return sum;
+ }
 
 //end 
     private float distributeElevationLevel(float height1, float height2)
@@ -1011,9 +1049,9 @@ private void  rabiespreading()
             }
             else if(allexposeamount > 0.0f)
             {
-                if(allexposeamount<=0.5f)
-                return new Color(255.0f * (allexposeamount / 0.5f) , 255.0f * (allexposeamount / 0.5f) , 0.0f);
-                else
+               // if(allexposeamount<=0.5f)
+              //  return new Color(255.0f * (allexposeamount / 0.5f) , 255.0f * (allexposeamount / 0.5f) , 0.0f);
+              //  else
                 return new Color(255.0f  , 255.0f  , 0.0f);
             }
             else if(doggroup[lon , lat] > 0.0f)
@@ -1022,7 +1060,7 @@ private void  rabiespreading()
             }
             else
             {
-                return Color.black;
+               return new Color(0.0f , 0.0f , ((heightxy[lon , lat] - minh) / (maxh - minh)));
             }
         }
 
