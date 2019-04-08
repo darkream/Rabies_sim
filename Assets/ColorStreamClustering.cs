@@ -286,7 +286,6 @@ public class ColorStreamClustering : MonoBehaviour
         reader.Close();
     }
 
-    private float map_x1, map_x2, map_y1, map_y2;
     public string[] coordTag = new string[] {"north" , "south" , "east" , "west"};
     public void readAndAssignMapCoordinates(string path){
         StreamReader reader = new StreamReader(path);
@@ -314,6 +313,7 @@ public class ColorStreamClustering : MonoBehaviour
         }
     }
 
+    private float map_x1, map_x2, map_y1, map_y2;
     private void assignMapCoordValue(int dir, string value){
         float val = float.Parse(value);
         if (dir == 0) { //north

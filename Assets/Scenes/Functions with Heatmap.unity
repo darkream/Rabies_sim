@@ -467,8 +467,8 @@ MonoBehaviour:
   _initializeOnStart: 1
   _options:
     locationOptions:
-      latitudeLongitude: 7.01125306678015, 100.518001044838
-      zoom: 16.1
+      latitudeLongitude: 18.32740000000,99.58160000000
+      zoom: 15
     extentOptions:
       extentType: 0
       cameraBoundsOptions:
@@ -692,6 +692,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   thaimap: {fileID: 2800000, guid: 392fa62c53adb0a47bb62b99367e898d, type: 3}
+  coordTag:
+  - north
+  - south
+  - east
+  - west
 --- !u!1 &633857137
 GameObject:
   m_ObjectHideFlags: 0

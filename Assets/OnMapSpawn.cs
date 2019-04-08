@@ -15,7 +15,7 @@ public class OnMapSpawn : MonoBehaviour
     [SerializeField]
     ColorStreamClustering clustering;
 
-    List<int> doggroupsize; //initial group size of the list of dogs above
+    List<float> doggroupsize; //initial group size of the list of dogs above
 
     [SerializeField]
     float distribution_criteria = 0.5f; //0.5 dog means at least 1 dog
@@ -23,7 +23,7 @@ public class OnMapSpawn : MonoBehaviour
     [SerializeField]
     Camera _referenceCamera;
 
-    private float startlat = 7.044082f, startlon = 100.4482f; //default_ lat: 7.044082, lon = 100.4482
+    private float startlat = 7.044082f, startlon = 100.4482f; //default_ lat: 7.01125306678015, lon: 100.518001044838, zoom: 16.1
     public int xgridsize, ygridsize; //default_ xsize = 1700 grid, ysize = 1000 grid
     private float minh, maxh;
     private float[,] heightxy;
@@ -95,17 +95,17 @@ public class OnMapSpawn : MonoBehaviour
         _mbfunction.initializeLocations();
         dogdata = new List<LatLonSize>();
         attracter = new List<AttractSource>();
-        doggroupsize = new List<int>();
+        doggroupsize = new List<float>();
         convergeCountdown = loopCriteria;
         singleMoveRate = 1.0f - (hordeMoveRate + exploreMoveRate);
         initialTimeScaleFactor();
         uicontroller.initialValue();
         uicontroller.setTotalProcess(9);
-        clustering.readAndAssignMapCoordinates("Assets/doc.kml");
-        clustering.pixelReaderAndFileWritten("Assets/mapcolor.txt");
+        //clustering.pixelReaderAndFileWritten("Assets/mapcolor.txt");
         //clustering.createStringColorListFromReadFile("Assets/mapcolor.txt");
         //clustering.kMeanClustering();
-        clustering.readFileToFindMinMax("Assets/mapcolor.txt");
+        //clustering.readAndAssignMapCoordinates("Assets/doc.kml");
+        //clustering.readFileToFindMinMax("Assets/mapcolor.txt");
     }
 
     private void Update()
@@ -298,6 +298,10 @@ public class OnMapSpawn : MonoBehaviour
                     startPreDataRegister = false;
                 }
             }
+        }
+
+        if (Input.GetKeyDown("b")){
+            readDogPopulationPoint("Assets/dogpop_point.csv", 3, 2, 1);
         }
     }
 
@@ -1549,5 +1553,32 @@ public class OnMapSpawn : MonoBehaviour
                 walkingHabits[x, y] /= totalhabits[groupassign[x , y]];
             }
         }
+    }
+
+    private void readDogPopulationPoint(string path, int lat_index, int lon_index, int size_index){
+        StreamReader reader = new StreamReader(path);
+        string line = reader.ReadLine();
+        string[] fractions;
+        float lat, lon, size;
+        Vector2d botleft = _mbfunction.getLatLonFromXY(0, 0);
+        Vector2d topright = _mbfunction.getLatLonFromXY(Screen.width, Screen.height);
+        Debug.Log(botleft);
+        Debug.Log(topright);
+
+        while(!reader.EndOfStream){
+            line = reader.ReadLine();
+            fractions = line.Split(',');
+            lat = float.Parse(fractions[lat_index]);
+            lon = float.Parse(fractions[lon_index]);
+
+            if (lon > botleft.x && lon < topright.x && lat > botleft.y && lat < topright.y){
+                Vector2d latlonDelta = new Vector2d(lon, lat);
+                size = float.Parse(fractions[size_index]);
+                doggroupsize.Add(size);
+                _mbfunction.addDogLocation(latlonDelta, size);
+                dogdata.Add(_mbfunction.getNewDog());
+            }
+        }
+        Debug.Log(doggroupsize.Count);
     }
 }

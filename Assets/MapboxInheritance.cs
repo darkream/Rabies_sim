@@ -218,28 +218,28 @@ public class MapboxInheritance : MonoBehaviour
     }
 
         //Add new dog location by float lat lon
-    public void addDogLocation(float lat , float lon, int groupsize)
+    public void addDogLocation(float lat , float lon, float groupsize)
     {
         doglocations.Add(new Vector2d(lat,lon));
         createDogObject(groupsize);
     }
 
     //Add new doglocation by location string of vector lat lon, Formula: "lat, long"
-    public void addDogLocation(string locationstring, int groupsize)
+    public void addDogLocation(string locationstring, float groupsize)
     {
         doglocations.Add(spawnLatLonWithinGrid(Conversions.StringToLatLon(locationstring)));
         createDogObject(groupsize);
     }
 
     //Add new doglocation by location vector lat lon
-    public void addDogLocation(Vector2d latlonvector, int groupsize)
+    public void addDogLocation(Vector2d latlonvector, float groupsize)
     {
         doglocations.Add(spawnLatLonWithinGrid(latlonvector));
         createDogObject(groupsize);
     }
 
     //create the object to the map location (with default height)
-    public void createDogObject(int groupsize)
+    public void createDogObject(float groupsize)
     {
         //In Latitude, the map is drawn in vector of (+Lon, -Lat) direction
         int lastIndex = doglocations.Count - 1;
