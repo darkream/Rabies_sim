@@ -467,7 +467,7 @@ MonoBehaviour:
   _initializeOnStart: 1
   _options:
     locationOptions:
-      latitudeLongitude: 18.32740000000,99.58160000000
+      latitudeLongitude: -10.2047290016696, 142.824046395789
       zoom: 15
     extentOptions:
       extentType: 0

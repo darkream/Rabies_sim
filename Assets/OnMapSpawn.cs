@@ -65,7 +65,7 @@ public class OnMapSpawn : MonoBehaviour
     float lowest_activity_rate;
 
     [SerializeField]
-    int time_length; //5 minutes for each activity
+    int time_length; //300 seconds is equals to 5 minutes for each activity
 
     [SerializeField]
     int time_cycle; //4 cycles for each day
@@ -291,11 +291,13 @@ public class OnMapSpawn : MonoBehaviour
                     uicontroller.updateProcessDetail("Dog sequence at "+ atTime + " is being created\nat activity rate " + timeScaleFactor[atTime]);
                     uicontroller.updateCurrentProgress((float)atTime / timeScaleFactor.Length);
                     createDogSequence(atTime);
+                    calculateTieFromWH(atTime);
                     atTime++;
                 }
                 else {
                     uicontroller.setupActivation(false);
                     startPreDataRegister = false;
+                    Debug.Log("This area has innate: " + (innate_total / (float)timeScaleFactor.Length) + ", outage: " + (outage_total / (float)timeScaleFactor.Length));
                 }
             }
         }
@@ -1580,5 +1582,34 @@ public class OnMapSpawn : MonoBehaviour
             }
         }
         Debug.Log(doggroupsize.Count);
+    }
+
+    float innate_total = 0.0f, outage_total = 0.0f;
+    private void calculateTieFromWH(int at_time){
+        float inside_total = 0.0f;
+        float outside_total = 0.0f;
+        int outside_count = 0, inside_count = 0;
+        for (int y = 0 ; y < ygridsize ; y++){
+            for (int x = 0 ; x < xgridsize ; x++){
+                if (doggroup[x , y] > 0.0f){
+                    inside_total += wh[x , y];
+                    inside_count++;
+                }
+                else if (walkingHabits[x , y] > 0.0f){
+                    outside_total += wh[x , y];
+                    outside_count++;
+                }
+            }
+        }
+        inside_total /= inside_count;
+        outside_total /= outside_count; //find the average
+
+        outside_total *= timeScaleFactor[at_time];
+        inside_total *= highest_activity_rate - timeScaleFactor[at_time];
+
+        Debug.Log("At" + at_time + " has o: " + outside_total + ", i: " + inside_total);
+        
+        outage_total += outside_total;
+        innate_total += inside_total;
     }
 }
