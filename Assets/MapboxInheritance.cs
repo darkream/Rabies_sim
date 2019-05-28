@@ -1,4 +1,17 @@
-﻿using System.Collections;
+﻿/*
+Temporaly cration list
+
+Latlonsize variation (add each state dog's size)
+
+    ^ Ref from above
+    |
+    |
+Createdogobject fucntion (add each state dog size) (at 275 line)
+
+
+ */
+
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -34,13 +47,30 @@ public struct LatLonSize
     public int lonid;
     public float size;
 
+   /*  public float Dog_S_size;
+    public float Dog_E_size;
+    public float Dog_I_size;
+    public float Dog_R_size;
+    public float Dog_V_size;*/
+
     public LatLonSize(int lt, int ln, float sz)
     {
         latid = lt;
         lonid = ln;
         size = sz;
+        /* 
+        Dog_S_size = szs;
+        Dog_E_size = sze;
+        Dog_I_size = szi;
+        Dog_R_size = szr;
+        Dog_V_size = szv;
+        */
     }
 }
+
+
+
+
 
 [System.Serializable]
 public struct AttractSource
@@ -78,10 +108,15 @@ public class MapboxInheritance : MonoBehaviour
     public float s_lat = 7.044082f, s_lon = 100.4482f; //default_ lat: 7.044082, lon = 100.4482
     public int x_gsize, y_gsize; //default_ xsize = 1700 grid, ysize = 1000 grid
     LatLonSize tempdoglocation;
+
+    LatLonSize tempinfect;
     AttractSource tempattracter;
 
     [SerializeField]
     GameObject dogpanel; //Prefabs for dog layer
+
+    [SerializeField]
+    GameObject infectedpanel; //Prefabs for infected layer
 
     [SerializeField]
     GameObject attractpanel; //Prefabs for attraction layer
@@ -101,6 +136,9 @@ public class MapboxInheritance : MonoBehaviour
     //Data List of dog objects
     public List<GameObject> dogObjs;
     public List<Vector2d> doglocations;  //List<string> doglocationStrings; //list of dogs == 7.03169034704473, 100.478511282507 default
+     //Data list of infected object
+    public List<GameObject> infectObjs;
+    public List<Vector2d> infectedlocations;
 
     //Data List of map point objects
     public List<GameObject> mappointObjs;
@@ -117,10 +155,13 @@ public class MapboxInheritance : MonoBehaviour
         mappointlocations = new List<Vector2d>();
         attractlocations = new List<Vector2d>();
         dogObjs = new List<GameObject>();
+        infectObjs = new List<GameObject>();
         mappointObjs = new List<GameObject>();
         attractObjs = new List<GameObject>();
         dogradius = new List<float>();
         factradius = new List<int>();
+
+      
     }
 
     //assign distance of camera to ground plane to z, 
@@ -247,7 +288,13 @@ public class MapboxInheritance : MonoBehaviour
         float lon = (float)doglocations[lastIndex].y;
         int at_lat = getLatGridIndex(abs(s_lat - lat));
         int at_lon = getLonGridIndex(abs(s_lon - lon));
+        //temporaly 
+        
+
         tempdoglocation = new LatLonSize(at_lat , at_lon , groupsize);
+
+
+        //
         spawnDogPrefabWithHeight(lat , lon);
     }
 
@@ -255,6 +302,9 @@ public class MapboxInheritance : MonoBehaviour
         return tempdoglocation;
     }
 
+    public LatLonSize getNewInfect(){
+        return tempinfect;
+    }
     /// create the object to the map location (with calculated map height)
     /// (reference: https://github.com/mapbox/mapbox-unity-sdk/issues/222)
     public void spawnDogPrefabWithHeight(double lat , double lon)
@@ -276,6 +326,51 @@ public class MapboxInheritance : MonoBehaviour
     }
 
     //Add map point reference to the world
+
+     public void addInfectedLocation(float lat , float lon, int groupsize)
+    {
+        infectedlocations.Add(new Vector2d(lat,lon));
+        createinfectDogObject(groupsize);
+    }
+    public void addInfectedLocation(Vector2d latlonvector, int groupsize)
+    {
+        infectedlocations.Add(spawnLatLonWithinGrid(latlonvector));
+        createinfectDogObject(groupsize);
+    }
+    public void createinfectDogObject(int groupsize)
+    {
+        //In Latitude, the map is drawn in vector of (+Lon, -Lat) direction
+        int lastIndex = infectedlocations.Count - 1;
+        float lat = (float)infectedlocations[lastIndex].x;
+        float lon = (float)infectedlocations[lastIndex].y;
+        int at_lat = getLatGridIndex(abs(s_lat - lat));
+        int at_lon = getLonGridIndex(abs(s_lon - lon));
+        //temporaly 
+        tempinfect= new LatLonSize(at_lat , at_lon , groupsize);
+
+
+        //
+        spawninfectedPrefab(lat , lon);
+    }
+ 
+    public void spawninfectedPrefab(double lat , double lon)
+    {
+        infectedlocations.Add(new Vector2d(lat, lon));
+        Vector3 location = Conversions.GeoToWorldPosition(lat, lon, _map.CenterMercator, _map.WorldRelativeScale).ToVector3xz();
+        location = new Vector3(location.x, 0.0f, location.z);
+        var obj = Instantiate(infectedpanel);
+        obj.transform.position = location;
+        obj.transform.localScale = new Vector3(_spawnScale, _spawnScale, _spawnScale);
+
+        infectObjs.Add(obj);
+
+        int lastIndex = infectedlocations.Count - 1;
+        int at_lat = getLatGridIndex(abs(s_lat - (float)infectedlocations[lastIndex].x));
+        int at_lon = getLonGridIndex(abs(s_lon - (float)infectedlocations[lastIndex].y));
+        //tempattracter = new AttractSource(at_lat, at_lon);
+
+    }
+
     public void spawnMapPointer(double lat, double lon)
     {
         mappointlocations.Add(new Vector2d(lat , lon));

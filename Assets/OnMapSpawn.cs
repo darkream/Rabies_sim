@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿//add quad+qaudlocation in gloabal var list
+// add at create image and color getFileNameTag
+using UnityEngine;
 using Mapbox.Utils;
 using Mapbox.Unity.Map;
 using Mapbox.Unity.Utilities;
@@ -90,12 +92,51 @@ public class OnMapSpawn : MonoBehaviour
     private int atAttract = 0;
     private int atTime = 0;
 
+
+    private float[] dogstate_proposion;
+    public Material Matref;
+    public GameObject quadmap;
+    Vector2d quadlocation;
+    Renderer renA;
+
+    Texture2D quadmaptexture;
+
+
+    //Rabies test zone
+    private List<LatLonSize> infectdogdata;
+
+    private float[,,] infectamount; //array is destination
+
+   
+
+    private float[,] vaccineamount; //array is destination
+    private float[,] suspectamount; //array is destination
+
+    private float[,,] exposeamount; //array is destination
+
+    private float biterate=0.2f; //100%
+    private float infectedrate=0.1f; //100% for test
+
+  
+
+    int e_to_i_date = 10 ; //10 days
+
+
+    int i_to_r_date = 3 ; //3 days
+
+    int rabiedetectrange = 5;
+    Texture2D[] runtexture = new Texture2D[100];
+
+    bool runanimate=false;
+    //end test zone
+
     void Start()
     {
         _mbfunction.initializeLocations();
         dogdata = new List<LatLonSize>();
         attracter = new List<AttractSource>();
         doggroupsize = new List<float>();
+        infectdogdata = new List<LatLonSize> ();
         convergeCountdown = loopCriteria;
         singleMoveRate = 1.0f - (hordeMoveRate + exploreMoveRate);
         initialTimeScaleFactor();
@@ -106,6 +147,15 @@ public class OnMapSpawn : MonoBehaviour
         //clustering.kMeanClustering();
         //clustering.readAndAssignMapCoordinates("Assets/doc.kml");
         //clustering.readFileToFindMinMax("Assets/mapcolor.txt");
+        //add
+        dogstate_proposion = new float[5]; //0:S ,1:E,2:I,3:R,4:V
+        dogstate_proposion[0] = 1;
+        dogstate_proposion[1] = 0.0f;
+        dogstate_proposion[2] = 0.0f;
+        dogstate_proposion[3] = 0.0f;
+        dogstate_proposion[4] = 0.0f;
+        //0:S ,1:E,2:I,3:R,4:V
+        //end add
     }
 
     private void Update()
@@ -133,6 +183,84 @@ public class OnMapSpawn : MonoBehaviour
             attractObject.transform.localPosition = _mbfunction._map.GeoToWorldPosition(location , true);
             attractObject.transform.localScale = new Vector3(_mbfunction._spawnScale , _mbfunction._spawnScale , _mbfunction._spawnScale);
         }
+
+        //infected obj/
+        for (int i = 0; i < _mbfunction.infectObjs.Count ; i++) //for each infected dog
+        {
+            var infectObject = _mbfunction.infectObjs[i];
+            var location = _mbfunction.infectedlocations[i];
+            infectObject.transform.localPosition = _mbfunction._map.GeoToWorldPosition(location , true);
+            infectObject.transform.localScale = new Vector3(_mbfunction._spawnScale , _mbfunction._spawnScale , _mbfunction._spawnScale);
+        }
+
+
+
+//add for quad
+       // for (int i = 0; i < 1 ; i++) //for quad
+       // {
+       //    quadmap.transform.localPosition = _mbfunction._map.GeoToWorldPosition(quadlocation , true);
+            //quadObject.transform.localScale = new Vector3(_mbfunction._spawnScale , _mbfunction._spawnScale , _mbfunction._spawnScale);
+       // }
+
+
+        //Press Q to after z to create onsite heatmap
+        if (Input.GetKeyDown("q"))
+        {
+            
+             quadmap= GameObject.CreatePrimitive(PrimitiveType.Quad);
+		    // quadmap.transform.position = new Vector3(0, 90, 0);
+		     quadmap.transform.localScale = new Vector3(68.43009f, 36.5747f, 1.310921f);
+		     quadmap.transform.eulerAngles = new Vector3(90.0f,0.0f,0.0f);
+            Material quadMaterial = (Material)Resources.Load( "Mapmat" );
+		   renA=quadmap.GetComponent<Renderer>();
+		   renA.material = quadMaterial;
+           Texture2D myTexture = Resources.Load( "test/selectedMapAndDog0" ) as Texture2D;
+            Vector2d latlondelta = _mbfunction.getLatLonFromXY(Screen.width/2, Screen.height/2);
+            Vector3 location = Conversions.GeoToWorldPosition(latlondelta.x , latlondelta.y , _mbfunction._map.CenterMercator , _mbfunction._map.WorldRelativeScale).ToVector3xz();
+            quadmap.transform.position = new Vector3(location.x ,172.0f , location.z);//fixed map
+            quadlocation = new Vector2d(location.x,location.z);
+            renA.material.mainTexture = myTexture;
+
+           
+        }
+//end
+
+//rotate running animate
+         if (Input.GetKeyDown("r"))
+        {
+             //add generate run animate
+            string tempstr;
+            for(int i = 0;i<100;i++)
+            {
+                tempstr = "test/run" + i  ;
+                runtexture[i]=Resources.Load( tempstr ) as Texture2D;
+            }
+
+            runanimate = true;
+        }
+
+         if (runanimate)
+         {
+            float framepersec=10.0f;
+            int animateindex = (int)((Time.time * framepersec) % runtexture.Length);
+            renA.material.mainTexture = runtexture[animateindex];
+         }
+//end
+       
+
+
+
+//add for infected
+         //Press E to add dog to the map
+        if (Input.GetKeyDown("e"))
+        {
+            Vector2d latlonDelta = _mbfunction.getLatLonFromMousePosition();
+           // doggroupsize.Add(1); //size is static at 625
+            _mbfunction.addInfectedLocation(latlonDelta, 1); //add new dog object from clicked position
+            infectdogdata.Add(_mbfunction.getNewInfect());
+        }
+//end
+
 
         //Press Z to select the screen
         if (Input.GetKeyDown("z"))
@@ -208,6 +336,12 @@ public class OnMapSpawn : MonoBehaviour
                 uicontroller.updateCurrentProgress(0.0f);
                 maxColor(0);
                 createImage(0, 1);
+                //add
+                createImage(0, 9);
+                createImage(0, 10);
+                 createImage(0, 11);
+                createImage(0, 12);
+                //end add
                 createImage(0, 2);
                 uicontroller.triggerCompleteProcess();
             }
@@ -215,7 +349,7 @@ public class OnMapSpawn : MonoBehaviour
             else if (uicontroller.getCompletedProcess() == 3){
                 uicontroller.updateProcessDetail("apply kernel density");
                 kernelDensityEstimation();
-                createImage(0 , 3);
+               // createImage(0 , 3);
                 uicontroller.triggerCompleteProcess();
             }
             //to start edge detection and home range calculation
@@ -230,8 +364,8 @@ public class OnMapSpawn : MonoBehaviour
                     kernelDensityEstimation(false);
                     walkingWithinHomeRange();
                     maxColor(2); //type 2 is walking habits type
-                    createImage(0 , 5); //create only walking habits
-                    createImage(0 , 6); //create walking habits and dog group
+                  //  createImage(0 , 5); //create only walking habits
+                 //   createImage(0 , 6); //create walking habits and dog group
                 }
                 uicontroller.triggerCompleteProcess();
             }
@@ -256,8 +390,8 @@ public class OnMapSpawn : MonoBehaviour
                     else {
                         highest_habits_rate = 0.0f;
                         maxColor(2);
-                        createImage(0 , 5);
-                        createImage(0 , 6);
+                       // createImage(0 , 5);
+                      //  createImage(0 , 6);
                         uicontroller.triggerCompleteProcess();
                     }
                 }
@@ -272,7 +406,7 @@ public class OnMapSpawn : MonoBehaviour
                 highest_habits_rate = 0.0f;
                 initializeWalkingSimulationMap();
                 assignGroup();
-                createImage(0, 7);
+               // createImage(0, 7);
                 highest_habits_rate = 0.0f;
                 maxColor(2);
                 decisionTree();
@@ -298,8 +432,16 @@ public class OnMapSpawn : MonoBehaviour
                     uicontroller.setupActivation(false);
                     startPreDataRegister = false;
                     Debug.Log("This area has innate: " + (innate_total / (float)timeScaleFactor.Length) + ", outage: " + (outage_total / (float)timeScaleFactor.Length));
+                   uicontroller.triggerCompleteProcess();
                 }
             }
+            //test rabies run
+             else if (uicontroller.getCompletedProcess() == 10){
+                 uicontroller.updateProcessDetail("Rabies is running");
+                    rabiespreading();
+                 uicontroller.setupActivation(false);
+                startPreDataRegister = false;
+             }
         }
 
         if (Input.GetKeyDown("b")){
@@ -307,6 +449,407 @@ public class OnMapSpawn : MonoBehaviour
         }
     }
 
+//add for rabies testing
+private void  rabiespreading()
+{
+         suspectamount= new float[xgridsize , ygridsize];
+         infectamount = new float[xgridsize , ygridsize,i_to_r_date];
+         exposeamount = new float[xgridsize , ygridsize,e_to_i_date];
+         float[ , , ] plusamount= new float[xgridsize , ygridsize,e_to_i_date];
+         float[ , , ] plusinfect= new float[xgridsize , ygridsize,i_to_r_date];
+         float[,] fleekernel = new float[xgridsize , ygridsize];
+        //float[,] groupkernel = new float[xgridsize , ygridsize];
+       //  float[,] attractkernel = new float[xgridsize , ygridsize];
+
+         float inclineweight = 0.5f;
+         float fleeweight = 0.5f;
+         float chaseweight = 0.5f;
+         float groupweight = 0.5f;
+         float attractweight = 0.5f;
+         //let's set environment
+        //set suspect
+        for (int m = 0; m < xgridsize; m++)
+            {
+                for (int n = 0; n < ygridsize; n++)
+                {
+                    suspectamount[m,n]=wh[m,n];
+                }
+            }
+
+         for (int i = 0; i < infectdogdata.Count; i++)
+        {
+              //add infect dog
+            infectamount[ infectdogdata[i].lonid ,  infectdogdata[i].latid,0] =1.0f;// infectdogdata[i].size;
+        }
+        
+
+        //test run
+         for (int i = 0; i < infectdogdata.Count; i++)
+        {
+          
+      
+
+            for (int j = 0; j < 200; j++)
+            {
+                uicontroller.updateProcessDetail("Rabies is running frame " + (j+1));
+         
+
+          
+
+            //for incline
+            float up_incdis=0.0f,down_incdis=0.0f,left_incdis=0.0f,right_incdis=0.0f;
+            float exposecriteria=distribution_criteria*(exposesum()/625.0f);
+            //for infect
+            float infectedcriteria=distribution_criteria*(infectsum()/625.0f);
+
+            //calculate each kernel table
+            //fleeandfight kernel
+          /*   for (int m = 0; m < xgridsize; m++)
+            {
+                for (int n = 0; n < ygridsize; n++)
+                {
+                    up_incdis=fleelevely(m,n,1);
+                    down_incdis=fleelevely(m,n,-1);
+                    left_incdis=fleelevelx(m,n,-1);
+                    right_incdis=fleelevelx(m,n,1);
+                    
+                        fleekernel[m,n]-=(left_incdis+right_incdis+down_incdis+up_incdis);
+                        fleekernel[m,n]+=up_incdis;
+                        fleekernel[m,n]+=down_incdis;
+                        fleekernel[m,n]+=right_incdis;
+                        fleekernel[m,n]+=left_incdis;
+                }
+            }*/
+
+                //eqaully distribute+incline
+            for(int d=0; d< e_to_i_date;d++)
+            {
+            for (int m = 0; m < xgridsize; m++)
+            {
+                for (int n = 0; n < ygridsize; n++)
+                {
+                    if (exposeamount[m,n,d]>0.0f) 
+                    {
+
+                        up_incdis =distributeElevationLevel(heightxy[m , n] , heightxy[m , n + 1]) *0.20f*exposeamount[m,n,d];
+                        down_incdis =distributeElevationLevel(heightxy[m , n] , heightxy[m , n - 1])*0.20f*exposeamount[m,n,d];
+                        left_incdis = distributeElevationLevel(heightxy[m , n] , heightxy[m-1 , n ])*0.20f*exposeamount[m,n,d];
+                        right_incdis = distributeElevationLevel(heightxy[m , n] , heightxy[m+1 , n ])*0.20f*exposeamount[m,n,d];
+
+                        
+                        if (m==0 )
+                        {
+                            left_incdis=0.0f;
+                        }
+                        else if (m==xgridsize-1)
+                        {
+                           right_incdis=0.0f;
+                        }
+                       
+                        if (n==0 )
+                        {
+                            down_incdis =0.0f;
+                        }
+                        else if (n==ygridsize-1 )
+                        {
+                           up_incdis =0.0f;
+                        }
+
+                        if(up_incdis<exposecriteria) up_incdis=0.0f;
+                        if(down_incdis<exposecriteria) down_incdis=0.0f;
+                        if(left_incdis<exposecriteria) left_incdis=0.0f;
+                        if(right_incdis<exposecriteria) right_incdis=0.0f;
+
+                        plusamount[m,n,d]-=(left_incdis+right_incdis+down_incdis+up_incdis);
+                        plusamount[m,n+1,d]+=up_incdis;
+                        plusamount[m,n-1,d]+=down_incdis;
+                        plusamount[m+1,n,d]+=right_incdis;
+                        plusamount[m-1,n,d]+= left_incdis;
+                        
+                    }
+                }
+            }
+            
+            //end  eqaully distribute+incline
+
+            //flee suspect and expose
+            
+             
+
+            //chase suspect
+           
+                //plus amount from all kernel convalute
+                 for (int m = 0; m < xgridsize; m++)
+                 {
+                    for (int n = 0; n < ygridsize; n++)
+                     {
+                          exposeamount[m,n,d]+=plusamount[m,n,d];
+                         plusamount[m,n,d]=0.0f;
+                     }   
+                 }
+            }
+            
+
+             //infecteqaully distribute+incline
+            //reuse incdis var
+            for(int d=0; d< i_to_r_date;d++)
+            {
+             for (int m = 0; m < xgridsize; m++)
+            {
+                for (int n = 0; n < ygridsize; n++)
+                {
+                     if (infectamount[m,n,d]>0.0f)
+                     {
+                         up_incdis =distributeElevationLevel(heightxy[m , n] , heightxy[m , n + 1]) *0.20f*infectamount[m,n,d];
+                        down_incdis =distributeElevationLevel(heightxy[m , n] , heightxy[m , n - 1])*0.20f*infectamount[m,n,d];
+                        left_incdis = distributeElevationLevel(heightxy[m , n] , heightxy[m-1 , n ])*0.20f*infectamount[m,n,d];
+                        right_incdis = distributeElevationLevel(heightxy[m , n] , heightxy[m+1 , n ])*0.20f*infectamount[m,n,d];
+                        if (m==0 )
+                        {
+                            left_incdis=0.0f;
+                        }
+                        else if (m==xgridsize-1)
+                        {
+                           right_incdis=0.0f;
+                        }
+                       
+                        if (n==0 )
+                        {
+                            down_incdis =0.0f;
+                        }
+                        else if (n==ygridsize-1 )
+                        {
+                           up_incdis =0.0f;
+                        }
+
+                        if(up_incdis<infectedcriteria) up_incdis=0.0f;
+                        if(down_incdis<infectedcriteria) down_incdis=0.0f;
+                        if(left_incdis<infectedcriteria) left_incdis=0.0f;
+                        if(right_incdis<infectedcriteria) right_incdis=0.0f;
+
+                         plusinfect[m,n,d]-=(left_incdis+right_incdis+down_incdis+up_incdis);
+                         plusinfect[m,n+1,d]+=up_incdis;
+                         plusinfect[m,n-1,d]+=down_incdis;
+                         plusinfect[m+1,n,d]+=right_incdis;
+                         plusinfect[m-1,n,d]+= left_incdis;
+                     }
+                }
+            }
+            }
+
+            for(int d=0; d< i_to_r_date;d++)
+            {
+             //plus any amount from distribute
+                 for (int m = 0; m < xgridsize; m++)
+                 {
+                    for (int n = 0; n < ygridsize; n++)
+                     {
+                          infectamount[m,n,d]+=plusinfect[m,n,d];
+                          plusinfect[m,n,d]=0.0f;
+                     }   
+                 }
+            }
+
+
+
+            //day of infect change
+           
+            for(int d=i_to_r_date-1; d>=0;d--)
+            {
+            for (int m = 0; m < xgridsize; m++)
+                 {
+                    for (int n = 0; n < ygridsize; n++)
+                     {
+
+                         if(d== (i_to_r_date-1))
+                         {
+                            infectamount[m,n,d]=0.0f; //dead
+                            //Debug.Log("yay");
+                         }
+
+                        if(d!=0)
+                        {
+                         infectamount[m,n,d]=infectamount[m,n,d-1];
+                        }
+                        else
+                        {
+                        infectamount[m,n,d]=0.0f;
+                        }  
+                     }
+                 }
+            }
+
+
+            //day of expose change
+           
+            for(int d=e_to_i_date-1; d>=0;d--)
+            {
+            for (int m = 0; m < xgridsize; m++)
+                 {
+                    for (int n = 0; n < ygridsize; n++)
+                     {
+
+                         if(d== (e_to_i_date-1))
+                         {
+                            infectamount[m,n,0]+= exposeamount[m,n,d];
+                            //Debug.Log("yay");
+                         }
+
+                        if(d!=0)
+                        {
+                         exposeamount[m,n,d]=exposeamount[m,n,d-1];
+                        }
+                        else
+                        {
+                        exposeamount[m,n,d]=0.0f;
+                        }  
+                     }
+                 }
+            }
+            
+            //
+
+             //if run rabies found normal dog,bite
+
+              for (int m = 0; m < xgridsize; m++)
+                 {
+                    for (int n = 0; n < ygridsize; n++)
+                     {
+                         if (foundinfect(m,n))
+                         {
+                           float rabietranfer;
+                           rabietranfer = suspectamount[m,n] * biterate * infectedrate * (infectamount[m,n,0]+infectamount[m,n,1]+infectamount[m,n,2]); // 1 is infectamount
+                           exposeamount[m,n,0] += rabietranfer;
+                           suspectamount[m,n]-= rabietranfer ;
+                         }
+                     }
+                 }
+           
+
+            createImage(j,100);
+            }
+
+            /*  //debug checking
+            for (int m = 0; m < xgridsize; m++)
+            {
+                for (int n = 0; n < ygridsize; n++)
+                {
+                    if(infectamount[m,n]>0.0f)
+                    Debug.Log("WTF infect amout at [" + m + " " + n+ "] is "+infectamount[m,n] );
+                }
+            }*/
+        }
+
+
+}
+
+//add for check expose sum
+private bool foundinfect(int lon,int lat)
+{
+
+    if(lon<0)return false;
+    if(lat<0)return false;
+    if(lon>xgridsize)return false;
+    if(lat>ygridsize)return false;
+   for(int d=0; d< i_to_r_date;d++)
+            {
+            
+                         if( infectamount[lon,lat,d]>0.0f)
+                         {
+                            return true;
+                         }
+            }
+            return false;
+        
+}
+ private float exposesum()
+ {
+     float sum=0.0f;
+    for(int d=0; d< e_to_i_date;d++)
+        {
+            for (int m = 0; m < xgridsize; m++)
+            {
+                for (int n = 0; n < ygridsize; n++)
+                {
+                    sum+=exposeamount[m,n,d];
+                }
+            }
+        }
+       
+     return sum;
+ }
+private float infectsum()
+ {
+     float sum=0.0f;
+    for(int d=0; d< i_to_r_date;d++)
+        {
+            for (int m = 0; m < xgridsize; m++)
+            {
+                for (int n = 0; n < ygridsize; n++)
+                {
+                    sum+=infectamount[m,n,d];
+                }
+            }
+        }
+       
+     return sum;
+ }
+private float exposesumatpoint(int lon,int lat)
+ {
+     float sum=0.0f;
+    for(int d=0; d< e_to_i_date;d++)
+        {
+                    sum+=exposeamount[lon,lat,d];
+        }  
+     return sum;
+ }
+private float infectsumatpoint(int lon,int lat)
+ {
+     float sum=0.0f;
+    for(int d=0; d< i_to_r_date;d++)
+        {
+                    sum+=infectamount[lon,lat,d];
+        }  
+     return sum;
+ }
+
+ private float fleelevelx(int lon,int lat,int leftrightindicator)
+ {
+     float fleeval=0.0f;
+  
+        for(int x=lon-rabiedetectrange;x<=lon+rabiedetectrange;x++)
+        {
+            for (int y=lat-((int)Mathf.Abs(lon-x)-rabiedetectrange);y<=lat+((int)Mathf.Abs(lon-x)-rabiedetectrange);y++)
+            {
+                if(foundinfect(x,y))
+                {
+                    fleeval+= (rabiedetectrange-((Mathf.Abs(lon-x)+Mathf.Abs(lat-y))))*infectsumatpoint(x,y);//(detectrange-infectandpointrange) *infectnum*80%//morenear morefleeval
+                }
+            }
+        }
+        return fleeval;
+    
+
+ }
+
+ private float fleelevely(int lon,int lat,int updownindicator)
+ {
+      float fleeval=0.0f;
+  
+        for(int x=lon-rabiedetectrange;x<=lon+rabiedetectrange;x++)
+        {
+            for (int y=lat-((int)Mathf.Abs(lon-x)-rabiedetectrange);y<=lat+((int)Mathf.Abs(lon-x)-rabiedetectrange);y++)
+            {
+                if(foundinfect(x,y))
+                {
+                    fleeval+= (rabiedetectrange-((Mathf.Abs(lon-x)+Mathf.Abs(lat-y))))*infectsumatpoint(x,y);//(detectrange-infectandpointrange) *infectnum*80%//morenear morefleeval
+                }
+            }
+        }
+        return fleeval;
+ }
+
+//end 
     private float distributeElevationLevel(float height1, float height2)
     {
         if (!allowElevation){
@@ -576,11 +1119,11 @@ public class OnMapSpawn : MonoBehaviour
         {
             for (int lon = 0; lon < xgridsize; lon++)
             {
-                texture.SetPixel(lon , lat , getColorFromColorType((ygridsize - 1) - lat , lon , imagetype));
+                texture.SetPixel( lon ,lat , getColorFromColorType((ygridsize-1) -lat , lon , imagetype));
             }
         }
-
         texture.Apply();
+        
 
         //encode to png
         byte[] bytes = texture.EncodeToPNG();
@@ -684,6 +1227,106 @@ public class OnMapSpawn : MonoBehaviour
             float colorvalue = wh[lon, lat] / highest_estimate_simulation_dog_color;
             return new Color(colorvalue, colorvalue, colorvalue);
         }
+
+        //show dog S state
+        else if (imagetype == 9)
+        {
+             if (doggroup[lon , lat]* dogstate_proposion[0] > 0.0f)
+            {
+                return new Color(doggroup[lon , lat] / highest_home_rate , doggroup[lon , lat] / highest_home_rate , doggroup[lon , lat] / highest_home_rate);
+            }
+            else
+            {
+                return Color.black;
+            }
+        }
+
+        //show dog S state //full white when at 5+
+        else if (imagetype == 10)
+        {
+            float passlimitdog ;
+             if (doggroup[lon , lat]* dogstate_proposion[0] > 0.0f)
+            {
+                passlimitdog = ( doggroup[lon , lat]* dogstate_proposion[0]) / 5.0f;
+                if ( passlimitdog > 1.0f ) passlimitdog=1.0f;
+                return new Color(passlimitdog ,passlimitdog  ,passlimitdog);
+            }
+            else
+            {
+                return Color.black;
+            }
+        }
+
+         //show dog E state 
+        else if (imagetype == 11)
+        {
+            if (doggroup[lon , lat]* dogstate_proposion[1] > 0.0f)
+            {
+                return new Color(doggroup[lon , lat] / highest_home_rate , doggroup[lon , lat] / highest_home_rate ,0.0f);
+            }
+            else
+            {
+                return Color.black;
+            }
+        }
+         //show dog E state //full yellow when at 5+
+        else if (imagetype == 12)
+        {
+           float passlimitdog ;
+             if (doggroup[lon , lat]* dogstate_proposion[1] > 0.0f)
+            {
+                passlimitdog = ( doggroup[lon , lat]* dogstate_proposion[1]) / 5.0f;
+                if ( passlimitdog > 1.0f ) passlimitdog=1.0f;
+                return new Color(passlimitdog ,passlimitdog  ,0.0f);
+            }
+            else
+            {
+                return Color.black;
+            }
+        }
+
+
+        else if (imagetype == 100)
+        {
+
+            //plus all expose day to be expose amount
+            float allexposeamount = 0.0f;
+             float allinfectamount = 0.0f;
+                     for(int d=0;d<e_to_i_date;d++)
+                    {
+                        allexposeamount += exposeamount[lon,lat,d];
+                    }
+                     for(int d=0;d<i_to_r_date;d++)
+                    {
+                        allinfectamount += infectamount[lon,lat,d];
+                    }
+           if (allinfectamount > 0.0f)
+            {
+                  if(allinfectamount<=0.5f)
+                return new Color(255.0f *(allinfectamount/0.5f) , 255.0f * (allexposeamount/(allinfectamount+allexposeamount))*(allinfectamount/0.5f) , 0.0f);
+                else
+                return new Color(255.0f , 0.0f , 0.0f);
+            }
+            else if(allexposeamount > 0.0f)
+            {
+                if(allexposeamount<=0.5f)
+                return new Color(255.0f * (allexposeamount / 0.5f) , 255.0f * (allexposeamount / 0.5f) , 0.0f);
+                else
+                return new Color(255.0f  , 255.0f  , 0.0f);
+            }
+            else if(suspectamount[lon , lat] > 0.0f)
+            {
+                if(suspectamount[lon , lat]<=0.5f)
+                return new Color(255.0f, 255.0f * (suspectamount[lon , lat] / 0.5f) , 255.0f);
+                else
+                return new Color(255.0f , 255.0f  , 255.0f);
+            }
+            else
+            {
+               return new Color(0.0f , 0.0f , ((heightxy[lon , lat] - minh) / (maxh - minh)));
+            }
+        }
+
         return Color.black;
     }
 
@@ -696,11 +1339,11 @@ public class OnMapSpawn : MonoBehaviour
         }
         else if (imagetype == 1)
         {
-            return "/../Assets/MickRendered/selectedDogTerrain" + route + ".png";
+            return "/../Assets/Resources/test/selectedDogTerrain" + route + ".png";
         }
         else if (imagetype == 2)
         {
-            return "/../Assets/MickRendered/selectedMapAndDog" + route + ".png";
+            return "/../Assets/Resources/test/selectedMapAndDog" + route + ".png";
         }
         else if (imagetype == 3)
         {
@@ -725,6 +1368,27 @@ public class OnMapSpawn : MonoBehaviour
         else if (imagetype == 8)
         {
             return "/../Assets/MickRendered/SingleDay/" + route + ".png";
+        }
+         else if (imagetype == 9)
+        {
+            return "/../Assets/P2render/state_s_dog" + route + ".png";
+        }
+         else if (imagetype == 10)
+        {
+            return "/../Assets/P2render/state_s_dogmax5" + route + ".png";
+        }
+         else if (imagetype == 11)
+        {
+            return "/../Assets/P2render/state_e_dog" + route + ".png";
+        }
+         else if (imagetype == 12)
+        {
+            return "/../Assets/P2render/state_w_dogmax5" + route + ".png";
+        }
+
+         else if (imagetype == 100)
+        {
+            return "/../Assets/Resources/test/run" + route + ".png";
         }
         return "/../Assets/MickRendered/createdImage" + route + ".png";
     }

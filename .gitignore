@@ -34,3 +34,8 @@ sysinfo.txt
 # Builds
 *.apk
 *.unitypackage
+Assets/P2render/state_w_dogmax50.png
+Assets/P2render/state_s_dogmax50.png
+Assets/P2render/state_s_dog0.png
+Assets/P2render/state_e_dog0.png
+Assets/P2render/selectedDogTerrain0.png
