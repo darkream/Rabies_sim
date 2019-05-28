@@ -44,7 +44,7 @@ public class OnMapSpawn : MonoBehaviour
     private int dogimageid = 0;
 
     [SerializeField]
-    int initial_dog_groupsize;
+    float initial_dog_groupsize;
 
     [SerializeField]
     float homeRangeMultiplier = 2.0f; //default home range multiplier = x1.8

@@ -467,7 +467,7 @@ MonoBehaviour:
   _initializeOnStart: 1
   _options:
     locationOptions:
-      latitudeLongitude: -10.2047290016696, 142.824046395789
+      latitudeLongitude: 20.34200000000,99.51410000000
       zoom: 15
     extentOptions:
       extentType: 0
@@ -606,12 +606,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _mbfunction: {fileID: 555018387}
   clustering: {fileID: 555018388}
-  distribution_criteria: 0.5
+  distribution_criteria: 0.0125
   _referenceCamera: {fileID: 1787361574}
   xgridsize: 1
   ygridsize: 1
   loopCriteria: 4
-  initial_dog_groupsize: 625
+  initial_dog_groupsize: 0.24
   homeRangeMultiplier: 2
   allowElevation: 1
   hordeMoveRate: 0.4
