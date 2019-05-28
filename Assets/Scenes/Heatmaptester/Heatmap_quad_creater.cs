@@ -5,7 +5,7 @@ using UnityEngine;
 public class Heatmap_quad_creater : MonoBehaviour {
 // Use this for initialization
 	public Material Matref;
-	public OnMapSpawn mapA;
+    public OnMapSpawn mapA;
     GameObject quadA;
     Renderer renA;
 	
