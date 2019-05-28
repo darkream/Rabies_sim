@@ -101,19 +101,37 @@ public class OnMapSpawn : MonoBehaviour
 
     Texture2D quadmaptexture;
 
-
+//--------------------------------------------------------------------------------------------
     //Rabies test zone
+
+
+        //SEIRV Destination+amount DATA
+      //+++++++++++++++++++++++++++++++++++++++++++++++
     private List<LatLonSize> infectdogdata;
-
+        
     private float[,,] infectamount; //array is destination
-
-   
-
     private float[,] vaccineamount; //array is destination
     private float[,] suspectamount; //array is destination
-
     private float[,,] exposeamount; //array is destination
 
+    //+++++++++++++++++++++++++++++++++++++++++++++++
+
+        //Group Tracking
+    //+++++++++++++++++++++++++++++++++++++++++++++++
+    private List<float[,]> grouptracker  ;  //list of group position and amount
+    //+++++++++++++++++++++++++++++++++++++++++++++++
+
+
+    //Factor moving 
+    //+++++++++++++++++++++++++++++++++++++++++++++++
+    //each factor //xgrid,ygrid, [0Sum,1Cen,2U,3D,4L,5R] value
+    private float[,,] inclinefactor;
+    private float[,,] fleefactor; 
+    private float[,,] chasefactor;
+     private float[,,] homefactor;
+     private float[,,] groupfactor;
+    private float[,,] attractfactor;
+    //+++++++++++++++++++++++++++++++++++++++++++++++
     private float biterate=0.2f; //100%
     private float infectedrate=0.1f; //100% for test
 
@@ -125,6 +143,9 @@ public class OnMapSpawn : MonoBehaviour
     int i_to_r_date = 3 ; //3 days
 
     int rabiedetectrange = 5;
+
+    
+//--------------------------------------------------------------------------------------------
     Texture2D[] runtexture = new Texture2D[100];
 
     bool runanimate=false;
@@ -457,16 +478,21 @@ private void  rabiespreading()
          exposeamount = new float[xgridsize , ygridsize,e_to_i_date];
          float[ , , ] plusamount= new float[xgridsize , ygridsize,e_to_i_date];
          float[ , , ] plusinfect= new float[xgridsize , ygridsize,i_to_r_date];
-         float[,] fleekernel = new float[xgridsize , ygridsize];
+
+         fleefactor = new float[xgridsize , ygridsize,6];
+         inclinefactor = new float[xgridsize , ygridsize,6];
         //float[,] groupkernel = new float[xgridsize , ygridsize];
        //  float[,] attractkernel = new float[xgridsize , ygridsize];
 
-         float inclineweight = 0.5f;
+         /*float inclineweight = 0.5f;
          float fleeweight = 0.5f;
          float chaseweight = 0.5f;
          float groupweight = 0.5f;
-         float attractweight = 0.5f;
+         float attractweight = 0.5f;*/
+
+
          //let's set environment
+//--------------------------------------------------------------------------------------------------------------------
         //set suspect
         for (int m = 0; m < xgridsize; m++)
             {
@@ -476,16 +502,34 @@ private void  rabiespreading()
                 }
             }
 
+
+        //add infect dog
          for (int i = 0; i < infectdogdata.Count; i++)
         {
-              //add infect dog
             infectamount[ infectdogdata[i].lonid ,  infectdogdata[i].latid,0] =1.0f;// infectdogdata[i].size;
         }
-        
 
-        //test run
-         for (int i = 0; i < infectdogdata.Count; i++)
+        //Set group
+        grouptracker = new List<float[,]>();
+        float[,] ArrayOffloat = new float[xgridsize,ygridsize];
+        for(int i=0;i<dogdata.Count;i++)
         {
+              grouptracker.Add(ArrayOffloat);
+        }
+        for(int x=0;x<xgridsize;x++)
+             {
+             for(int y=0;y<ygridsize;y++)
+                {
+                    grouptracker[findNearestGroupNeighbour(x,y)][x,y]=suspectamount[x,y];
+                    if(foundinfect(x,y))
+                    {
+                         grouptracker[findNearestGroupNeighbour(x,y)][x,y]+=infectamount[x,y,0];
+                    }
+                }
+             }
+//--------------------------------------------------------------------------------------------------------------------
+        
+      
           
       
 
@@ -494,7 +538,7 @@ private void  rabiespreading()
                 uicontroller.updateProcessDetail("Rabies is running frame " + (j+1));
          
 
-          
+
 
             //for incline
             float up_incdis=0.0f,down_incdis=0.0f,left_incdis=0.0f,right_incdis=0.0f;
@@ -502,25 +546,8 @@ private void  rabiespreading()
             //for infect
             float infectedcriteria=distribution_criteria*(infectsum()/625.0f);
 
-            //calculate each kernel table
-            //fleeandfight kernel
-          /*   for (int m = 0; m < xgridsize; m++)
-            {
-                for (int n = 0; n < ygridsize; n++)
-                {
-                    up_incdis=fleelevely(m,n,1);
-                    down_incdis=fleelevely(m,n,-1);
-                    left_incdis=fleelevelx(m,n,-1);
-                    right_incdis=fleelevelx(m,n,1);
-                    
-                        fleekernel[m,n]-=(left_incdis+right_incdis+down_incdis+up_incdis);
-                        fleekernel[m,n]+=up_incdis;
-                        fleekernel[m,n]+=down_incdis;
-                        fleekernel[m,n]+=right_incdis;
-                        fleekernel[m,n]+=left_incdis;
-                }
-            }*/
-
+           
+           
                 //eqaully distribute+incline
             for(int d=0; d< e_to_i_date;d++)
             {
@@ -651,6 +678,35 @@ private void  rabiespreading()
             }
 
 
+            //day of expose change
+
+          float[,] e_to_i_amount=new float[xgridsize,ygridsize];
+
+            for(int d=e_to_i_date-1; d>=0;d--)
+            {
+            for (int m = 0; m < xgridsize; m++)
+                 {
+                    for (int n = 0; n < ygridsize; n++)
+                     {
+
+                         if(d== (e_to_i_date-1))
+                         {
+                            e_to_i_amount[m,n] = exposeamount[m,n,d];
+                            //Debug.Log("yay");
+                         }
+
+                        if(d!=0)
+                        {
+                         exposeamount[m,n,d]=exposeamount[m,n,d-1];
+                        }
+                        else  if(d==0)
+                        {
+                        exposeamount[m,n,d]=0.0f;
+                        }  
+                     }
+                 }
+            }
+            
 
             //day of infect change
            
@@ -664,49 +720,19 @@ private void  rabiespreading()
                          if(d== (i_to_r_date-1))
                          {
                             infectamount[m,n,d]=0.0f; //dead
-                            //Debug.Log("yay");
                          }
 
                         if(d!=0)
                         {
                          infectamount[m,n,d]=infectamount[m,n,d-1];
                         }
-                        else
+                        else if(d==0)
                         {
-                        infectamount[m,n,d]=0.0f;
-                        }  
-                     }
-                 }
-            }
-
-
-            //day of expose change
-           
-            for(int d=e_to_i_date-1; d>=0;d--)
-            {
-            for (int m = 0; m < xgridsize; m++)
-                 {
-                    for (int n = 0; n < ygridsize; n++)
-                     {
-
-                         if(d== (e_to_i_date-1))
-                         {
-                            infectamount[m,n,0]+= exposeamount[m,n,d];
-                            //Debug.Log("yay");
-                         }
-
-                        if(d!=0)
-                        {
-                         exposeamount[m,n,d]=exposeamount[m,n,d-1];
+                         infectamount[m,n,d]=e_to_i_amount[m,n];
                         }
-                        else
-                        {
-                        exposeamount[m,n,d]=0.0f;
-                        }  
                      }
                  }
             }
-            
             //
 
              //if run rabies found normal dog,bite
@@ -718,7 +744,8 @@ private void  rabiespreading()
                          if (foundinfect(m,n))
                          {
                            float rabietranfer;
-                           rabietranfer = suspectamount[m,n] * biterate * infectedrate * (infectamount[m,n,0]+infectamount[m,n,1]+infectamount[m,n,2]); // 1 is infectamount
+                           rabietranfer = suspectamount[m,n] * biterate * infectedrate * infectsumatpoint(m,n); // 1 is infectamount
+                           if (rabietranfer > suspectamount[m,n]) rabietranfer=suspectamount[m,n];
                            exposeamount[m,n,0] += rabietranfer;
                            suspectamount[m,n]-= rabietranfer ;
                          }
@@ -738,7 +765,7 @@ private void  rabiespreading()
                     Debug.Log("WTF infect amout at [" + m + " " + n+ "] is "+infectamount[m,n] );
                 }
             }*/
-        }
+        
 
 
 }
@@ -816,39 +843,119 @@ private float infectsumatpoint(int lon,int lat)
  private float fleelevelx(int lon,int lat,int leftrightindicator)
  {
      float fleeval=0.0f;
-  
-        for(int x=lon-rabiedetectrange;x<=lon+rabiedetectrange;x++)
-        {
-            for (int y=lat-((int)Mathf.Abs(lon-x)-rabiedetectrange);y<=lat+((int)Mathf.Abs(lon-x)-rabiedetectrange);y++)
-            {
-                if(foundinfect(x,y))
-                {
-                    fleeval+= (rabiedetectrange-((Mathf.Abs(lon-x)+Mathf.Abs(lat-y))))*infectsumatpoint(x,y);//(detectrange-infectandpointrange) *infectnum*80%//morenear morefleeval
-                }
-            }
-        }
-        return fleeval;
-    
+     int temp=0;
+     //if infect found at same lon line destination, it choose same left and right ,but not middle
+     //for middle, it will calculated separately on fleecenter function 
 
+    //left side calculation
+    if(leftrightindicator==0) //left
+    {
+             for(int x=lon-rabiedetectrange;x<lon;x++)
+              {
+                   temp = (int)Mathf.Abs((int)Mathf.Abs(lon-x)-rabiedetectrange); 
+                     for (int y=lat-temp;y<=lat+temp;y++)
+                     {
+                             if(foundinfect(x,y))
+                             {
+                                 fleeval+= (rabiedetectrange-((Mathf.Abs(lon-x)+Mathf.Abs(lat-y))))*infectsumatpoint(x,y);//(detectrange-infectandpointrange) *infectnum*80%//morenear morefleeval
+                             }
+                     }
+              }
+        return fleeval;
+    }
+    //right side calculation
+      if(leftrightindicator==1) //right
+    {
+        for(int x=lon+1;x<=lon+rabiedetectrange;x++)
+              {
+                   temp = (int)Mathf.Abs((int)Mathf.Abs(lon-x)-rabiedetectrange); 
+                     for (int y=lat-temp;y<=lat+temp;y++)
+                     {
+                             if(foundinfect(x,y))
+                             {
+                                 fleeval+= (rabiedetectrange-((Mathf.Abs(lon-x)+Mathf.Abs(lat-y))))*infectsumatpoint(x,y);//(detectrange-infectandpointrange) *infectnum*80%//morenear morefleeval
+                             }
+                     }
+              }
+        return fleeval;
+    }
+
+    return fleeval;
+
+       
  }
 
  private float fleelevely(int lon,int lat,int updownindicator)
  {
       float fleeval=0.0f;
-  
-        for(int x=lon-rabiedetectrange;x<=lon+rabiedetectrange;x++)
-        {
-            for (int y=lat-((int)Mathf.Abs(lon-x)-rabiedetectrange);y<=lat+((int)Mathf.Abs(lon-x)-rabiedetectrange);y++)
-            {
-                if(foundinfect(x,y))
-                {
-                    fleeval+= (rabiedetectrange-((Mathf.Abs(lon-x)+Mathf.Abs(lat-y))))*infectsumatpoint(x,y);//(detectrange-infectandpointrange) *infectnum*80%//morenear morefleeval
-                }
-            }
-        }
+     int temp=0;
+     //for middle, it will calculated separately on fleecenter function 
+
+    //left side calculation
+    if(updownindicator==0) //up
+    {
+             for(int y=lat-rabiedetectrange;y<lat;y++)
+              {
+                   temp = (int)Mathf.Abs((int)Mathf.Abs(lat-y)-rabiedetectrange); 
+                     for (int x=lon-temp;x<=lon+temp;x++)
+                     {            
+                             if(foundinfect(x,y))
+                             {
+                                 fleeval+= (rabiedetectrange-((Mathf.Abs(lon-x)+Mathf.Abs(lat-y))))*infectsumatpoint(x,y);//(detectrange-infectandpointrange) *infectnum*80%//morenear morefleeval
+                             }                     
+                     }
+              }
         return fleeval;
+    }
+    //right side calculation
+      if(updownindicator==1) //down
+    {
+        for(int y=lat+1;y<=lat+rabiedetectrange;y++)
+              {
+                   temp = (int)Mathf.Abs((int)Mathf.Abs(lat-y)-rabiedetectrange); 
+                     for (int x=lon-temp;x<=lon+temp;y++)
+                     {
+                             if(foundinfect(x,y))
+                             {
+                                 fleeval+= (rabiedetectrange-((Mathf.Abs(lon-x)+Mathf.Abs(lat-y))))*infectsumatpoint(x,y);//(detectrange-infectandpointrange) *infectnum*80%//morenear morefleeval
+                             }                       
+                     }
+              }
+        return fleeval;
+    }
+
+    return fleeval;
+
  }
 
+private float fleecenterx(int lon,int lat)
+{
+    float fleeval=0.0f;
+
+     for (int y=lat-rabiedetectrange;y<=lat+rabiedetectrange;y++)
+                     {
+                             if(foundinfect(lon,y))
+                             {
+                                 fleeval+= (rabiedetectrange-(Mathf.Abs(lat-y)))*infectsumatpoint(lon,y);//(detectrange-infectandpointrange) *infectnum*80%//morenear morefleeval
+                             }
+                     }
+
+    return fleeval;
+}
+
+private float fleecentery(int lon,int lat)
+{
+    float fleeval=0.0f;
+
+     for (int x=lon-rabiedetectrange;x<=lon+rabiedetectrange;x++)
+                     {            
+                             if(foundinfect(x,lat))
+                             {
+                                 fleeval+= (rabiedetectrange-(Mathf.Abs(lon-x)))*infectsumatpoint(x,lat);//(detectrange-infectandpointrange) *infectnum*80%//morenear morefleeval
+                             }                     
+                     }
+    return fleeval;
+}
 //end 
     private float distributeElevationLevel(float height1, float height2)
     {
