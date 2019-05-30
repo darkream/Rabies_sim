@@ -119,6 +119,8 @@ public class OnMapSpawn : MonoBehaviour
         //Group Tracking
     //+++++++++++++++++++++++++++++++++++++++++++++++
     private List<float[,]> grouptracker  ;  //list of group position and amount
+
+    private int[,] homedestination;
     //+++++++++++++++++++++++++++++++++++++++++++++++
 
 
@@ -128,8 +130,8 @@ public class OnMapSpawn : MonoBehaviour
     private float[,,] inclinefactor;
     private float[,,] fleefactor; 
     private float[,,] chasefactor;
-     private float[,,] homefactor;
-     private float[,,] groupfactor;
+     private float[,,] homefactor;//x,y,group,value
+     private float[,,,] groupfactor;//x,y,group,value
     private float[,,] attractfactor;
     //+++++++++++++++++++++++++++++++++++++++++++++++
     private float biterate=0.2f; //100%
@@ -143,6 +145,7 @@ public class OnMapSpawn : MonoBehaviour
     int i_to_r_date = 3 ; //3 days
 
     int rabiedetectrange = 5;
+    int rabiechaserange = 6;
 
     
 //--------------------------------------------------------------------------------------------
@@ -169,12 +172,7 @@ public class OnMapSpawn : MonoBehaviour
         //clustering.readAndAssignMapCoordinates("Assets/doc.kml");
         //clustering.readFileToFindMinMax("Assets/mapcolor.txt");
         //add
-        dogstate_proposion = new float[5]; //0:S ,1:E,2:I,3:R,4:V
-        dogstate_proposion[0] = 1;
-        dogstate_proposion[1] = 0.0f;
-        dogstate_proposion[2] = 0.0f;
-        dogstate_proposion[3] = 0.0f;
-        dogstate_proposion[4] = 0.0f;
+     
         //0:S ,1:E,2:I,3:R,4:V
         //end add
     }
@@ -478,7 +476,7 @@ private void  rabiespreading()
          exposeamount = new float[xgridsize , ygridsize,e_to_i_date];
          float[ , , ] plusamount= new float[xgridsize , ygridsize,e_to_i_date];
          float[ , , ] plusinfect= new float[xgridsize , ygridsize,i_to_r_date];
-
+         homedestination = new int[xgridsize , ygridsize];
          fleefactor = new float[xgridsize , ygridsize,6];
          inclinefactor = new float[xgridsize , ygridsize,6];
         //float[,] groupkernel = new float[xgridsize , ygridsize];
@@ -520,6 +518,7 @@ private void  rabiespreading()
              {
              for(int y=0;y<ygridsize;y++)
                 {
+                    homedestination[x,y]=findNearestGroupNeighbour(x,y);
                     grouptracker[findNearestGroupNeighbour(x,y)][x,y]=suspectamount[x,y];
                     if(foundinfect(x,y))
                     {
@@ -531,39 +530,38 @@ private void  rabiespreading()
         
       
           
-      
-
+    //Loop begin
+//--------------------------------------------------------------------------------------------------------------------
             for (int j = 0; j < 200; j++)
             {
-                uicontroller.updateProcessDetail("Rabies is running frame " + (j+1));
-         
-
-
-
+            uicontroller.updateProcessDetail("Rabies is running frame " + (j+1));
             //for incline
             float up_incdis=0.0f,down_incdis=0.0f,left_incdis=0.0f,right_incdis=0.0f;
             float exposecriteria=distribution_criteria*(exposesum()/625.0f);
             //for infect
             float infectedcriteria=distribution_criteria*(infectsum()/625.0f);
-
+            float sumforfinalize=0.0f;
            
            
-                //eqaully distribute+incline
-            for(int d=0; d< e_to_i_date;d++)
-            {
+            //incline Factor
+        //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+           
             for (int m = 0; m < xgridsize; m++)
             {
                 for (int n = 0; n < ygridsize; n++)
                 {
-                    if (exposeamount[m,n,d]>0.0f) 
-                    {
+                        up_incdis =distributeElevationLevel(heightxy[m , n] , heightxy[m , n + 1]) *0.20f;
+                        down_incdis =distributeElevationLevel(heightxy[m , n] , heightxy[m , n - 1])*0.20f;
+                        left_incdis = distributeElevationLevel(heightxy[m , n] , heightxy[m-1 , n ])*0.20f;
+                        right_incdis = distributeElevationLevel(heightxy[m , n] , heightxy[m+1 , n ])*0.20f;
 
-                        up_incdis =distributeElevationLevel(heightxy[m , n] , heightxy[m , n + 1]) *0.20f*exposeamount[m,n,d];
-                        down_incdis =distributeElevationLevel(heightxy[m , n] , heightxy[m , n - 1])*0.20f*exposeamount[m,n,d];
-                        left_incdis = distributeElevationLevel(heightxy[m , n] , heightxy[m-1 , n ])*0.20f*exposeamount[m,n,d];
-                        right_incdis = distributeElevationLevel(heightxy[m , n] , heightxy[m+1 , n ])*0.20f*exposeamount[m,n,d];
+                        inclinefactor[m,n,1]=(-1.0f)*(up_incdis+down_incdis+left_incdis+right_incdis);
+                        inclinefactor[m,n,2]=up_incdis;
+                        inclinefactor[m,n,3]=down_incdis;
+                        inclinefactor[m,n,4]=left_incdis;
+                        inclinefactor[m,n,5]=right_incdis;
 
-                        
+                      /* 
                         if (m==0 )
                         {
                             left_incdis=0.0f;
@@ -582,7 +580,7 @@ private void  rabiespreading()
                            up_incdis =0.0f;
                         }
 
-                        if(up_incdis<exposecriteria) up_incdis=0.0f;
+                         if(up_incdis<exposecriteria) up_incdis=0.0f;
                         if(down_incdis<exposecriteria) down_incdis=0.0f;
                         if(left_incdis<exposecriteria) left_incdis=0.0f;
                         if(right_incdis<exposecriteria) right_incdis=0.0f;
@@ -591,95 +589,165 @@ private void  rabiespreading()
                         plusamount[m,n+1,d]+=up_incdis;
                         plusamount[m,n-1,d]+=down_incdis;
                         plusamount[m+1,n,d]+=right_incdis;
-                        plusamount[m-1,n,d]+= left_incdis;
+                        plusamount[m-1,n,d]+= left_incdis;*/
+                        
+                    
+                }
+            }
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++     
+            //end  incline Factor
+
+            //flee+fightback Factor
+            //everydog when see infect will flee
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++     
+                 for (int m = 0; m < xgridsize; m++)
+                {
+                    for (int n = 0; n < ygridsize; n++)
+                    {
+                        //flee value of each side
+                        up_incdis =fleelevely(m,n,0);
+                        down_incdis =fleelevely(m,n,1);
+                        left_incdis = fleelevelx(m,n,0);
+                        right_incdis = fleelevelx(m,n,1);
+                         //plus center axis flee value to both side in same axis
+                        float cenx=0.0f,ceny=0.0f,fight1=0.0f,fight2=0.0f;
+                        cenx=fleecenterx(m,n);
+                        ceny=fleecentery(m,n);
+                        up_incdis += (ceny/2.0f);
+                        down_incdis += (ceny/2.0f);
+                        left_incdis += (cenx/2.0f);
+                        right_incdis +=(cenx/2.0f);
+
+                        //then calculate fight back 20%
+                        fight1 =  up_incdis*0.2f;
+                        fight2 =  down_incdis*0.2f;
+                        up_incdis += (fight2-fight1);
+                        up_incdis += (fight1-fight2);
+                        fight1 =  left_incdis*0.2f;
+                        fight2 =  right_incdis*0.2f;
+                        left_incdis += (fight2-fight1);
+                        right_incdis += (fight1-fight2);
+
+                        //now we got all flee value , finalize
+                        sumforfinalize = up_incdis+down_incdis+left_incdis+right_incdis;
+                        up_incdis =  up_incdis/sumforfinalize;
+                        down_incdis =  down_incdis/sumforfinalize;
+                        left_incdis =  left_incdis/sumforfinalize;
+                        right_incdis =  right_incdis/sumforfinalize;
+                        fleefactor[m,n,1]=-1.0f;// everydog flee from center //will be back if some side can't expand
+                        fleefactor[m,n,2]=up_incdis;
+                        fleefactor[m,n,3]=down_incdis;
+                        fleefactor[m,n,4]=left_incdis;
+                        fleefactor[m,n,5]=right_incdis;
+                    }
+                }
+
+            
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ 
+
+
+             //chase Factor
+             //rabies chase every dog
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++    
+
+             float chasevalue=0.0f;
+             for (int m = 0; m < xgridsize; m++)
+                {
+                    for (int n = 0; n < ygridsize; n++)
+                    {
+                        if(foundinfect(m,n))
+                        {
+                            up_incdis=0.0f;
+                            down_incdis=0.0f;
+                            left_incdis=0.0f;
+                            right_incdis=0.0f;
+                            for(int x=m-rabiechaserange;x<=m+rabiechaserange;x++)
+                            {
+                             for(int y=n-(rabiechaserange-(int)Mathf.Abs(x-m));y<=n+((rabiechaserange-(int)Mathf.Abs(x-m)));y++)
+                                 {
+                                       if(founddog(x,y))
+                                       {
+                                           chasevalue = (rabiechaserange-(Mathf.Abs(x-m)+Mathf.Abs(y-n)))*suspectamount[x,y]+exposesumatpoint(x,y);
+                                           if(x<m) left_incdis+= chasevalue;
+                                           if(x>m) right_incdis+= chasevalue;
+                                           if(y<n) down_incdis+= chasevalue;
+                                           if(y>n) up_incdis+= chasevalue;
+                                       }
+                                 }
+                            }
+                        sumforfinalize = up_incdis+down_incdis+left_incdis+right_incdis;
+                        up_incdis =  up_incdis/sumforfinalize;
+                        down_incdis =  down_incdis/sumforfinalize;
+                        left_incdis =  left_incdis/sumforfinalize;
+                        right_incdis =  right_incdis/sumforfinalize;
+                        chasefactor[m,n,1]=-1.0f;// everydog flee from center //will be back if some side can't expand
+                        chasefactor[m,n,2]=up_incdis;
+                        chasefactor[m,n,3]=down_incdis;
+                        chasefactor[m,n,4]=left_incdis;
+                        chasefactor[m,n,5]=right_incdis;
+                        }
+                    }
+                }
+
+            
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ 
+
+            //Group Factor
+            //need to do each group
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++     
+             for (int g = 0; g < dogdata.Count; g++)
+             {
+             for (int m = 0; m < xgridsize; m++)
+                {
+                    for (int n = 0; n < ygridsize; n++)
+                    {
+
+                    }
+                }
+             }
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ 
+
+            //Home Factor
+            //need to do each group
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++     
+            /* 
+             for (int g = 0; g < dogdata.Count; g++)
+             {
+             for (int m = 0; m < xgridsize; m++)
+                {
+                    for (int n = 0; n < ygridsize; n++)
+                    {
                         
                     }
                 }
-            }
+             }
+            */
             
-            //end  eqaully distribute+incline
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ 
 
-            //flee suspect and expose
-            
-             
-
-            //chase suspect
-           
-                //plus amount from all kernel convalute
-                 for (int m = 0; m < xgridsize; m++)
-                 {
-                    for (int n = 0; n < ygridsize; n++)
-                     {
-                          exposeamount[m,n,d]+=plusamount[m,n,d];
-                         plusamount[m,n,d]=0.0f;
-                     }   
-                 }
-            }
-            
-
-             //infecteqaully distribute+incline
-            //reuse incdis var
-            for(int d=0; d< i_to_r_date;d++)
-            {
+             //attraction Factor
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++     
+            /* 
              for (int m = 0; m < xgridsize; m++)
-            {
-                for (int n = 0; n < ygridsize; n++)
                 {
-                     if (infectamount[m,n,d]>0.0f)
-                     {
-                         up_incdis =distributeElevationLevel(heightxy[m , n] , heightxy[m , n + 1]) *0.20f*infectamount[m,n,d];
-                        down_incdis =distributeElevationLevel(heightxy[m , n] , heightxy[m , n - 1])*0.20f*infectamount[m,n,d];
-                        left_incdis = distributeElevationLevel(heightxy[m , n] , heightxy[m-1 , n ])*0.20f*infectamount[m,n,d];
-                        right_incdis = distributeElevationLevel(heightxy[m , n] , heightxy[m+1 , n ])*0.20f*infectamount[m,n,d];
-                        if (m==0 )
-                        {
-                            left_incdis=0.0f;
-                        }
-                        else if (m==xgridsize-1)
-                        {
-                           right_incdis=0.0f;
-                        }
-                       
-                        if (n==0 )
-                        {
-                            down_incdis =0.0f;
-                        }
-                        else if (n==ygridsize-1 )
-                        {
-                           up_incdis =0.0f;
-                        }
-
-                        if(up_incdis<infectedcriteria) up_incdis=0.0f;
-                        if(down_incdis<infectedcriteria) down_incdis=0.0f;
-                        if(left_incdis<infectedcriteria) left_incdis=0.0f;
-                        if(right_incdis<infectedcriteria) right_incdis=0.0f;
-
-                         plusinfect[m,n,d]-=(left_incdis+right_incdis+down_incdis+up_incdis);
-                         plusinfect[m,n+1,d]+=up_incdis;
-                         plusinfect[m,n-1,d]+=down_incdis;
-                         plusinfect[m+1,n,d]+=right_incdis;
-                         plusinfect[m-1,n,d]+= left_incdis;
-                     }
-                }
-            }
-            }
-
-            for(int d=0; d< i_to_r_date;d++)
-            {
-             //plus any amount from distribute
-                 for (int m = 0; m < xgridsize; m++)
-                 {
                     for (int n = 0; n < ygridsize; n++)
-                     {
-                          infectamount[m,n,d]+=plusinfect[m,n,d];
-                          plusinfect[m,n,d]=0.0f;
-                     }   
-                 }
-            }
+                    {
+                        
+                    }
+                }
+            */
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ 
 
+            
+            
+
+           
+
+          //State date updater
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++     
 
             //day of expose change
-
+                //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
           float[,] e_to_i_amount=new float[xgridsize,ygridsize];
 
             for(int d=e_to_i_date-1; d>=0;d--)
@@ -706,10 +774,10 @@ private void  rabiespreading()
                      }
                  }
             }
-            
+            //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             //day of infect change
-           
+           //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
             for(int d=i_to_r_date-1; d>=0;d--)
             {
             for (int m = 0; m < xgridsize; m++)
@@ -733,10 +801,12 @@ private void  rabiespreading()
                      }
                  }
             }
+
+            //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
             //
 
              //if run rabies found normal dog,bite
-
+            //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx    
               for (int m = 0; m < xgridsize; m++)
                  {
                     for (int n = 0; n < ygridsize; n++)
@@ -751,8 +821,12 @@ private void  rabiespreading()
                          }
                      }
                  }
-           
+           //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+             //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++    
+
+             //piture creation 
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++    
             createImage(j,100);
             }
 
@@ -769,6 +843,8 @@ private void  rabiespreading()
 
 
 }
+
+
 
 //add for check expose sum
 private bool foundinfect(int lon,int lat)
@@ -789,6 +865,61 @@ private bool foundinfect(int lon,int lat)
             return false;
         
 }
+
+private bool founddog(int lon,int lat)
+{
+
+    if(lon<0)return false;
+    if(lat<0)return false;
+    if(lon>xgridsize)return false;
+    if(lat>ygridsize)return false;
+   for(int d=0; d< i_to_r_date;d++)
+            {
+            
+                         if( infectamount[lon,lat,d]>0.0f)
+                         {
+                            return true;
+                         }
+            }
+
+      for(int d1=0; d1< e_to_i_date;d1++)
+            {
+            
+                         if( exposeamount[lon,lat,d1]>0.0f)
+                         {
+                            return true;
+                         }
+            }
+        if(suspectamount[lon,lat]>0.0f) return true;
+         return false;      
+}
+
+
+
+private float sumatpoint()
+{
+    float sum=0.0f;
+   
+            for (int m = 0; m < xgridsize; m++)
+            {
+                for (int n = 0; n < ygridsize; n++)
+                {
+                    sum+=suspectamount[m,n];
+                    for(int d=0; d< e_to_i_date;d++)
+                    {
+                    sum+=exposeamount[m,n,d];
+                    }
+                    for(int d2=0; d2< i_to_r_date;d2++)
+                    {
+                    sum+=infectamount[m,n,d2];
+                    }
+                }
+            }
+        
+       
+     return sum;
+}
+
  private float exposesum()
  {
      float sum=0.0f;
@@ -848,7 +979,7 @@ private float infectsumatpoint(int lon,int lat)
      //for middle, it will calculated separately on fleecenter function 
 
     //left side calculation
-    if(leftrightindicator==0) //left
+    if(leftrightindicator==1) //right
     {
              for(int x=lon-rabiedetectrange;x<lon;x++)
               {
@@ -864,7 +995,7 @@ private float infectsumatpoint(int lon,int lat)
         return fleeval;
     }
     //right side calculation
-      if(leftrightindicator==1) //right
+      if(leftrightindicator==0) //left
     {
         for(int x=lon+1;x<=lon+rabiedetectrange;x++)
               {
@@ -892,7 +1023,7 @@ private float infectsumatpoint(int lon,int lat)
      //for middle, it will calculated separately on fleecenter function 
 
     //left side calculation
-    if(updownindicator==0) //up
+    if(updownindicator==1) //up
     {
              for(int y=lat-rabiedetectrange;y<lat;y++)
               {
@@ -908,7 +1039,7 @@ private float infectsumatpoint(int lon,int lat)
         return fleeval;
     }
     //right side calculation
-      if(updownindicator==1) //down
+      if(updownindicator==0) //down
     {
         for(int y=lat+1;y<=lat+rabiedetectrange;y++)
               {
@@ -956,6 +1087,9 @@ private float fleecentery(int lon,int lat)
                      }
     return fleeval;
 }
+
+
+
 //end 
     private float distributeElevationLevel(float height1, float height2)
     {
