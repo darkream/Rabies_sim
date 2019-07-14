@@ -604,12 +604,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _mbfunction: {fileID: 555018387}
+  clustering: {fileID: 0}
   distribution_criteria: 0.5
   _referenceCamera: {fileID: 1787361574}
   xgridsize: 1
   ygridsize: 1
   loopCriteria: 4
-  initial_dog_groupsize: 625
+  initial_dog_groupsize: 40
   homeRangeMultiplier: 2
   allowElevation: 1
   hordeMoveRate: 0.4
