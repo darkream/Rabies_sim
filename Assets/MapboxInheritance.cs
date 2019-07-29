@@ -355,20 +355,19 @@ public class MapboxInheritance : MonoBehaviour
  
     public void spawninfectedPrefab(double lat , double lon)
     {
-        infectedlocations.Add(new Vector2d(lat, lon));
-        Vector3 location = Conversions.GeoToWorldPosition(lat, lon, _map.CenterMercator, _map.WorldRelativeScale).ToVector3xz();
-        location = new Vector3(location.x, 0.0f, location.z);
+         UnityTile tile = getTileAt(lat , lon);
+        float h = getHeightAt((float)lat,(float)lon);
+
+        Vector3 location = Conversions.GeoToWorldPosition(lat , lon , _map.CenterMercator , _map.WorldRelativeScale).ToVector3xz();
+        location = new Vector3(location.x , h * tile.TileScale, location.z);
+
         var obj = Instantiate(infectedpanel);
         obj.transform.position = location;
-        obj.transform.localScale = new Vector3(_spawnScale, _spawnScale, _spawnScale);
-
+        obj.transform.localScale = new Vector3(_spawnScale , _spawnScale , _spawnScale);
+        
         infectObjs.Add(obj);
-
-        int lastIndex = infectedlocations.Count - 1;
-        int at_lat = getLatGridIndex(abs(s_lat - (float)infectedlocations[lastIndex].x));
-        int at_lon = getLonGridIndex(abs(s_lon - (float)infectedlocations[lastIndex].y));
-        //tempattracter = new AttractSource(at_lat, at_lon);
-
+       
+     
     }
 
     public void spawnMapPointer(double lat, double lon)

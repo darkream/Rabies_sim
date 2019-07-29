@@ -8,6 +8,7 @@ using Mapbox.Map;
 using Mapbox.Unity.MeshGeneration.Data;
 using System.IO;
 using System.Collections.Generic;
+using UnityEngine.UI;
 
 public class OnMapSpawn : MonoBehaviour
 {
@@ -152,10 +153,12 @@ public class OnMapSpawn : MonoBehaviour
      private float[,,,] homefactor;//x,y,group,value
      private float[,,,] groupfactor;//x,y,group,value
     private float[,,] attractfactor;
-
+    /* 
     private float[,] finalplusamount ;
     private float[,,] finalplusamount_E ;
-    private float[,,] finalplusamount_R ;
+    private float[,,] finalplusamount_R ;*/
+
+    private float[,] finalfactor ;
     //+++++++++++++++++++++++++++++++++++++++++++++++
 
     
@@ -185,7 +188,7 @@ public class OnMapSpawn : MonoBehaviour
 
 //--------------------------------------------------------------------------------------------
     Texture2D[] runtexture = new Texture2D[100];
-
+    public Text pictextrender;
     bool runanimate=false;
     //end test zone
 
@@ -496,7 +499,7 @@ public class OnMapSpawn : MonoBehaviour
                          rabiesEnvironmentSet();
                          InclineFactorCalculated();
                     }
-                     if (rabiespreadloop <30) //set loop per day here
+                     if (rabiespreadloop <50) //set loop per day here
                     {
                             if(step_factor)
                          {
@@ -512,7 +515,8 @@ public class OnMapSpawn : MonoBehaviour
                          //Factor_summarize();
                          //Factor_apply();
                           //Stateupdater();
-                         bitearea_calculated();
+                         Alldogmovement(); 
+                         //bitearea_calculated();
                          rabies_bite_and_spread();
                          dogeverygroup_updater();
                           step_create=true;
@@ -522,7 +526,7 @@ public class OnMapSpawn : MonoBehaviour
                          if(step_create)
                           {
                              createImage(rabiespreadloop,100);
-                             createImage(rabiespreadloop,13);
+                            // createImage(rabiespreadloop,13);//bitearea
                              //dogeverygroup_updater();
                              rabiespreadloop+=1;
                               step_factor=true;
@@ -556,7 +560,119 @@ public class OnMapSpawn : MonoBehaviour
 
 //add for rabies testing
 
+private void Alldogmovement()
+{
+            float newdistribution_criteria =0.001f;
+            float exposecriteria=newdistribution_criteria*(exposesum()/sumeverypoint());
+            float infectedcriteria=newdistribution_criteria*(infectsum()/sumeverypoint());
+            float moveinamount=0.0f;
+    //only incline use for now
+     for (int m = 0; m < xgridsize; m++)
+            {
+                for (int n = 0; n < ygridsize; n++)
+                {
+                    for (int g = 0; g < dogeachgroup.Count; g++)
+                    {
+                        if(homedestination[m,n]==g) //move in only group area
+                        {
+                             //suspectmove
+                        if(m>0&&dogeachgroup[g].suspectamount[m-1,n]>0) moveinamount=dogeachgroup[g].suspectamount[m-1,n]*inclinefactor[m-1,n,4]*0.2f;
+                        else moveinamount=0;
+                        if(moveinamount>newdistribution_criteria)
+                        {dogeachgroup[g].suspectamount[m,n]+=moveinamount;//eqully distrubute //not at left
+                        dogeachgroup[g].suspectamount[m-1,n]-=moveinamount;
+                        }
 
+                        if(n>0&&dogeachgroup[g].suspectamount[m,n-1]>0) moveinamount=dogeachgroup[g].suspectamount[m,n-1]*inclinefactor[m,n-1,3]*0.2f;//not at down
+                        else moveinamount=0;
+                        if(moveinamount>newdistribution_criteria)
+                        {dogeachgroup[g].suspectamount[m,n]+=moveinamount;//eqully distrubute //not at left
+                        dogeachgroup[g].suspectamount[m,n-1]-=moveinamount;
+                        }
+
+                        if(m<xgridsize-1&&dogeachgroup[g].suspectamount[m+1,n]>0) moveinamount=dogeachgroup[g].suspectamount[m+1,n]*inclinefactor[m+1,n,5]*0.2f;//not at right
+                        else moveinamount=0;
+                        if(moveinamount>newdistribution_criteria)
+                        {dogeachgroup[g].suspectamount[m,n]+=moveinamount;//eqully distrubute //not at left
+                        dogeachgroup[g].suspectamount[m+1,n]-=moveinamount;
+                        }
+
+                        if(n<ygridsize-1&&dogeachgroup[g].suspectamount[m,n+1]>0) moveinamount=dogeachgroup[g].suspectamount[m,n+1]*inclinefactor[m,n+1,2]*0.2f;//not at top
+                        else moveinamount=0;
+                        if(moveinamount>newdistribution_criteria)
+                        {dogeachgroup[g].suspectamount[m,n]+=moveinamount;//eqully distrubute //not at left
+                        dogeachgroup[g].suspectamount[m,n+1]-=moveinamount;
+                        }
+
+                        //exposedmove
+                         for(int d=0;d<e_to_i_date;d++)
+                        {
+                        if(m>0&&dogeachgroup[g].exposeamount[m-1,n,d]>0) moveinamount=dogeachgroup[g].exposeamount[m-1,n,d]*inclinefactor[m-1,n,4]*0.2f;//eqully distrubute //not at left
+                        else moveinamount=0;
+                        if(moveinamount>exposecriteria)
+                        {dogeachgroup[g].exposeamount[m,n,d]+=moveinamount;
+                        dogeachgroup[g].exposeamount[m-1,n,d]-=moveinamount;
+                        }
+
+                        if(n>0&&dogeachgroup[g].exposeamount[m,n-1,d]>0) moveinamount=dogeachgroup[g].exposeamount[m,n-1,d]*inclinefactor[m,n-1,3]*0.2f;//not at down
+                        else moveinamount=0;
+                        if(moveinamount>exposecriteria)
+                        {dogeachgroup[g].exposeamount[m,n,d]+=moveinamount;
+                        dogeachgroup[g].exposeamount[m,n-1,d]-=moveinamount;
+                        }
+
+                        if(m<xgridsize-1&&dogeachgroup[g].exposeamount[m+1,n,d]>0) moveinamount=dogeachgroup[g].exposeamount[m+1,n,d]*inclinefactor[m+1,n,5]*0.2f;//not at right
+                        else moveinamount=0;
+                        if(moveinamount>exposecriteria)
+                        {dogeachgroup[g].exposeamount[m,n,d]+=moveinamount;
+                        dogeachgroup[g].exposeamount[m+1,n,d]-=moveinamount;
+                        }
+
+                        if(n<ygridsize-1&&dogeachgroup[g].exposeamount[m,n+1,d]>0) moveinamount=dogeachgroup[g].exposeamount[m,n+1,d]*inclinefactor[m,n+1,2]*0.2f;//not at top
+                        else moveinamount=0;
+                        if(moveinamount>exposecriteria)
+                        {dogeachgroup[g].exposeamount[m,n,d]+=moveinamount;
+                        dogeachgroup[g].exposeamount[m,n+1,d]-=moveinamount;
+                        }
+                        }
+                        }
+                        //ifect is only one who can move outside 
+                        //infectedmove 
+                         for(int dd=0;dd<i_to_r_date;dd++)
+                        {
+                        if(m>0&&dogeachgroup[g].infectamount[m-1,n,dd]>0) moveinamount=dogeachgroup[g].infectamount[m-1,n,dd]*inclinefactor[m-1,n,4]*0.2f;//eqully distrubute //not at left
+                        else moveinamount=0;
+                        if(moveinamount>infectedcriteria)
+                        {dogeachgroup[g].infectamount[m,n,dd]+=moveinamount;
+                        dogeachgroup[g].infectamount[m-1,n,dd]-=moveinamount;
+                        }
+
+                        if(n>0&&dogeachgroup[g].infectamount[m,n-1,dd]>0) moveinamount=dogeachgroup[g].infectamount[m,n-1,dd]*inclinefactor[m,n-1,3]*0.2f;//not at down
+                        else moveinamount=0;
+                        if(moveinamount>infectedcriteria)
+                        {dogeachgroup[g].infectamount[m,n,dd]+=moveinamount;
+                        dogeachgroup[g].infectamount[m,n-1,dd]-=moveinamount;
+                        }
+
+                        if(m<xgridsize-1&&dogeachgroup[g].infectamount[m+1,n,dd]>0) moveinamount=dogeachgroup[g].infectamount[m+1,n,dd]*inclinefactor[m+1,n,5]*0.2f;//not at right
+                        else moveinamount=0;
+                        if(moveinamount>infectedcriteria)
+                        {dogeachgroup[g].infectamount[m,n,dd]+=moveinamount;
+                        dogeachgroup[g].infectamount[m+1,n,dd]-=moveinamount;
+                        }
+                        
+                        if(n<ygridsize-1&&dogeachgroup[g].infectamount[m,n+1,dd]>0) moveinamount=dogeachgroup[g].infectamount[m,n+1,dd]*inclinefactor[m,n+1,2]*0.2f;//not at top
+                        else moveinamount=0;
+                        if(moveinamount>infectedcriteria)
+                        {dogeachgroup[g].infectamount[m,n,dd]+=moveinamount;
+                        dogeachgroup[g].infectamount[m,n+1,dd]-=moveinamount;
+                        }
+
+                        }
+                    }
+                }
+            }
+}
 //add for check expose sum
 private void dogeverygroup_updater()
 {
@@ -1284,7 +1400,8 @@ private void HomeFactorCalculated()
 //---------------------------------------------------------------------------------------------------------------
 private void Factor_summarize()
 {
-    
+
+    /* 
             //all weigth equally
             //All factor convalution
             float uptemp=0.0f,downtemp=0.0f,lefttemp=0.0f,righttemp=0.0f;
@@ -1410,6 +1527,7 @@ private void Factor_summarize()
                 }
 
             }
+            */
 }
 
 
@@ -1417,6 +1535,8 @@ private void Factor_summarize()
 //---------------------------------------------------------------------------------------------------------------
 private void Factor_apply()
 {
+
+ /* 
 //Applying
             //++++++++++++++++++++++++++++++++++++++++++++
              for (int grabies = 0; grabies < dogeachgroup.Count; grabies++)
@@ -1442,7 +1562,7 @@ private void Factor_apply()
             }
 
             //++++++++++++++++++++++++++++++++++++++++++++
-
+*/
 }
 
 //----------------------------------------------------------------------------------------------------------------
@@ -1553,7 +1673,7 @@ private void rabies_bite_and_spread()
                     {
                         if (Bitearea[m,n]>0 && dogeverygroup.suspectamount[m,n]>0)
                          {
-                           rabietranfer = dogeverygroup.suspectamount[m,n] * biterate * infectedrate * Bitearea[m,n] * 0.2f;//fight rate as 0.2 
+                           rabietranfer = dogeverygroup.suspectamount[m,n] * biterate * infectedrate * infectsumatpoint(m,n) * 0.2f;//fight rate as 0.2 
                            if (rabietranfer >= dogeverygroup.suspectamount[m,n]) rabietranfer=dogeverygroup.suspectamount[m,n];
                             //this tranfer amount is suspect that turn to Expose from "Everygroup"
                             //Share to group
