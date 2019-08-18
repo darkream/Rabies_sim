@@ -105,7 +105,7 @@ public class MapboxInheritance : MonoBehaviour
     public float widest_longitude_per_degree = 111321.0f; //111.321 km longitude per degree at equator (while 0 at pole)
     public float one_degree_per_radian = 0.0174532925f; //PI divided by 180
 
-    public float s_lat = 7.044082f, s_lon = 100.4482f; //default_ lat: 7.044082, lon = 100.4482
+    public float s_lat = 7.044082f, s_lon = 100.4482f; //default_ lat: 7.044082, lon = 100.4482 // s_lat = 7.044082f, s_lon = 100.4482f;
     public int x_gsize, y_gsize; //default_ xsize = 1700 grid, ysize = 1000 grid
     LatLonSize tempdoglocation;
 
