@@ -609,7 +609,7 @@ private void Alldogmovement()
 {
             float newdistribution_criteria =0.0005f;
             float exposecriteria=newdistribution_criteria*(exposesum()/sumeverypoint());
-            float infectedcriteria=0.0000000001f;//newdistribution_criteria*(infectsum()/sumeverypoint());
+            float infectedcriteria=0.00000001f;//newdistribution_criteria*(infectsum()/sumeverypoint());
             float moveinamount=0.0f;
             float[,] tempsus = new  float[xgridsize,ygridsize] ;
             float[,,] tempexpose= new  float[xgridsize,ygridsize,e_to_i_date] ;
