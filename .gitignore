@@ -42,7 +42,7 @@ Assets/P2render/state_s_dogmax50.png
 Assets/P2render/state_s_dog0.png
 Assets/P2render/state_e_dog0.png
 Assets/P2render/selectedDogTerrain0.png
-Assets/Resources/E_state*
-Assets/Resources/S_state*
-Assets/Resources/I_state*
-Assets/Resources/test*
+/Assets/Resources/E_state/*
+/Assets/Resources/S_state/*
+/Assets/Resources/I_state/*
+/Assets/Resources/test/*

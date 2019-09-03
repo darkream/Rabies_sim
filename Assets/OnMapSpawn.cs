@@ -515,7 +515,7 @@ public class OnMapSpawn : MonoBehaviour
                          pictextrender.text = ("Max Suspect: "+maxsuspect.ToString("F2")+"\n"+"Max Exposed: "+maxexposed.ToString("F2")+"\n"+"Max Infected: "+maxinfect.ToString("F2")+"\n"+"day "+rentext_sysdate+" Pic number"+rentext_frame);
                     }
                  
-                    if (rabiespreadloop <288 && rabiespreadloop >=0) //set loop per day here //edit ----------------------------------
+                    if (rabiespreadloop <20 && rabiespreadloop >=0) //set loop per day here //edit ----------------------------------
                     {
                             if(step_factor)
                          {
@@ -537,7 +537,7 @@ public class OnMapSpawn : MonoBehaviour
                                  createImage_withtext(rentext_frame,10);
                                  createImage_withtext(rentext_frame,11);
                                  rentext_frame++;
-                                 if(rentext_frame>=288)//edit ----------------------------------
+                                 if(rentext_frame>=20)//edit ----------------------------------
                                  {
                                      rentext_frame=0;
                                      rentext_sysdate++;
@@ -624,7 +624,7 @@ private void Alldogmovement()
 {
             float newdistribution_criteria =0.0005f;
             float exposecriteria=newdistribution_criteria*(exposesum()/sumeverypoint());
-            float infectedcriteria=0.00001f;//newdistribution_criteria*(infectsum()/sumeverypoint());
+            float infectedcriteria=0.000001f;//newdistribution_criteria*(infectsum()/sumeverypoint());
             float moveinamount=0.0f;
             float[,] tempsus = new  float[xgridsize,ygridsize] ;
             float[,,] tempexpose= new  float[xgridsize,ygridsize,e_to_i_date] ;
