@@ -466,8 +466,8 @@ MonoBehaviour:
   _initializeOnStart: 1
   _options:
     locationOptions:
-      latitudeLongitude: 7.01125306678015,100.518001044838
-      zoom: 16.1
+      latitudeLongitude: 7.00762969112312, 100.501147439112
+      zoom: 18
     extentOptions:
       extentType: 0
       cameraBoundsOptions:

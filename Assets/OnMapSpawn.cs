@@ -170,7 +170,7 @@ public class OnMapSpawn : MonoBehaviour
     private float biterate=0.1f; //100%
     private float infectedrate=0.1f; //100% for test
 
-    int rabiespreadloop=0;
+    int rabiespreadloop=-1;
    
     int e_to_i_date = 10 ; //10 days
 
@@ -181,7 +181,7 @@ public class OnMapSpawn : MonoBehaviour
     int rabiechaserange = 3;
 
     int rabies_roam_grid_radius=500;
-    bool step_factor=true,step_apply=false,step_create=false;
+    bool step_factor=true,step_apply=false,step_create=false,step_first=true;
 
     private int sysdate=0;
 
@@ -504,21 +504,24 @@ public class OnMapSpawn : MonoBehaviour
                  if(sysdate<30) //set date here
                  {
 
-                    if (rabiespreadloop ==0 && sysdate==0 && step_factor==true)
+                    if (rabiespreadloop ==-1 && sysdate==0 && step_factor==true)
                     {
                          rabiesEnvironmentSet();
                          InclineFactorCalculated();
                          HomeFactorCalculated();
                          Factor_summarize();//tempolary cause no dynamic factor at moment
+                         dogeverygroup_updater();
+                         //Debug.Log("day " +rentext_sysdate+ " frame "+rentext_frame+" : sum"+sumeverypoint()+" s :"+suspectsum() + " e :" +exposesum()+ " i :"+infectsum());
+                         pictextrender.text = ("Max Suspect: "+maxsuspect.ToString("F2")+"\n"+"Max Exposed: "+maxexposed.ToString("F2")+"\n"+"Max Infected: "+maxinfect.ToString("F2")+"\n"+"day "+rentext_sysdate+" Pic number"+rentext_frame);
                     }
-                     if (rabiespreadloop <288) //set loop per day here //edit ----------------------------------
+                 
+                    if (rabiespreadloop <288 && rabiespreadloop >=0) //set loop per day here //edit ----------------------------------
                     {
                             if(step_factor)
                          {
                              //from rendertexture need to end frame first
-                             //skip first loop
-                             //and every shit also
-                             if(rabiespreadloop !=0 && sysdate==0)
+                            
+                            if(rabiespreadloop ==0 && sysdate==0)
                              {
                                  createImage_withtext(rentext_frame,100);
                                  createImage_withtext(rentext_frame,9);
@@ -526,6 +529,7 @@ public class OnMapSpawn : MonoBehaviour
                                  createImage_withtext(rentext_frame,11);
                                  rentext_frame++;
                              }
+                            
                              else if(rabiespreadloop !=0 || sysdate!=0)
                              {
                                  createImage_withtext(rentext_frame,100);
@@ -541,20 +545,25 @@ public class OnMapSpawn : MonoBehaviour
                              }
                             // FleeFactorCalculated();
                             // ChaseFactorCalculated();
-                            
+                         
                              step_apply=true;
                             step_factor=false;
                              uicontroller.updateProcessDetail("Factor loop :"+ rabiespreadloop);
                         }
+                       
                          if(step_apply)
                         {
                          //Factor_summarize();
                          //Factor_apply();
                           //Stateupdater();
+                       
                          Alldogmovement(); 
+                          dogeverygroup_updater();
                          //bitearea_calculated();
                          rabies_bite_and_spread();
+                        
                          dogeverygroup_updater();
+                        
                           step_create=true;
                          step_apply=false;
                           uicontroller.updateProcessDetail("Apply Factor calculation:"+ rabiespreadloop);
@@ -564,18 +573,24 @@ public class OnMapSpawn : MonoBehaviour
                              //createImage(rabiespreadloop,100);
                             //render texture need frame to end first
                             //so only text update here
-                            pictextrender.text = ("Max Suspect: "+maxsuspect.ToString("F2")+"\n"+"Max Exposed: "+maxexposed.ToString("F2")+"\n"+"Max Infected: "+maxinfect.ToString("F2")+"\n"+"day "+sysdate+" Pic number"+rabiespreadloop);
+                            
                             
                             // createImage(rabiespreadloop,13);//bitearea
-                             //dogeverygroup_updater();
+                            // dogeverygroup_updater();
+                           
                              rabiespreadloop+=1;
+                             pictextrender.text = ("Max Suspect: "+maxsuspect.ToString("F2")+"\n"+"Max Exposed: "+maxexposed.ToString("F2")+"\n"+"Max Infected: "+maxinfect.ToString("F2")+"\n"+"day "+rentext_sysdate+" Pic number"+rentext_frame);
+                             
+                            //Debug.Log("day " +rentext_sysdate+ " frame "+rentext_frame+" : sum"+sumeverypoint()+" s :"+suspectsum() + " e :" +exposesum()+ " i :"+infectsum());
                               step_factor=true;
                               step_create=false;
                           uicontroller.updateProcessDetail("day"+sysdate+"Pic creation :"+ rabiespreadloop);
                           }
                     }
+                    else if(rabiespreadloop==-1)rabiespreadloop++;
                     else
                     {
+                        
                       //  dogeverygroup_updater();
                         Stateupdater();
                         dogeverygroup_updater();
@@ -609,7 +624,7 @@ private void Alldogmovement()
 {
             float newdistribution_criteria =0.0005f;
             float exposecriteria=newdistribution_criteria*(exposesum()/sumeverypoint());
-            float infectedcriteria=0.00000001f;//newdistribution_criteria*(infectsum()/sumeverypoint());
+            float infectedcriteria=0.00001f;//newdistribution_criteria*(infectsum()/sumeverypoint());
             float moveinamount=0.0f;
             float[,] tempsus = new  float[xgridsize,ygridsize] ;
             float[,,] tempexpose= new  float[xgridsize,ygridsize,e_to_i_date] ;
@@ -963,6 +978,23 @@ private float sumeverypoint()
             }
      return sum;
 }
+
+private float suspectsum()
+ {
+     float sum=0.0f;
+    
+            for (int m = 0; m < xgridsize; m++)
+            {
+                for (int n = 0; n < ygridsize; n++)
+                {
+                    sum+=dogeverygroup.suspectamount[m,n];
+                }
+            }
+    
+       
+     return sum;
+ }
+
  private float exposesum()
  {
      float sum=0.0f;
@@ -1251,7 +1283,7 @@ private void rabiesEnvironmentSet()
   
                 for (int i = 0; i < infectdogdata.Count; i++)
                 {
-                 dogeverygroup.infectamount[ infectdogdata[i].lonid ,  infectdogdata[i].latid,0] =40.0f;// infectdogdata[i].size;
+                 dogeverygroup.infectamount[ infectdogdata[i].lonid ,  infectdogdata[i].latid,0] =1.0f;// infectdogdata[i].size;
               /*   roamingrabies.Add (new float[xgridsize,ygridsize]);
                  roamingrabies[i][infectdogdata[i].lonid ,  infectdogdata[i].latid]=1.0f;
                  roamingrabiesgroupID.Add ((findNearestGroupNeighbour(infectdogdata[i].lonid,infectdogdata[i].latid)));
@@ -1500,9 +1532,10 @@ private void HomeFactorCalculated()
 //---------------------------------------------------------------------------------------------------------------
 private void Factor_summarize()
 {
-    float home_weight=0.1f;
-     float flee_weight=0.5f;
-    float sum_weight=1.1f; //sum of all weight
+   // float home_weight=0.1f;
+   //  float flee_weight=0.5f;
+    //float sum_weight=1.1f; //sum of all weight
+ 
     //float _weight=0.5;
       for (int m = 0; m < xgridsize; m++)
                 {
@@ -1514,7 +1547,9 @@ private void Factor_summarize()
                             {
                                finalfactor[m,n,g,i] = inclinefactor[m,n,i];//*fleefactor[m,n,i]*flee_weight;
                                finalfactor_I[m,n,g,i] = inclinefactor[m,n,i]*(homefactor[m,n,g,i]+0.75f); //-0.25+1.00
+                              
                             }
+                         
                         }
                     }
                 }
@@ -1614,6 +1649,7 @@ private void Stateupdater()
                         else if(d==0)
                         {
                          dogeachgroup[grabies].infectamount[m,n,d]=e_to_i_amount[m,n];
+                         
                         }
                      }
                  }
@@ -1655,14 +1691,14 @@ private void Stateupdater()
 private void rabies_bite_and_spread()
 {
     float[] rabiestranfer_plusval = new float[dogeachgroup.Count];
-     float rabietranfer=0;
+     float rabietranfer=0.0f;
         for(int gg =0;gg<dogeachgroup.Count;gg++) rabiestranfer_plusval[gg]=0;
 
      for (int m = 0; m < xgridsize; m++)
                 {
                     for (int n = 0; n < ygridsize; n++)
                     {
-                       if(foundinfect(m,n))// if (Bitearea[m,n]>0 && dogeverygroup.suspectamount[m,n]>0)
+                       if(foundinfect(m,n)&&dogeverygroup.suspectamount[m,n]>0)// if (Bitearea[m,n]>0 && dogeverygroup.suspectamount[m,n]>0)
                          {
                            rabietranfer = dogeverygroup.suspectamount[m,n] * biterate * infectedrate * infectsumatpoint(m,n) * 0.2f;//fight rate as 0.2 
                            if (rabietranfer >= dogeverygroup.suspectamount[m,n]) rabietranfer=dogeverygroup.suspectamount[m,n];
