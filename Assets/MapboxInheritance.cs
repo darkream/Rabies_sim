@@ -519,12 +519,12 @@ public class MapboxInheritance : MonoBehaviour
         }
     }
 
-    private int getLatGridIndex(float moved_lat)
+    public int getLatGridIndex(float moved_lat)
     {
         return (int)(moved_lat / addLatByMeters(GridSize));
     }
 
-    private int getLonGridIndex(float moved_lon)
+     public int getLonGridIndex(float moved_lon)
     {
         return (int)(moved_lon / addLonByMeters(GridSize));
     }

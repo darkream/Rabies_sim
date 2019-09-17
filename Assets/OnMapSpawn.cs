@@ -192,6 +192,16 @@ public class OnMapSpawn : MonoBehaviour
     float maxinfect=0;
 
 //--------------------------------------------------------------------------------------------
+  //extend map zone
+    private float[,] extend_height;
+
+    private int extend_xgridsize=0,extend_ygridsize=0;
+    private float extend_slat,extend_slon;
+
+    float extend_minh,extend_maxh;    
+
+    public float[,] extend_infectamount; 
+//-----------------------------------------------------------------------------------------------
     Texture2D[] runtexture = new Texture2D[100];
     public Text pictextrender;
     public RenderTexture ren_texture;
@@ -327,6 +337,26 @@ public class OnMapSpawn : MonoBehaviour
             
         }
 //end
+
+        if (Input.GetKeyDown("t")) //temp map
+        {
+            Vector2d extendlatlondelta = _mbfunction.getLatLonFromXY(0, Screen.height);
+            //_mbfunction.setStartLatLon(extendlatlondelta);
+            extend_slat=(float)extendlatlondelta.x;
+            extend_slon=(float)extendlatlondelta.y;
+            extendlatlondelta = _mbfunction.getLatLonFromXY(Screen.width, 0);
+
+            extend_ygridsize = _mbfunction.getLatGridIndex(abs(extend_slat - (float)extendlatlondelta.x));
+            extend_xgridsize = _mbfunction.getLonGridIndex(abs(extend_slon - (float)extendlatlondelta.y));
+            extend_height = new float[extend_xgridsize, extend_ygridsize];
+
+            
+            extendmapping(extend_slat ,  extend_slon ,  extend_xgridsize , extend_ygridsize);
+           // pointToColorMap(startlat , startlon , xgridsize , ygridsize);
+            createImage_extendmap(0, 1001); //Create Height Map
+            Debug.Log("Extend Map Array is created with size (" +extend_xgridsize + ", " + extend_ygridsize + ")");
+        }
+
 
 
         //Press Z to select the screen
@@ -501,7 +531,7 @@ public class OnMapSpawn : MonoBehaviour
             //test rabies run
              else if (uicontroller.getCompletedProcess() == 10){
                  uicontroller.updateProcessDetail("Rabies is running");
-                 if(sysdate<30) //set date here
+                 if(sysdate<288) //set date here
                  {
 
                     if (rabiespreadloop ==-1 && sysdate==0 && step_factor==true)
@@ -515,7 +545,7 @@ public class OnMapSpawn : MonoBehaviour
                          pictextrender.text = ("Max Suspect: "+maxsuspect.ToString("F2")+"\n"+"Max Exposed: "+maxexposed.ToString("F2")+"\n"+"Max Infected: "+maxinfect.ToString("F2")+"\n"+"day "+rentext_sysdate+" Pic number"+rentext_frame);
                     }
                  
-                    if (rabiespreadloop <20 && rabiespreadloop >=0) //set loop per day here //edit ----------------------------------
+                    if (rabiespreadloop <288 && rabiespreadloop >=0) //set loop per day here //edit ----------------------------------
                     {
                             if(step_factor)
                          {
@@ -537,7 +567,7 @@ public class OnMapSpawn : MonoBehaviour
                                  createImage_withtext(rentext_frame,10);
                                  createImage_withtext(rentext_frame,11);
                                  rentext_frame++;
-                                 if(rentext_frame>=20)//edit ----------------------------------
+                                 if(rentext_frame>=288)//edit ----------------------------------
                                  {
                                      rentext_frame=0;
                                      rentext_sysdate++;
@@ -590,7 +620,9 @@ public class OnMapSpawn : MonoBehaviour
                     else if(rabiespreadloop==-1)rabiespreadloop++;
                     else
                     {
-                        
+                        extend_rabiesestimation();
+                        createImage_extendmap(0,1002);
+                        createImage_extendmap(0,1003);
                       //  dogeverygroup_updater();
                         Stateupdater();
                         dogeverygroup_updater();
@@ -619,7 +651,56 @@ public class OnMapSpawn : MonoBehaviour
     }
 
 //add for rabies testing
+private void extendmapping(float lat, float lon, int xsize, int ysize)
+{
+        float currlat = lat;
+        float currlon = lon;
+        float firstlat = lat;
 
+        for (int x = 0; x < xsize; x++)
+        {
+            for (int y = 0; y < ysize; y++)
+            {
+                currlat -= _mbfunction.addLatByMeters(_mbfunction.GridSize);
+                extend_height[x,y] = _mbfunction.getHeightAt(currlat , currlon);
+                if (extend_height[x,y] < extend_minh)
+                    extend_minh = extend_height[x,y];
+                if (extend_height[x,y] > extend_maxh)
+                    extend_maxh = extend_height[x,y];
+            }
+            currlat = firstlat;
+            currlon += _mbfunction.addLonByMeters(_mbfunction.GridSize);
+        }
+}
+
+private void  extend_rabiesestimation()
+{
+     int xgriddiff=0,ygriddiff=0;
+        xgriddiff=(extend_xgridsize-xgridsize)/2;
+        ygriddiff=(extend_ygridsize-ygridsize)/2;
+
+    int[] groupgridcount=new int[dogdata.Count];
+    //extend rabies not need date
+    //count all then spread until coverage ,hit criteria or reach 500 grid?
+    //assign value
+     for (int x = 0; x < extend_xgridsize; x++)
+        {
+            for (int y = 0; y < extend_ygridsize; y++)
+            {
+                if((x >= xgriddiff && x < (extend_xgridsize-xgriddiff))&&(y>= ygriddiff && y< (extend_ygridsize-ygriddiff))) //if in area
+                {
+                   if(foundinfect(x-xgriddiff,y-ygriddiff))
+                   {
+                        extend_infectamount[x,y]=infectsumatpoint(x-xgriddiff,y-ygriddiff);
+                   }
+                   else  extend_infectamount[x,y]=0;
+                }
+            }
+        }
+        
+        //potential bitearea calculation
+        bitearea_calculated();
+}
 private void Alldogmovement()
 {
             float newdistribution_criteria =0.0005f;
@@ -1245,7 +1326,7 @@ private void rabiesEnvironmentSet()
               dogeachgroup.Add( new dogamountSEIRV(xgridsize,ygridsize,e_to_i_date,i_to_r_date));
               
         }
-        Bitearea=new float[xgridsize,ygridsize];
+        Bitearea=new float[extend_xgridsize,extend_ygridsize];
          homedestination = new int[xgridsize , ygridsize];
          fleefactor = new float[xgridsize , ygridsize,4];
          chasefactor = new float[xgridsize , ygridsize,4];
@@ -1253,6 +1334,7 @@ private void rabiesEnvironmentSet()
          homefactor = new float [xgridsize , ygridsize,dogdata.Count,4];
          finalfactor = new float[xgridsize,ygridsize,dogdata.Count,4];
          finalfactor_I=new float[xgridsize,ygridsize,dogdata.Count,4];
+         extend_infectamount=new float[extend_xgridsize,extend_ygridsize];
         //roamingrabies = new List<float[,]>();
          //let's set environment
          
@@ -1764,28 +1846,19 @@ private void rabies_bite_and_spread()
 
 private void bitearea_calculated()
 {
-    float pi_val=3.14f;
-    float circle_area = Mathf.Ceil((rabiespreadloop)*(rabiespreadloop)*pi_val);
+  
+        Bitearea=new float[extend_xgridsize,extend_ygridsize];
 
-     for (int m = 0; m < xgridsize; m++)
+    for (int m = 0; m < extend_xgridsize; m++)
                 {
-                    for (int n = 0; n < ygridsize; n++)
+                    for (int n = 0; n < extend_ygridsize; n++)
                     {
-                        Bitearea[m,n]=0;
-                    }
-                }
-
-
-    for (int m = 0; m < xgridsize; m++)
-                {
-                    for (int n = 0; n < ygridsize; n++)
-                    {
-                       if(foundinfect(m,n))
+                       if(extend_infectamount[m,n]>0)
                        {
-                           int round_for_radius=0;
-                           round_for_radius = rabiespreadloop;
-                           if (round_for_radius >= 500) round_for_radius=500;
-                           if(round_for_radius==0) Bitearea[m,n]=infectsumatpoint(m,n);
+                           int round_for_radius=30;//150 meter radius
+                           int maximum_radius=100; 
+                           if (round_for_radius >= maximum_radius) round_for_radius=maximum_radius;
+                           if(round_for_radius==0) Bitearea[m,n]=1;
                            else
                            {
 
@@ -1795,15 +1868,15 @@ private void bitearea_calculated()
                                      {
                                          if(i==0&&j==0)
                                          {
-                                            Bitearea[m+i,n+j]+=infectsumatpoint(m,n)/circle_area;
+                                            Bitearea[m+i,n+j]=1;
                                          }
                                         else if((i*i)+(j*j)-(round_for_radius*round_for_radius)<=0)
                                         {
-                                             if(m+i<xgridsize&&n+j<ygridsize)Bitearea[m+i,n+j]+=infectsumatpoint(m,n)/circle_area;
+                                             if(m+i<extend_xgridsize&&n+j<extend_ygridsize)Bitearea[m+i,n+j]=1;
                                             //to other 3 qaudtant
-                                            if(m+i<xgridsize&&n-j>=0)Bitearea[m+i,n-j]+=infectsumatpoint(m,n)/circle_area;
-                                            if(m-i>=0&&n+j<ygridsize)Bitearea[m-i,n+j]+=infectsumatpoint(m,n)/circle_area;
-                                            if(m-i>=0&&n-j>=0)Bitearea[m-i,n-j]+=infectsumatpoint(m,n)/circle_area;
+                                            if(m+i<extend_xgridsize&&n-j>=0)Bitearea[m+i,n-j]=1;
+                                            if(m-i>=0&&n+j<extend_ygridsize)Bitearea[m-i,n+j]=1;
+                                            if(m-i>=0&&n-j>=0)Bitearea[m-i,n-j]=1;
                                         }
                                      }
                                 }
@@ -2138,7 +2211,59 @@ private void bitearea_calculated()
         File.WriteAllBytes(Application.dataPath + getFileNameTag(imagetype, route) , bytes);
     }
 
+private void createImage_extendmap(int route, int imagetype)
+    {
+         RenderTexture.active=ren_texture;
+        
+        
+        int realxsize=200; //rendertexture width
+        if (realxsize<extend_xgridsize)realxsize=extend_xgridsize;
 
+        //RenderTexture.active = ren_texture;
+        Texture2D texture = new Texture2D(realxsize , extend_ygridsize+90 , TextureFormat.RGB24 , false);
+
+        texture.ReadPixels(new Rect(0, 0, ren_texture.width, ren_texture.height-110), 0, 0);
+
+        //write text from texture
+
+        int xgriddiff=0,ygriddiff=0;
+
+        xgriddiff=(extend_xgridsize-xgridsize)/2;
+        ygriddiff=(extend_ygridsize-ygridsize)/2;
+
+       // Debug.Log("xg:"+xgriddiff+"yg:"+ygriddiff);
+        //map area
+        for (int lat = 0; lat < extend_ygridsize; lat++)
+        {
+            for (int lon = 0; lon < extend_xgridsize; lon++)
+            {
+                //extend pixel
+                if(imagetype==1001 || imagetype==1002)
+                {
+                    texture.SetPixel( lon ,lat+90 , getColorFromColorType((extend_ygridsize-1) -lat , lon , imagetype)); 
+                }
+                else
+                {           
+                    if((lat>= ygriddiff && lat< extend_ygridsize-ygriddiff-1) && (lon>= xgriddiff && lon< extend_xgridsize-xgriddiff-1) )
+                    {
+                        Debug.Log("y"+((ygridsize-1) -(lat-ygriddiff))+"x"+(lon-xgriddiff));
+                        texture.SetPixel( lon ,lat+90 , getColorFromColorType(((ygridsize-1) -(lat-ygriddiff)) , lon-xgriddiff , 100));
+                    }
+                    else
+                    texture.SetPixel( lon ,lat+90 , getColorFromColorType((extend_ygridsize-1) -lat , lon , 1001));
+                }
+                
+            }
+        }
+        texture.Apply();
+        
+
+        //encode to png
+        byte[] bytes = texture.EncodeToPNG();
+        Destroy(texture);
+
+        File.WriteAllBytes(Application.dataPath + getFileNameTag(imagetype, route) , bytes);
+    }
 
 
 
@@ -2278,16 +2403,11 @@ private void bitearea_calculated()
 
         else if (imagetype == 12)
         {
-             if (Bitearea[lon , lat]> 0.0f)
-            {
-                return Color.red;
-            }
-            else
-            {
+            
+           
                 return Color.black;
-            }
         }
-
+        
 
         else if (imagetype == 100)
         {
@@ -2311,6 +2431,23 @@ private void bitearea_calculated()
             }
         }
 
+        //extend map
+         else if (imagetype == 1001)
+        {
+            return new Color(0.0f , 0.0f , ((extend_height[lon , lat] - extend_minh) / (extend_maxh - extend_minh)));
+        }
+
+        else if (imagetype == 1002)
+        {
+            if(extend_infectamount[lon,lat]>0)  return Color.red;
+            else if (Bitearea[lon,lat]>0) return Color.cyan;
+            else return new Color(0.0f , 0.0f , ((extend_height[lon , lat] - extend_minh) / (extend_maxh - extend_minh)));
+        }
+
+        else if (imagetype == 1003)
+        {
+            return new Color(0.0f , 0.0f , ((extend_height[lon , lat] - extend_minh) / (extend_maxh - extend_minh)));
+        }
         return Color.white;
     }
 
@@ -2372,6 +2509,18 @@ private void bitearea_calculated()
          else if (imagetype == 100)
         {
             return "/../Assets/Resources/test/day"+rentext_sysdate+"_runloop_" + rentext_frame  + ".png";
+        }
+         else if (imagetype == 1001)
+        {
+            return "/../Assets/Resources/test/extendmap.png";
+        }
+         else if (imagetype == 1002)
+        {
+            return "/../Assets/Resources/testextend/extend_rabiespotetial_day"+rentext_sysdate+".png";
+        }
+        else if (imagetype == 1003)
+        {
+            return "/../Assets/Resources/testextend/extendmap_day"+rentext_sysdate+".png";
         }
         return "/../Assets/MickRendered/createdImage" + route + ".png";
     }

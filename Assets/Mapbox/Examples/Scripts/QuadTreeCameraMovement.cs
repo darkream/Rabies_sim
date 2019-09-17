@@ -28,6 +28,8 @@
 		[SerializeField]
 		bool _allowInput;
 
+		bool _allowInput2=true;//add
+
 		private Vector3 _origin;
 		private Vector3 _mousePosition;
 		private Vector3 _mousePositionPrevious;
@@ -55,7 +57,8 @@
 
 			if (Input.GetKeyDown("z"))
 			{
-				_allowInput = !_allowInput;
+				//_allowInput = !_allowInput;
+				_allowInput2 = !_allowInput2;//add this
 			}
 
 			if (_allowInput)
@@ -83,11 +86,13 @@
 			float xMove = Input.GetAxis("Horizontal");
 			float zMove = Input.GetAxis("Vertical");
 
+            if(_allowInput2)        //add this if braclet
+			{
 			PanMapUsingKeyBoard(xMove, zMove);
-
-
 			//pan mouse
 			PanMapUsingTouchOrMouse();
+
+			}	
 		}
 
 		void HandleTouch()
