@@ -132,6 +132,8 @@ public class OnMapSpawn : MonoBehaviour
     private dogamountSEIRV dogeverygroup;
 
     private float [,] Bitearea;
+    
+    private float [,] attractpoint;
     private List<dogamountSEIRV> dogeachgroup;
 
     //+++++++++++++++++++++++++++++++++++++++++++++++
@@ -184,6 +186,7 @@ public class OnMapSpawn : MonoBehaviour
     bool step_factor=true,step_apply=false,step_create=false,step_first=true;
 
     private int sysdate=0;
+    private int loopperday=288;
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //pic creation relate
@@ -200,7 +203,9 @@ public class OnMapSpawn : MonoBehaviour
 
     float extend_minh,extend_maxh;    
 
-    public float[,] extend_infectamount; 
+     float[,] extend_infectamount; 
+     float[,] extend_suspectamount; 
+    public float cutoff_percentage=0.05f;
 //-----------------------------------------------------------------------------------------------
     Texture2D[] runtexture = new Texture2D[100];
     public Text pictextrender;
@@ -531,7 +536,7 @@ public class OnMapSpawn : MonoBehaviour
             //test rabies run
              else if (uicontroller.getCompletedProcess() == 10){
                  uicontroller.updateProcessDetail("Rabies is running");
-                 if(sysdate<288) //set date here
+                 if(sysdate<30) //set date here
                  {
 
                     if (rabiespreadloop ==-1 && sysdate==0 && step_factor==true)
@@ -545,7 +550,7 @@ public class OnMapSpawn : MonoBehaviour
                          pictextrender.text = ("Max Suspect: "+maxsuspect.ToString("F2")+"\n"+"Max Exposed: "+maxexposed.ToString("F2")+"\n"+"Max Infected: "+maxinfect.ToString("F2")+"\n"+"day "+rentext_sysdate+" Pic number"+rentext_frame);
                     }
                  
-                    if (rabiespreadloop <288 && rabiespreadloop >=0) //set loop per day here //edit ----------------------------------
+                    if (rabiespreadloop < loopperday && rabiespreadloop >=0) //set loop per day here //edit ----------------------------------
                     {
                             if(step_factor)
                          {
@@ -567,7 +572,7 @@ public class OnMapSpawn : MonoBehaviour
                                  createImage_withtext(rentext_frame,10);
                                  createImage_withtext(rentext_frame,11);
                                  rentext_frame++;
-                                 if(rentext_frame>=288)//edit ----------------------------------
+                                 if(rentext_frame>=loopperday)//edit ----------------------------------
                                  {
                                      rentext_frame=0;
                                      rentext_sysdate++;
@@ -587,11 +592,9 @@ public class OnMapSpawn : MonoBehaviour
                          //Factor_apply();
                           //Stateupdater();
                        
-                         Alldogmovement(); 
+                          Alldogmovement(); 
                           dogeverygroup_updater();
-                         //bitearea_calculated();
                          rabies_bite_and_spread();
-                        
                          dogeverygroup_updater();
                         
                           step_create=true;
@@ -620,10 +623,12 @@ public class OnMapSpawn : MonoBehaviour
                     else if(rabiespreadloop==-1)rabiespreadloop++;
                     else
                     {
+                        dogeverygroup_updater();
                         extend_rabiesestimation();
                         createImage_extendmap(0,1002);
                         createImage_extendmap(0,1003);
-                      //  dogeverygroup_updater();
+                        text_file_creation();
+                     
                         Stateupdater();
                         dogeverygroup_updater();
                         sysdate+=1;
@@ -676,8 +681,8 @@ private void extendmapping(float lat, float lon, int xsize, int ysize)
 private void  extend_rabiesestimation()
 {
      int xgriddiff=0,ygriddiff=0;
-        xgriddiff=(extend_xgridsize-xgridsize)/2;
-        ygriddiff=(extend_ygridsize-ygridsize)/2;
+        xgriddiff=Mathf.CeilToInt((extend_xgridsize-xgridsize)/2);
+        ygriddiff=Mathf.CeilToInt((extend_ygridsize-ygridsize)/2);
 
     int[] groupgridcount=new int[dogdata.Count];
     //extend rabies not need date
@@ -687,20 +692,33 @@ private void  extend_rabiesestimation()
         {
             for (int y = 0; y < extend_ygridsize; y++)
             {
-                if((x >= xgriddiff && x < (extend_xgridsize-xgriddiff))&&(y>= ygriddiff && y< (extend_ygridsize-ygriddiff))) //if in area
+                 if((x >= xgriddiff && x < (extend_xgridsize-xgriddiff)-1)&&(y>= ygriddiff && y< (extend_ygridsize-ygriddiff)-1)) //if in area
                 {
+
+                   if(dogeverygroup.suspectamount[x-xgriddiff,y-ygriddiff]>0.0f)
+                   {
+                            extend_suspectamount[x,y]=dogeverygroup.suspectamount[x-xgriddiff,y-ygriddiff];
+                          
+                   }
+                   else {extend_suspectamount[x,y]=0;}
                    if(foundinfect(x-xgriddiff,y-ygriddiff))
                    {
                         extend_infectamount[x,y]=infectsumatpoint(x-xgriddiff,y-ygriddiff);
+                      
                    }
-                   else  extend_infectamount[x,y]=0;
+                   else  {extend_infectamount[x,y]=0;}
                 }
             }
         }
-        
+        //rabies_cutoff();
         //potential bitearea calculation
         bitearea_calculated();
 }
+private void rabies_cutoff()
+{
+
+}
+
 private void Alldogmovement()
 {
             float newdistribution_criteria =0.0005f;
@@ -947,6 +965,26 @@ private bool foundinfect(int lon,int lat)
         
 }
 
+
+private bool foundinfect_group(int lon,int lat,int groupnum)
+{
+
+    if(lon<0)return false;
+    if(lat<0)return false;
+    if(lon>=xgridsize)return false;
+    if(lat>=ygridsize)return false;
+    for(int d=0; d< i_to_r_date;d++)
+            {
+            
+                         if( dogeachgroup[groupnum].infectamount[lon,lat,d]>0.0f)
+                         {
+                            return true;
+                         }
+            }
+            return false;
+        
+}
+
 private bool foundexposed(int lon,int lat)
 {
 
@@ -1146,6 +1184,56 @@ private float infectsumatpoint_group(int lon,int lat,int groupnum)
      return sum;
  }
 
+private float everypointsum_group(int groupnum)
+ {
+     float sum=0.0f;
+    
+             for (int m = 0; m < xgridsize; m++)
+            {
+                for (int n = 0; n < ygridsize; n++)
+                {
+                    sum+=dogeachgroup[groupnum].suspectamount[m,n];
+                     for(int d=0; d< e_to_i_date;d++)
+                     {
+                         sum+=dogeachgroup[groupnum].exposeamount[m,n,d];
+                         sum+=dogeachgroup[groupnum].infectamount[m,n,d];
+                     }
+                }
+            }
+          
+     return sum;
+ }
+ private float suspectsum_group(int groupnum)
+ {
+     float sum=0.0f;
+    
+             for (int m = 0; m < xgridsize; m++)
+            {
+                for (int n = 0; n < ygridsize; n++)
+                {
+                    sum+=dogeachgroup[groupnum].suspectamount[m,n]; 
+                }
+            }
+          
+     return sum;
+ }
+
+ private float exposesum_group(int groupnum)
+ {
+     float sum=0.0f;
+    for(int d=0; d< e_to_i_date;d++)
+        {
+             for (int m = 0; m < xgridsize; m++)
+            {
+                for (int n = 0; n < ygridsize; n++)
+                {
+                    sum+=dogeachgroup[groupnum].exposeamount[m,n,d];
+                }
+            }
+        }  
+     return sum;
+ }
+
  private float infectsum_group(int groupnum)
  {
      float sum=0.0f;
@@ -1161,6 +1249,33 @@ private float infectsumatpoint_group(int lon,int lat,int groupnum)
         }  
      return sum;
  }
+
+ private float simple_inf_radius(int groupnum)
+ {
+
+      float rad=0.0f;
+      float minx=xgridsize,maxx=0,miny=ygridsize,maxy=0; 
+      //simple find center of polygon
+      for(int i=0;i<xgridsize;i++)
+     {
+          for(int j=0;j<ygridsize;j++)
+        {
+                if(foundinfect_group(i,j,groupnum))
+                 {
+                    if(i<minx)minx=i;
+                    if(i>maxx)maxx=i;
+                    if(j<miny)miny=j;
+                    if(j>maxy)maxy=j;
+                 }
+        }
+     }
+     rad=Mathf.Sqrt(((maxx-minx+1)*(maxx-minx+1))+((maxy-miny+1)*(maxy-miny+1))) /2.0f;//+1 cuase same position is still 1 rad
+         return rad;
+     
+ }
+
+
+
 
  private float fleelevelx(int lon,int lat,int leftrightindicator)
  {
@@ -1327,6 +1442,7 @@ private void rabiesEnvironmentSet()
               
         }
         Bitearea=new float[extend_xgridsize,extend_ygridsize];
+        attractpoint=new float[xgridsize,ygridsize];
          homedestination = new int[xgridsize , ygridsize];
          fleefactor = new float[xgridsize , ygridsize,4];
          chasefactor = new float[xgridsize , ygridsize,4];
@@ -1335,6 +1451,7 @@ private void rabiesEnvironmentSet()
          finalfactor = new float[xgridsize,ygridsize,dogdata.Count,4];
          finalfactor_I=new float[xgridsize,ygridsize,dogdata.Count,4];
          extend_infectamount=new float[extend_xgridsize,extend_ygridsize];
+         extend_suspectamount=new float[extend_xgridsize,extend_ygridsize];
         //roamingrabies = new List<float[,]>();
          //let's set environment
          
@@ -1352,10 +1469,6 @@ private void rabiesEnvironmentSet()
                      for (int dd = 0; dd < i_to_r_date; dd++)
                      {
                         dogeverygroup.infectamount[m,n,dd]=0.0f;
-                     }
-                     for(int gg=0;gg<dogeachgroup.Count;gg++)
-                     {
-                         Bitearea[m,n]=0;
                      }
                 }
             }
@@ -1390,6 +1503,12 @@ private void rabiesEnvironmentSet()
              }
             // Debug.Log("I do only once");
 
+
+             //Set food
+         for (int i = 0; i < attracter.Count; i++)
+                {
+                 attractpoint[attracter[i].lonid ,  attracter[i].latid] =1.0f;
+                }
 }
 //----------------------------------------------------------------------------------------------------------------------------
 
@@ -1608,6 +1727,52 @@ private void HomeFactorCalculated()
              }
         }
 }
+
+
+//-----------------------------------------------------------------------------------------------------
+private void FoodFactorCalculated()
+{
+     float left_incdis=0.0f,right_incdis=0.0f,up_incdis=0.0f,down_incdis=0.0f;
+     float sumforfinalize=0.0f;
+
+       for (int m = 0; m < xgridsize; m++)
+                {
+                    for (int n = 0; n < ygridsize; n++)
+                    {
+                            up_incdis=0.0f;
+                            down_incdis=0.0f;
+                            left_incdis=0.0f;
+                            right_incdis=0.0f;
+                        
+                        if(attractpoint[m,n]!=0)//if there is not attractor
+                        {
+                            //findNearestAttractionSource(m,n)
+                        }
+
+                        //complete calculation
+                         sumforfinalize = up_incdis+down_incdis+left_incdis+right_incdis;
+                         if (sumforfinalize>0.0f)
+                         {
+                        up_incdis =  up_incdis/sumforfinalize;
+                        down_incdis =  down_incdis/sumforfinalize;
+                        left_incdis =  left_incdis/sumforfinalize;
+                        right_incdis =  right_incdis/sumforfinalize;
+                         }
+                         else //every side is same
+                         {
+                        up_incdis =  0.25f;
+                        down_incdis =  0.25f;
+                        left_incdis =  0.25f;
+                        right_incdis =  0.25f; 
+                         }
+                        attractfactor[m,n,0]=up_incdis;
+                        attractfactor[m,n,1]=down_incdis;
+                        attractfactor[m,n,2]=left_incdis;
+                        attractfactor[m,n,3]=right_incdis;
+                    }
+                }
+}
+
 
 
 
@@ -1855,7 +2020,8 @@ private void bitearea_calculated()
                     {
                        if(extend_infectamount[m,n]>0)
                        {
-                           int round_for_radius=30;//150 meter radius
+                           
+                           int round_for_radius=100;//500 meter radius
                            int maximum_radius=100; 
                            if (round_for_radius >= maximum_radius) round_for_radius=maximum_radius;
                            if(round_for_radius==0) Bitearea[m,n]=1;
@@ -2175,7 +2341,43 @@ private void bitearea_calculated()
     }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+private void text_file_creation()
+{
+    string path = (Application.dataPath + "/../Assets/Resources/test/Report_day"+rentext_sysdate+".txt");
+    float inf_rad_temp=0;
+        
+            // Create a file to write to.
+            StreamWriter sw = File.CreateText(path);
+            sw.WriteLine("Rabies Report day "+rentext_sysdate+"\n");
+            sw.WriteLine("All Dog Amount : "+sumeverypoint());
+            sw.WriteLine("Suspect amount : "+suspectsum());
+            sw.WriteLine("Expose amount : "+exposesum());
+            sw.WriteLine("Infect amount : "+infectsum());
+            sw.WriteLine("==================================");
+            sw.WriteLine("Group Report day"+rentext_sysdate);
+            sw.WriteLine("==================================");
+            for (int i=0;i<dogeachgroup.Count;i++)
+            {
+                sw.WriteLine("Group "+(i+1)+"Report");
+                sw.WriteLine("Group Dog Amount : "+everypointsum_group(i));
+                sw.WriteLine("Group Suspect amount : "+suspectsum_group(i));
+                sw.WriteLine("Group Expose amount : "+exposesum_group(i));
+                inf_rad_temp=infectsum_group(i);
+                sw.WriteLine("Group Infect amount : "+inf_rad_temp);
+                if(inf_rad_temp!=0)
+                {
+                sw.WriteLine("Infect Group (sim) Radius : "+simple_inf_radius(i));
+                }
+                else
+                {
+                  sw.WriteLine("No infect Radius");  
+                }
+                sw.WriteLine("==================================");
+            }
+            sw.Close();  
+        
 
+}
 
  private void createImage_withtext(int route, int imagetype)
     {
@@ -2246,8 +2448,10 @@ private void createImage_extendmap(int route, int imagetype)
                 {           
                     if((lat>= ygriddiff && lat< extend_ygridsize-ygriddiff-1) && (lon>= xgriddiff && lon< extend_xgridsize-xgriddiff-1) )
                     {
-                        Debug.Log("y"+((ygridsize-1) -(lat-ygriddiff))+"x"+(lon-xgriddiff));
+                        if(founddog(lon-xgriddiff , (ygridsize-1) -(lat-ygriddiff)))
+                       // Debug.Log("y"+((ygridsize-1) -(lat-ygriddiff))+"x"+(lon-xgriddiff));
                         texture.SetPixel( lon ,lat+90 , getColorFromColorType(((ygridsize-1) -(lat-ygriddiff)) , lon-xgriddiff , 100));
+                        else texture.SetPixel( lon ,lat+90 , getColorFromColorType((extend_ygridsize-1) -lat , lon , 1001));
                     }
                     else
                     texture.SetPixel( lon ,lat+90 , getColorFromColorType((extend_ygridsize-1) -lat , lon , 1001));
@@ -2440,7 +2644,11 @@ private void createImage_extendmap(int route, int imagetype)
         else if (imagetype == 1002)
         {
             if(extend_infectamount[lon,lat]>0)  return Color.red;
-            else if (Bitearea[lon,lat]>0) return Color.cyan;
+            else if (Bitearea[lon,lat]>0) 
+            {
+                if(extend_suspectamount[lon,lat]>0)return Color.green;
+                else return Color.cyan;
+            }
             else return new Color(0.0f , 0.0f , ((extend_height[lon , lat] - extend_minh) / (extend_maxh - extend_minh)));
         }
 
