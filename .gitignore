@@ -46,3 +46,9 @@ Assets/P2render/selectedDogTerrain0.png
 /Assets/Resources/S_state/*
 /Assets/Resources/I_state/*
 /Assets/Resources/test/*
+/Assets/Resources/testextend/*
+!/Assets/Resources/E_state/keep_it.txt
+!/Assets/Resources/S_state/keep_it.txt
+!/Assets/Resources/I_state/keep_it.txt
+!/Assets/Resources/test/keep_it.txt
+!/Assets/Resources/testextend/keep_it.txt

@@ -186,7 +186,8 @@ public class OnMapSpawn : MonoBehaviour
     bool step_factor=true,step_apply=false,step_create=false,step_first=true;
 
     private int sysdate=0;
-    private int loopperday=288;
+    private int loopperday=5;
+    private int dayloop=5;
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //pic creation relate
@@ -536,7 +537,7 @@ public class OnMapSpawn : MonoBehaviour
             //test rabies run
              else if (uicontroller.getCompletedProcess() == 10){
                  uicontroller.updateProcessDetail("Rabies is running");
-                 if(sysdate<30) //set date here
+                 if(sysdate<dayloop) //set date here
                  {
 
                     if (rabiespreadloop ==-1 && sysdate==0 && step_factor==true)
