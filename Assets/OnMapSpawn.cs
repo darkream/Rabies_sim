@@ -2575,7 +2575,7 @@ private void createImage_extendmap(int route, int imagetype)
             
             if (dogeverygroup.suspectamount[lon,lat] > 0.0f)
             {
-                return new Color(0.0f , dogeverygroup.suspectamount[lon,lat] / maxsuspect ,0.0f);
+                return new Color(0.0f , ((dogeverygroup.suspectamount[lon,lat] / maxsuspect)*0.5f)+0.5f ,0.0f);
             }
             else  return Color.white;
             
@@ -2589,7 +2589,7 @@ private void createImage_extendmap(int route, int imagetype)
             float exsum=exposesumatpoint(lon,lat);
             if (exsum > 0.0f)
             {
-                return new Color(exsum  / maxexposed , exsum  / maxexposed ,0.0f);
+                return new Color(((exsum  / maxexposed)*0.5f)+0.5f , ((exsum  / maxexposed)*0.5f)+0.5f ,0.0f);
             }
             else  return Color.white;
             
@@ -2600,7 +2600,7 @@ private void createImage_extendmap(int route, int imagetype)
             float infsum=infectsumatpoint(lon,lat);
             if ( infsum > 0.0f)
             {
-                return new Color(infsum / maxinfect ,  0.0f ,0.0f);
+                return new Color(((infsum / maxinfect)*0.5f)+0.5f ,  0.0f ,0.0f);
             }
             else  return Color.white;
             
@@ -2620,15 +2620,15 @@ private void createImage_extendmap(int route, int imagetype)
             
            if (infectsumatpoint(lon,lat) > 0.0f)
             {
-                return new Color(infectsumatpoint(lon,lat)/maxinfect, 0.0f , 0.0f);
+                return new Color(((infectsumatpoint(lon,lat)/maxinfect)*0.5f)+0.5f, 0.0f , 0.0f);
             }
             else if(exposesumatpoint(lon,lat) > 0.0f)
             {
-                return new Color(exposesumatpoint(lon,lat)/maxexposed  , exposesumatpoint(lon,lat)/maxexposed , 0.0f);
+                return new Color(((exposesumatpoint(lon,lat)/maxexposed)*0.5f)+0.5f  , ((exposesumatpoint(lon,lat)/maxexposed)*0.5f)+0.5f , 0.0f);
             }
             else if(dogeverygroup.suspectamount[lon , lat] > 0.0f)
             {
-                return new Color(0.0f , dogeverygroup.suspectamount[lon , lat]/maxsuspect  , 0.0f);
+                return new Color(0.0f , ((dogeverygroup.suspectamount[lon , lat]/maxsuspect)*0.5f)+0.5f  , 0.0f);
             }
             else
             {
