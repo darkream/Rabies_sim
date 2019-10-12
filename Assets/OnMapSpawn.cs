@@ -179,15 +179,15 @@ public class OnMapSpawn : MonoBehaviour
 
     int i_to_r_date = 10 ; //3 days
 
-    int rabiedetectrange = 5;
-    int rabiechaserange = 3;
+    int rabiedetectrange = 10;
+    int rabiechaserange = 5;
 
     int rabies_roam_grid_radius=500;
     bool step_factor=true,step_apply=false,step_create=false,step_first=true;
 
     private int sysdate=0;
-    private int loopperday=5;
-    private int dayloop=5;
+    private int loopperday=288;
+    private int dayloop=30;
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //pic creation relate
@@ -2589,7 +2589,7 @@ private void createImage_extendmap(int route, int imagetype)
             float exsum=exposesumatpoint(lon,lat);
             if (exsum > 0.0f)
             {
-                return new Color(((exsum  / maxexposed)*0.5f)+0.5f , ((exsum  / maxexposed)*0.5f)+0.5f ,0.0f);
+                return new Color(((exsum  / maxexposed)*0.75f)+0.25f , ((exsum  / maxexposed)*0.75f)+0.25f ,0.0f);
             }
             else  return Color.white;
             
@@ -2600,7 +2600,7 @@ private void createImage_extendmap(int route, int imagetype)
             float infsum=infectsumatpoint(lon,lat);
             if ( infsum > 0.0f)
             {
-                return new Color(((infsum / maxinfect)*0.5f)+0.5f ,  0.0f ,0.0f);
+                return new Color(((infsum / maxinfect)*0.75f)+0.25f ,  0.0f ,0.0f);
             }
             else  return Color.white;
             
@@ -2620,15 +2620,15 @@ private void createImage_extendmap(int route, int imagetype)
             
            if (infectsumatpoint(lon,lat) > 0.0f)
             {
-                return new Color(((infectsumatpoint(lon,lat)/maxinfect)*0.5f)+0.5f, 0.0f , 0.0f);
+                return new Color(((infectsumatpoint(lon,lat)/maxinfect)*0.75f)+0.25f, 0.0f , 0.0f);
             }
             else if(exposesumatpoint(lon,lat) > 0.0f)
             {
-                return new Color(((exposesumatpoint(lon,lat)/maxexposed)*0.5f)+0.5f  , ((exposesumatpoint(lon,lat)/maxexposed)*0.5f)+0.5f , 0.0f);
+                return new Color(((exposesumatpoint(lon,lat)/maxexposed)*0.75f)+0.25f  , ((exposesumatpoint(lon,lat)/maxexposed)*0.75f)+0.25f , 0.0f);
             }
             else if(dogeverygroup.suspectamount[lon , lat] > 0.0f)
             {
-                return new Color(0.0f , ((dogeverygroup.suspectamount[lon , lat]/maxsuspect)*0.5f)+0.5f  , 0.0f);
+                return new Color(0.0f , ((dogeverygroup.suspectamount[lon , lat]/maxsuspect)*0.75f)+0.25f  , 0.0f);
             }
             else
             {
