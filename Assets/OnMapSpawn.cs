@@ -169,11 +169,13 @@ public class OnMapSpawn : MonoBehaviour
     //+++++++++++++++++++++++++++++++++++++++++++++++
 
     
-    private float biterate=0.7f; //100%
+    private float biterate=1.0f; //100%
     private float infectedrate=0.5f; //100% for test
 
     float daily_rzero=0.0f;
-    float wholetime_rzero=0.0f;
+
+    float daily_rabiesbite=0.0f;
+
 
     //
 
@@ -191,8 +193,8 @@ public class OnMapSpawn : MonoBehaviour
     bool step_factor=true,step_apply=false,step_create=false,step_first=true;
 
     private int sysdate=0;
-    private int loopperday=100;
-    private int dayloop=10;
+    private int loopperday=288;
+    private int dayloop=30;
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //pic creation relate
@@ -729,7 +731,7 @@ private void Alldogmovement()
 {
             float newdistribution_criteria =0.0005f;
             float exposecriteria=newdistribution_criteria*(exposesum()/sumeverypoint());
-            float infectedcriteria=0.000001f;//newdistribution_criteria*(infectsum()/sumeverypoint());
+            float infectedcriteria=0.0000005f;//newdistribution_criteria*(infectsum()/sumeverypoint());
             float moveinamount=0.0f;
             float[,] tempsus = new  float[xgridsize,ygridsize] ;
             float[,,] tempexpose= new  float[xgridsize,ygridsize,e_to_i_date] ;
@@ -1958,6 +1960,7 @@ private void rabies_bite_and_spread()
                             //this tranfer amount is suspect that turn to Expose from "Everygroup"
                             //Share to group
                             //------------------ R zero calculating
+                            daily_rabiesbite+=infectsumatpoint(m,n);
                             daily_rzero+=rabietranfer;
                             //------------------ end R zero calculating
                             for(int gg=0; gg<dogeachgroup.Count;gg++)
@@ -2355,7 +2358,8 @@ private void text_file_creation()
         
             temp_rzero=daily_rzero;
             daily_rzero=0.0f;
-            temp_rzero=(temp_rzero*(1.0f/(float)i_to_r_date))/infectsum();
+            temp_rzero=(temp_rzero*(1.0f/(float)i_to_r_date))/daily_rabiesbite;
+            daily_rabiesbite=0.0f;
             // Create a file to write to.
             StreamWriter sw = File.CreateText(path);
             sw.WriteLine("Rabies Report day "+rentext_sysdate+"\n");
