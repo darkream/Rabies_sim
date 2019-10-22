@@ -169,8 +169,13 @@ public class OnMapSpawn : MonoBehaviour
     //+++++++++++++++++++++++++++++++++++++++++++++++
 
     
-    private float biterate=0.1f; //100%
-    private float infectedrate=0.1f; //100% for test
+    private float biterate=0.7f; //100%
+    private float infectedrate=0.5f; //100% for test
+
+    float daily_rzero=0.0f;
+    float wholetime_rzero=0.0f;
+
+    //
 
     int rabiespreadloop=-1;
    
@@ -186,8 +191,8 @@ public class OnMapSpawn : MonoBehaviour
     bool step_factor=true,step_apply=false,step_create=false,step_first=true;
 
     private int sysdate=0;
-    private int loopperday=288;
-    private int dayloop=30;
+    private int loopperday=100;
+    private int dayloop=10;
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //pic creation relate
@@ -1952,8 +1957,9 @@ private void rabies_bite_and_spread()
                            if (rabietranfer >= dogeverygroup.suspectamount[m,n]) rabietranfer=dogeverygroup.suspectamount[m,n];
                             //this tranfer amount is suspect that turn to Expose from "Everygroup"
                             //Share to group
-
-
+                            //------------------ R zero calculating
+                            daily_rzero+=rabietranfer;
+                            //------------------ end R zero calculating
                             for(int gg=0; gg<dogeachgroup.Count;gg++)
                             {
                                 dogeachgroup[gg].exposeamount[m,n,0]+= (rabietranfer*(dogeachgroup[gg].suspectamount[m,n]/dogeverygroup.suspectamount[m,n]));
@@ -2345,8 +2351,11 @@ private void bitearea_calculated()
 private void text_file_creation()
 {
     string path = (Application.dataPath + "/../Assets/Resources/test/Report_day"+rentext_sysdate+".txt");
-    float inf_rad_temp=0;
+    float inf_rad_temp=0,temp_rzero=0.0f;
         
+            temp_rzero=daily_rzero;
+            daily_rzero=0.0f;
+            temp_rzero=(temp_rzero*(1.0f/(float)i_to_r_date))/infectsum();
             // Create a file to write to.
             StreamWriter sw = File.CreateText(path);
             sw.WriteLine("Rabies Report day "+rentext_sysdate+"\n");
@@ -2354,6 +2363,7 @@ private void text_file_creation()
             sw.WriteLine("Suspect amount : "+suspectsum());
             sw.WriteLine("Expose amount : "+exposesum());
             sw.WriteLine("Infect amount : "+infectsum());
+            sw.WriteLine("Daily R-zero : "+temp_rzero);
             sw.WriteLine("==================================");
             sw.WriteLine("Group Report day"+rentext_sysdate);
             sw.WriteLine("==================================");
