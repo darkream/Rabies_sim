@@ -298,6 +298,16 @@ public class MapboxInheritance : MonoBehaviour
         spawnDogPrefabWithHeight(lat , lon);
     }
 
+    public Vector2d temp_latlondelta;
+    public void createDogObjectForShow(){
+        temp_latlondelta = getLatLonFromMousePosition();
+        doglocations.Add(spawnLatLonWithinGrid(temp_latlondelta));
+        int lastIndex = doglocations.Count - 1;
+        float lat = (float)doglocations[lastIndex].x;
+        float lon = (float)doglocations[lastIndex].y;
+        spawnDogPrefabWithHeight(lat , lon);
+    }
+
     public LatLonSize getNewDog(){
         return tempdoglocation;
     }
@@ -325,6 +335,14 @@ public class MapboxInheritance : MonoBehaviour
         factradius.Add(0);
     }
 
+    public void clearDogObjectMemory(){
+        int removeIndex = dogObjs.Count - 1;
+        doglocations.RemoveAt(removeIndex);
+        dogObjs.RemoveAt(removeIndex);
+        dogradius.RemoveAt(removeIndex);
+        factradius.RemoveAt(removeIndex);
+        Destroy(DogLayer.GetComponent<Transform>().GetChild(removeIndex).gameObject);
+    }
     //Add map point reference to the world
 
      public void addInfectedLocation(float lat , float lon, int groupsize)

@@ -23,6 +23,9 @@
 		AbstractMap _mapManager;
 
 		[SerializeField]
+		CoreUIController _coreUI;
+
+		[SerializeField]
 		bool _useDegreeMethod;
 
 		[SerializeField]
@@ -55,10 +58,10 @@
 		{
 			if (!_isInitialized) { return; }
 
-			if (Input.GetKeyDown("z"))
+			if (_coreUI.mapIsLocked)
 			{
 				//_allowInput = !_allowInput;
-				_allowInput2 = !_allowInput2;//add this
+				_allowInput2 = false; //add this
 			}
 
 			if (_allowInput)
@@ -88,11 +91,10 @@
 
             if(_allowInput2)        //add this if braclet
 			{
-			PanMapUsingKeyBoard(xMove, zMove);
-			//pan mouse
-			PanMapUsingTouchOrMouse();
-
-			}	
+				PanMapUsingKeyBoard(xMove, zMove);
+				//pan mouse
+				PanMapUsingTouchOrMouse();
+			}
 		}
 
 		void HandleTouch()

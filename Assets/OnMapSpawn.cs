@@ -15,9 +15,6 @@ public class OnMapSpawn : MonoBehaviour
     [SerializeField]
     MapboxInheritance _mbfunction;
 
-    [SerializeField]
-    ColorStreamClustering clustering;
-
     List<float> doggroupsize; //initial group size of the list of dogs above
 
     [SerializeField]
@@ -75,6 +72,9 @@ public class OnMapSpawn : MonoBehaviour
 
     [SerializeField]
     UIController uicontroller;
+
+    [SerializeField]
+    CoreUIController coreuicontroller;
 
     private float singleMoveRate;
     private List<AttractSource> attracter;
@@ -229,6 +229,7 @@ public class OnMapSpawn : MonoBehaviour
         initialTimeScaleFactor();
         uicontroller.initialValue();
         uicontroller.setTotalProcess(10);
+        coreuicontroller.setupActivation(true);
         //clustering.pixelReaderAndFileWritten("Assets/mapcolor.txt");
         //clustering.createStringColorListFromReadFile("Assets/mapcolor.txt");
         //clustering.kMeanClustering();
@@ -363,297 +364,15 @@ public class OnMapSpawn : MonoBehaviour
             Debug.Log("Extend Map Array is created with size (" +extend_xgridsize + ", " + extend_ygridsize + ")");
         }
 
-
-
-        //Press Z to select the screen
-        if (Input.GetKeyDown("z"))
-        {
-            //int w = Screen.width();
-            //int h = Screen.height();
-            Vector2d latlondelta = _mbfunction.getLatLonFromXY(0, Screen.height);
-            _mbfunction.setStartLatLon(latlondelta);
-            latlondelta = _mbfunction.getLatLonFromXY(Screen.width, 0);
-            _mbfunction.setEndLatLon(latlondelta);
-            startlat = _mbfunction.s_lat;
-            startlon = _mbfunction.s_lon;
-            xgridsize = _mbfunction.x_gsize;
-            ygridsize = _mbfunction.y_gsize;
-            heightxy = new float[xgridsize, ygridsize];
-            pointToColorMap(startlat , startlon , xgridsize , ygridsize);
-            createImage(0, 0); //Create Height Map
-            Debug.Log("Map Array is created with size (" + xgridsize + ", " + ygridsize + ")");
-        }
-
-        //Press X to add dog to the map
-        if (Input.GetKeyDown("x"))
-        {
-            Vector2d latlonDelta = _mbfunction.getLatLonFromMousePosition();
-            doggroupsize.Add(initial_dog_groupsize); //size is static at 625
-            _mbfunction.addDogLocation(latlonDelta, initial_dog_groupsize); //add new dog object from clicked position
-            dogdata.Add(_mbfunction.getNewDog());
-        }
-
-        //Press C to add attract source to the map
-        if (Input.GetKeyDown("c"))
-        {
-            Vector2d latlonDelta = _mbfunction.getLatLonFromMousePosition();
-            _mbfunction.spawnAttractSource(latlonDelta.x , latlonDelta.y);
-            attracter.Add(_mbfunction.getNewAttracter());
-        }
+        overallUIFlowController();
+        overallOnClickHandlerUIController();
 
         if (Input.GetKeyDown("v"))
         {
-            startPreDataRegister = true;
-            uicontroller.setupActivation(true);
+            initialPreDataRegister();
         }
 
-        if (startPreDataRegister)
-        {
-            //to initiate dog group
-            if (uicontroller.getCompletedProcess() == 0){
-                initializeDogGroup();
-                uicontroller.updateProcessDetail("initializing dog group");
-                uicontroller.triggerCompleteProcess();
-            }
-            //and start distribution until it converge
-            else if (uicontroller.getCompletedProcess() == 1){
-                if (convergeCountdown > 0)
-                {
-                    dogimageid++;
-                    normalDistribution(dogimageid);
-                    uicontroller.updateProcessDetail("normal distribution at " + dogimageid + "-th loop");
-                    if (dogimageid < initial_dog_groupsize / 4){
-                        uicontroller.updateCurrentProgress((dogimageid / (initial_dog_groupsize/4.0f)));
-                    }
-                    else {
-                        uicontroller.updateCurrentProgress(1.0f);
-                    }
-                }
-                else {
-                    uicontroller.triggerCompleteProcess();
-                }
-            }
-            //to create image
-            else if (uicontroller.getCompletedProcess() == 2){
-                uicontroller.updateProcessDetail("creating image for distribution");
-                uicontroller.updateCurrentProgress(0.0f);
-                maxColor(0);
-                createImage(0, 1);
-            
-                createImage(0, 2);
-                uicontroller.triggerCompleteProcess();
-            }
-            //to apply kernel density
-            else if (uicontroller.getCompletedProcess() == 3){
-                uicontroller.updateProcessDetail("apply kernel density");
-                kernelDensityEstimation();
-               // createImage(0 , 3);
-                uicontroller.triggerCompleteProcess();
-            }
-            //to start edge detection and home range calculation
-            else if (uicontroller.getCompletedProcess() == 4){
-                uicontroller.updateProcessDetail("apply walking extension, selection, and nodes attraction");
-                if (attracter.Count <= 0){
-                    edgeExpansion();
-                    maxColor(1); //type 1 is walk type
-                    createImage(0 , 4); //create walk extension image image
-
-                    normalizeWalkingExtension();
-                    kernelDensityEstimation(false);
-                    walkingWithinHomeRange();
-                    maxColor(2); //type 2 is walking habits type
-                  //  createImage(0 , 5); //create only walking habits
-                 //   createImage(0 , 6); //create walking habits and dog group
-                }
-                uicontroller.triggerCompleteProcess();
-            }
-            //and Also using kdb of (LoCoH)
-            else if (uicontroller.getCompletedProcess() == 5){
-                uicontroller.updateProcessDetail("apply extracted nodes to the attraction points");
-                if (attracter.Count > 0){
-                    walkToAttraction();
-                }
-                uicontroller.triggerCompleteProcess();
-            }
-            //let the dog walk to the closest attraction
-            else if (uicontroller.getCompletedProcess() == 6){
-                uicontroller.updateProcessDetail("extract attraction point");
-                if (attracter.Count > 0){
-                    if (atAttract < heuristic_init.Count){
-                        uicontroller.updateProcessDetail("attraction point: " + atAttract + " / " + heuristic_init.Count + " is being extracted");
-                        applyAttraction(heuristic_init[atAttract].lonid, heuristic_init[atAttract].latid);
-                        atAttract++;
-                        uicontroller.updateCurrentProgress((float)atAttract / heuristic_init.Count);
-                    }
-                    else {
-                        highest_habits_rate = 0.0f;
-                        maxColor(2);
-                       // createImage(0 , 5);
-                      //  createImage(0 , 6);
-                        uicontroller.triggerCompleteProcess();
-                    }
-                }
-                else {
-                    uicontroller.triggerCompleteProcess();
-                }
-            }
-            //to initialize walking habits for controlled simulation
-            else if (uicontroller.getCompletedProcess() == 7){
-                uicontroller.updateProcessDetail("initialize simulation map");
-                uicontroller.updateCurrentProgress(0.0f);
-                highest_habits_rate = 0.0f;
-                initializeWalkingSimulationMap();
-                assignGroup();
-               // createImage(0, 7);
-                highest_habits_rate = 0.0f;
-                maxColor(2);
-                decisionTree();
-                uicontroller.triggerCompleteProcess();
-            }
-            //to normalize dog group and walking habits
-            else if (uicontroller.getCompletedProcess() == 8){
-                uicontroller.updateProcessDetail("normalize dog groups and habits");
-                normalizeDogGroup();
-                normalizeWalkingHabits();
-                uicontroller.triggerCompleteProcess();
-            }
-            //to create sequence of dog habits in a day
-            else if (uicontroller.getCompletedProcess() == 9){
-                 if (atTime < timeScaleFactor.Length){
-                    uicontroller.updateProcessDetail("Dog sequence at "+ atTime + " is being created\nat activity rate " + timeScaleFactor[atTime]);
-                    uicontroller.updateCurrentProgress((float)atTime / timeScaleFactor.Length);
-                    createDogSequence(atTime);
-                    calculateTieFromWH(atTime);
-                    atTime++;
-                }
-                else {
-                   // uicontroller.setupActivation(false);
-                   // startPreDataRegister = false;
-                    Debug.Log("This area has innate: " + (innate_total / (float)timeScaleFactor.Length) + ", outage: " + (outage_total / (float)timeScaleFactor.Length));
-                   uicontroller.triggerCompleteProcess();
-                }
-              
-            }
-            //test rabies run
-             else if (uicontroller.getCompletedProcess() == 10){
-                 uicontroller.updateProcessDetail("Rabies is running");
-                 if(sysdate<dayloop) //set date here
-                 {
-
-                    if (rabiespreadloop ==-1 && sysdate==0 && step_factor==true)
-                    {
-                         rabiesEnvironmentSet();
-                         InclineFactorCalculated();
-                         HomeFactorCalculated();
-                         Factor_summarize();//tempolary cause no dynamic factor at moment
-                         dogeverygroup_updater();
-                         //Debug.Log("day " +rentext_sysdate+ " frame "+rentext_frame+" : sum"+sumeverypoint()+" s :"+suspectsum() + " e :" +exposesum()+ " i :"+infectsum());
-                         pictextrender.text = ("Max Suspect: "+maxsuspect.ToString("F2")+"\n"+"Max Exposed: "+maxexposed.ToString("F2")+"\n"+"Max Infected: "+maxinfect.ToString("F2")+"\n"+"day "+rentext_sysdate+" Pic number"+rentext_frame);
-                    }
-                 
-                    if (rabiespreadloop < loopperday && rabiespreadloop >=0) //set loop per day here //edit ----------------------------------
-                    {
-                            if(step_factor)
-                         {
-                             //from rendertexture need to end frame first
-                            
-                            if(rabiespreadloop ==0 && sysdate==0)
-                             {
-                                 createImage_withtext(rentext_frame,100);
-                                 createImage_withtext(rentext_frame,9);
-                                 createImage_withtext(rentext_frame,10);
-                                 createImage_withtext(rentext_frame,11);
-                                 rentext_frame++;
-                             }
-                            
-                             else if(rabiespreadloop !=0 || sysdate!=0)
-                             {
-                                 createImage_withtext(rentext_frame,100);
-                                 createImage_withtext(rentext_frame,9);
-                                 createImage_withtext(rentext_frame,10);
-                                 createImage_withtext(rentext_frame,11);
-                                 rentext_frame++;
-                                 if(rentext_frame>=loopperday)//edit ----------------------------------
-                                 {
-                                     rentext_frame=0;
-                                     rentext_sysdate++;
-                                 }
-                             }
-                            // FleeFactorCalculated();
-                            // ChaseFactorCalculated();
-                         
-                             step_apply=true;
-                            step_factor=false;
-                             uicontroller.updateProcessDetail("Factor loop :"+ rabiespreadloop);
-                        }
-                       
-                         if(step_apply)
-                        {
-                         //Factor_summarize();
-                         //Factor_apply();
-                          //Stateupdater();
-                       
-                          Alldogmovement(); 
-                          dogeverygroup_updater();
-                         rabies_bite_and_spread();
-                         dogeverygroup_updater();
-                        
-                          step_create=true;
-                         step_apply=false;
-                          uicontroller.updateProcessDetail("Apply Factor calculation:"+ rabiespreadloop);
-                         }
-                         if(step_create)
-                          {
-                             //createImage(rabiespreadloop,100);
-                            //render texture need frame to end first
-                            //so only text update here
-                            
-                            
-                            // createImage(rabiespreadloop,13);//bitearea
-                            // dogeverygroup_updater();
-                           
-                             rabiespreadloop+=1;
-                             pictextrender.text = ("Max Suspect: "+maxsuspect.ToString("F2")+"\n"+"Max Exposed: "+maxexposed.ToString("F2")+"\n"+"Max Infected: "+maxinfect.ToString("F2")+"\n"+"day "+rentext_sysdate+" Pic number"+rentext_frame);
-                             
-                            //Debug.Log("day " +rentext_sysdate+ " frame "+rentext_frame+" : sum"+sumeverypoint()+" s :"+suspectsum() + " e :" +exposesum()+ " i :"+infectsum());
-                              step_factor=true;
-                              step_create=false;
-                          uicontroller.updateProcessDetail("day"+sysdate+"Pic creation :"+ rabiespreadloop);
-                          }
-                    }
-                    else if(rabiespreadloop==-1)rabiespreadloop++;
-                    else
-                    {
-                        dogeverygroup_updater();
-                        extend_rabiesestimation();
-                        createImage_extendmap(0,1002);
-                        createImage_extendmap(0,1003);
-                        text_file_creation();
-                     
-                        Stateupdater();
-                        dogeverygroup_updater();
-                        sysdate+=1;
-                        rabiespreadloop=0; 
-                    }
-                 }
-                else
-                {
-                //finish last date
-                 createImage_withtext(rentext_frame,100);
-                 createImage_withtext(rentext_frame,9);
-                 createImage_withtext(rentext_frame,10);
-                 createImage_withtext(rentext_frame,11);    
-                Debug.Log("COMPLETE!");
-                uicontroller.triggerCompleteProcess();
-                 uicontroller.setupActivation(false);
-                startPreDataRegister = false;
-                }   
-             }
-        }
-
-        if (Input.GetKeyDown("b")){
-            readDogPopulationPoint("Assets/Dogpop_3provinces.csv", 1, 2, 3);
-        }
+        registerUIControllerData();
     }
 
 //add for rabies testing
@@ -3617,5 +3336,348 @@ private void createImage_extendmap(int route, int imagetype)
         
         outage_total += outside_total;
         innate_total += inside_total;
+    }
+
+    private void screenSelection(){
+        //int w = Screen.width();
+        //int h = Screen.height();
+        Vector2d latlondelta = _mbfunction.getLatLonFromXY(0, Screen.height);
+        _mbfunction.setStartLatLon(latlondelta);
+        latlondelta = _mbfunction.getLatLonFromXY(Screen.width, 0);
+        _mbfunction.setEndLatLon(latlondelta);
+        startlat = _mbfunction.s_lat;
+        startlon = _mbfunction.s_lon;
+        xgridsize = _mbfunction.x_gsize;
+        ygridsize = _mbfunction.y_gsize;
+        heightxy = new float[xgridsize, ygridsize];
+        pointToColorMap(startlat , startlon , xgridsize , ygridsize);
+        createImage(0, 0); //Create Height Map
+        Debug.Log("Map Array is created with size (" + xgridsize + ", " + ygridsize + ")");
+    }
+
+    private void addNormalDogObject(Vector2d latlondelta, float groupsize){
+        doggroupsize.Add(groupsize); //size is static at 625
+        _mbfunction.addDogLocation(latlondelta, groupsize); //add new dog object from clicked position
+        dogdata.Add(_mbfunction.getNewDog());
+    }
+
+    private void addAttractSourceObject(Vector2d latlondelta){
+        _mbfunction.spawnAttractSource(latlondelta.x , latlondelta.y);
+        attracter.Add(_mbfunction.getNewAttracter());
+    }
+
+    private void initialPreDataRegister(){
+        startPreDataRegister = true;
+        uicontroller.setupActivation(true);
+    }
+
+    private void registerUIControllerData(){
+        if (startPreDataRegister){
+            //to initiate dog group
+            if (uicontroller.getCompletedProcess() == 0){
+                initializeDogGroup();
+                uicontroller.updateProcessDetail("initializing dog group");
+                uicontroller.triggerCompleteProcess();
+            }
+            //and start distribution until it converge
+            else if (uicontroller.getCompletedProcess() == 1){
+                if (convergeCountdown > 0)
+                {
+                    dogimageid++;
+                    normalDistribution(dogimageid);
+                    uicontroller.updateProcessDetail("normal distribution at " + dogimageid + "-th loop");
+                    if (dogimageid < initial_dog_groupsize / 4){
+                        uicontroller.updateCurrentProgress((dogimageid / (initial_dog_groupsize/4.0f)));
+                    }
+                    else {
+                        uicontroller.updateCurrentProgress(1.0f);
+                    }
+                }
+                else {
+                    uicontroller.triggerCompleteProcess();
+                }
+            }
+            //to create image
+            else if (uicontroller.getCompletedProcess() == 2){
+                uicontroller.updateProcessDetail("creating image for distribution");
+                uicontroller.updateCurrentProgress(0.0f);
+                maxColor(0);
+                createImage(0, 1);
+            
+                createImage(0, 2);
+                uicontroller.triggerCompleteProcess();
+            }
+            //to apply kernel density
+            else if (uicontroller.getCompletedProcess() == 3){
+                uicontroller.updateProcessDetail("apply kernel density");
+                kernelDensityEstimation();
+               // createImage(0 , 3);
+                uicontroller.triggerCompleteProcess();
+            }
+            //to start edge detection and home range calculation
+            else if (uicontroller.getCompletedProcess() == 4){
+                uicontroller.updateProcessDetail("apply walking extension, selection, and nodes attraction");
+                if (attracter.Count <= 0){
+                    edgeExpansion();
+                    maxColor(1); //type 1 is walk type
+                    createImage(0 , 4); //create walk extension image image
+
+                    normalizeWalkingExtension();
+                    kernelDensityEstimation(false);
+                    walkingWithinHomeRange();
+                    maxColor(2); //type 2 is walking habits type
+                  //  createImage(0 , 5); //create only walking habits
+                 //   createImage(0 , 6); //create walking habits and dog group
+                }
+                uicontroller.triggerCompleteProcess();
+            }
+            //and Also using kdb of (LoCoH)
+            else if (uicontroller.getCompletedProcess() == 5){
+                uicontroller.updateProcessDetail("apply extracted nodes to the attraction points");
+                if (attracter.Count > 0){
+                    walkToAttraction();
+                }
+                uicontroller.triggerCompleteProcess();
+            }
+            //let the dog walk to the closest attraction
+            else if (uicontroller.getCompletedProcess() == 6){
+                uicontroller.updateProcessDetail("extract attraction point");
+                if (attracter.Count > 0){
+                    if (atAttract < heuristic_init.Count){
+                        uicontroller.updateProcessDetail("attraction point: " + atAttract + " / " + heuristic_init.Count + " is being extracted");
+                        applyAttraction(heuristic_init[atAttract].lonid, heuristic_init[atAttract].latid);
+                        atAttract++;
+                        uicontroller.updateCurrentProgress((float)atAttract / heuristic_init.Count);
+                    }
+                    else {
+                        highest_habits_rate = 0.0f;
+                        maxColor(2);
+                       // createImage(0 , 5);
+                      //  createImage(0 , 6);
+                        uicontroller.triggerCompleteProcess();
+                    }
+                }
+                else {
+                    uicontroller.triggerCompleteProcess();
+                }
+            }
+            //to initialize walking habits for controlled simulation
+            else if (uicontroller.getCompletedProcess() == 7){
+                uicontroller.updateProcessDetail("initialize simulation map");
+                uicontroller.updateCurrentProgress(0.0f);
+                highest_habits_rate = 0.0f;
+                initializeWalkingSimulationMap();
+                assignGroup();
+               // createImage(0, 7);
+                highest_habits_rate = 0.0f;
+                maxColor(2);
+                decisionTree();
+                uicontroller.triggerCompleteProcess();
+            }
+            //to normalize dog group and walking habits
+            else if (uicontroller.getCompletedProcess() == 8){
+                uicontroller.updateProcessDetail("normalize dog groups and habits");
+                normalizeDogGroup();
+                normalizeWalkingHabits();
+                uicontroller.triggerCompleteProcess();
+            }
+            //to create sequence of dog habits in a day
+            else if (uicontroller.getCompletedProcess() == 9){
+                 if (atTime < timeScaleFactor.Length){
+                    uicontroller.updateProcessDetail("Dog sequence at "+ atTime + " is being created\nat activity rate " + timeScaleFactor[atTime]);
+                    uicontroller.updateCurrentProgress((float)atTime / timeScaleFactor.Length);
+                    createDogSequence(atTime);
+                    calculateTieFromWH(atTime);
+                    atTime++;
+                }
+                else {
+                   // uicontroller.setupActivation(false);
+                   // startPreDataRegister = false;
+                    Debug.Log("This area has innate: " + (innate_total / (float)timeScaleFactor.Length) + ", outage: " + (outage_total / (float)timeScaleFactor.Length));
+                   uicontroller.triggerCompleteProcess();
+                }
+              
+            }
+            //test rabies run
+             else if (uicontroller.getCompletedProcess() == 10){
+                 uicontroller.updateProcessDetail("Rabies is running");
+                 if(sysdate<dayloop) //set date here
+                 {
+
+                    if (rabiespreadloop ==-1 && sysdate==0 && step_factor==true)
+                    {
+                         rabiesEnvironmentSet();
+                         InclineFactorCalculated();
+                         HomeFactorCalculated();
+                         Factor_summarize();//tempolary cause no dynamic factor at moment
+                         dogeverygroup_updater();
+                         //Debug.Log("day " +rentext_sysdate+ " frame "+rentext_frame+" : sum"+sumeverypoint()+" s :"+suspectsum() + " e :" +exposesum()+ " i :"+infectsum());
+                         pictextrender.text = ("Max Suspect: "+maxsuspect.ToString("F2")+"\n"+"Max Exposed: "+maxexposed.ToString("F2")+"\n"+"Max Infected: "+maxinfect.ToString("F2")+"\n"+"day "+rentext_sysdate+" Pic number"+rentext_frame);
+                    }
+                 
+                    if (rabiespreadloop < loopperday && rabiespreadloop >=0) //set loop per day here //edit ----------------------------------
+                    {
+                            if(step_factor)
+                         {
+                             //from rendertexture need to end frame first
+                            
+                            if(rabiespreadloop ==0 && sysdate==0)
+                             {
+                                 createImage_withtext(rentext_frame,100);
+                                 createImage_withtext(rentext_frame,9);
+                                 createImage_withtext(rentext_frame,10);
+                                 createImage_withtext(rentext_frame,11);
+                                 rentext_frame++;
+                             }
+                            
+                             else if(rabiespreadloop !=0 || sysdate!=0)
+                             {
+                                 createImage_withtext(rentext_frame,100);
+                                 createImage_withtext(rentext_frame,9);
+                                 createImage_withtext(rentext_frame,10);
+                                 createImage_withtext(rentext_frame,11);
+                                 rentext_frame++;
+                                 if(rentext_frame>=loopperday)//edit ----------------------------------
+                                 {
+                                     rentext_frame=0;
+                                     rentext_sysdate++;
+                                 }
+                             }
+                            // FleeFactorCalculated();
+                            // ChaseFactorCalculated();
+                         
+                             step_apply=true;
+                            step_factor=false;
+                             uicontroller.updateProcessDetail("Factor loop :"+ rabiespreadloop);
+                        }
+                       
+                         if(step_apply)
+                        {
+                         //Factor_summarize();
+                         //Factor_apply();
+                          //Stateupdater();
+                       
+                          Alldogmovement(); 
+                          dogeverygroup_updater();
+                         rabies_bite_and_spread();
+                         dogeverygroup_updater();
+                        
+                          step_create=true;
+                         step_apply=false;
+                          uicontroller.updateProcessDetail("Apply Factor calculation:"+ rabiespreadloop);
+                         }
+                         if(step_create)
+                          {
+                             //createImage(rabiespreadloop,100);
+                            //render texture need frame to end first
+                            //so only text update here
+                            
+                            
+                            // createImage(rabiespreadloop,13);//bitearea
+                            // dogeverygroup_updater();
+                           
+                             rabiespreadloop+=1;
+                             pictextrender.text = ("Max Suspect: "+maxsuspect.ToString("F2")+"\n"+"Max Exposed: "+maxexposed.ToString("F2")+"\n"+"Max Infected: "+maxinfect.ToString("F2")+"\n"+"day "+rentext_sysdate+" Pic number"+rentext_frame);
+                             
+                            //Debug.Log("day " +rentext_sysdate+ " frame "+rentext_frame+" : sum"+sumeverypoint()+" s :"+suspectsum() + " e :" +exposesum()+ " i :"+infectsum());
+                              step_factor=true;
+                              step_create=false;
+                          uicontroller.updateProcessDetail("day"+sysdate+"Pic creation :"+ rabiespreadloop);
+                          }
+                    }
+                    else if(rabiespreadloop==-1)rabiespreadloop++;
+                    else
+                    {
+                        dogeverygroup_updater();
+                        extend_rabiesestimation();
+                        createImage_extendmap(0,1002);
+                        createImage_extendmap(0,1003);
+                        text_file_creation();
+                     
+                        Stateupdater();
+                        dogeverygroup_updater();
+                        sysdate+=1;
+                        rabiespreadloop=0; 
+                    }
+                 }
+                else
+                {
+                //finish last date
+                 createImage_withtext(rentext_frame,100);
+                 createImage_withtext(rentext_frame,9);
+                 createImage_withtext(rentext_frame,10);
+                 createImage_withtext(rentext_frame,11);    
+                Debug.Log("COMPLETE!");
+                uicontroller.triggerCompleteProcess();
+                 uicontroller.setupActivation(false);
+                startPreDataRegister = false;
+                }   
+             }
+        }
+    }
+
+    private void overallUIFlowController(){
+        if (coreuicontroller.getScreenMode() == coreuicontroller.MODE_MAP_SELECTION){
+            if (coreuicontroller.mapIsLocked){
+                coreuicontroller.setScreenMode(coreuicontroller.MODE_NORMAL_DOG_SELECTION);
+                screenSelection();
+            }
+        }
+        if (coreuicontroller.dogIsCancelledNotification){
+            coreuicontroller.dogIsCancelledNotification = false;
+            _mbfunction.clearDogObjectMemory();
+            coreuicontroller.showDogErrorInput("");
+            coreuicontroller.switchAllowInput(true);
+        }
+        if (coreuicontroller.dogIsAddedNotification){
+            coreuicontroller.dogIsAddedNotification = false;
+            _mbfunction.clearDogObjectMemory();
+            float quantity = coreuicontroller.getDogPopulation();
+            if (quantity != -1){
+                addNormalDogObject(_mbfunction.temp_latlondelta, quantity);
+                coreuicontroller.showDogErrorInput("");
+            } 
+            else {
+                coreuicontroller.showDogErrorInput("Error Input Field");
+            }
+            coreuicontroller.switchAllowInput(true);
+        }
+        if (coreuicontroller.useDefaultDogNotification){
+            coreuicontroller.useDefaultDogNotification = false;
+            readDogPopulationPoint("Assets/Dogpop_3provinces.csv", 1, 2, 3);
+        }
+        if (startPreDataRegister){
+            startPreDataRegister = false;
+            initialPreDataRegister();
+        }
+    }
+    private void overallOnClickHandlerUIController(){
+        //if left click
+        if (Input.GetMouseButtonDown(0)){
+            switch (coreuicontroller.getScreenMode()){
+                case 2 :
+                    if (coreuicontroller.allowAddDogObject){
+                        _mbfunction.createDogObjectForShow();
+                        coreuicontroller.initializeDogPopulationInput();
+                    }
+                    break;
+                case 3:
+                    
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        //if right click
+        if (Input.GetMouseButtonDown(1)){
+            switch (coreuicontroller.getScreenMode()){
+                case 2 :
+                    coreuicontroller.switchAllowInput(!coreuicontroller.allowAddDogObject);
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 }
