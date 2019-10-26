@@ -169,8 +169,11 @@ public class OnMapSpawn : MonoBehaviour
     //+++++++++++++++++++++++++++++++++++++++++++++++
 
     
-    private float biterate=0.1f; //100%
-    private float infectedrate=0.1f; //100% for test
+    [SerializeField]
+    float biterate=0.1f; 
+
+    [SerializeField]
+    float infectedrate=0.1f;
 
     int rabiespreadloop=-1;
    
@@ -229,7 +232,7 @@ public class OnMapSpawn : MonoBehaviour
         initialTimeScaleFactor();
         uicontroller.initialValue();
         uicontroller.setTotalProcess(10);
-        coreuicontroller.setupActivation(true);
+        coreuicontroller.setupActivation();
         //clustering.pixelReaderAndFileWritten("Assets/mapcolor.txt");
         //clustering.createStringColorListFromReadFile("Assets/mapcolor.txt");
         //clustering.kMeanClustering();
@@ -3623,6 +3626,8 @@ private void createImage_extendmap(int route, int imagetype)
                 screenSelection();
             }
         }
+
+        //HANDLING DOG BEHAVIOR INPUT
         if (coreuicontroller.dogIsCancelledNotification){
             coreuicontroller.dogIsCancelledNotification = false;
             _mbfunction.clearDogObjectMemory();
@@ -3646,38 +3651,118 @@ private void createImage_extendmap(int route, int imagetype)
             coreuicontroller.useDefaultDogNotification = false;
             readDogPopulationPoint("Assets/Dogpop_3provinces.csv", 1, 2, 3);
         }
-        if (startPreDataRegister){
-            startPreDataRegister = false;
+
+        //HANDLING DEFAULT PARAMETERS
+        if (coreuicontroller.initMapCalculationParameter){
+            coreuicontroller.initMapCalculationParameter = false;
+            setParamMapCal_MBToCoreUI();
+        }
+        if (coreuicontroller.resetMapCalculationParameter){
+            coreuicontroller.resetMapCalculationParameter = false;
+            setParamMapCal_CoreUIToMB();
+        }
+        if (coreuicontroller.initDogBehaviorParameter){
+            coreuicontroller.initDogBehaviorParameter = false;
+            setParamDogBehavior_MBToCoreUI();
+        }
+        if (coreuicontroller.resetDogBehaviorParameter){
+            coreuicontroller.resetDogBehaviorParameter = false;
+            setParamDogBehavior_CoreUIToMB();
+        }
+        if (coreuicontroller.initImageGenParameter){
+            coreuicontroller.initImageGenParameter = false;
+            setParamImageGen_MBToCoreUI();
+        }
+        if (coreuicontroller.resetImageGenParameter){
+            coreuicontroller.resetImageGenParameter = false;
+            setParamImageGen_CoreUIToMB();
+            coreuicontroller.runProgramNotification = true;
+        }
+        //AND HANDLING RESET PARAMETERS
+
+        //HANDLING RUNNING WHOLE PROGRAM
+        if (coreuicontroller.runProgramNotification){
+            coreuicontroller.runProgramNotification = false;
             initialPreDataRegister();
         }
     }
     private void overallOnClickHandlerUIController(){
         //if left click
         if (Input.GetMouseButtonDown(0)){
-            switch (coreuicontroller.getScreenMode()){
-                case 2 :
-                    if (coreuicontroller.allowAddDogObject){
-                        _mbfunction.createDogObjectForShow();
-                        coreuicontroller.initializeDogPopulationInput();
-                    }
-                    break;
-                case 3:
-                    
-                    break;
-                default:
-                    break;
+            if (coreuicontroller.getScreenMode() == 2){
+                if (coreuicontroller.allowAddDogObject){
+                    _mbfunction.createDogObjectForShow();
+                    coreuicontroller.initializeDogPopulationInput();
+                }
             }
         }
 
         //if right click
         if (Input.GetMouseButtonDown(1)){
-            switch (coreuicontroller.getScreenMode()){
-                case 2 :
-                    coreuicontroller.switchAllowInput(!coreuicontroller.allowAddDogObject);
-                    break;
-                default:
-                    break;
+            if (coreuicontroller.getScreenMode() == 2){
+                coreuicontroller.switchAllowInput(!coreuicontroller.allowAddDogObject);
             }
         }
+    }
+
+    //SET DEFAULT PARAMETERS
+    private void setParamMapCal_MBToCoreUI(){
+        coreuicontroller.mapCal[0].text = "" + _mbfunction.radius_earth;
+        coreuicontroller.mapCal[1].text = "" + _mbfunction.rough_sphere_per_degree;
+        coreuicontroller.mapCal[2].text = "" + _mbfunction.equator_latitude_per_degree;
+        coreuicontroller.mapCal[3].text = "" + _mbfunction.pole_latitude_per_degree;
+        coreuicontroller.mapCal[4].text = "" + _mbfunction.widest_longitude_per_degree;
+        coreuicontroller.mapCal[5].text = "" + _mbfunction.one_degree_per_radian;
+        coreuicontroller.mapCal[6].text = "" + _mbfunction.GridSize;
+    }
+
+    private void setParamMapCal_CoreUIToMB(){
+        _mbfunction.radius_earth = float.Parse(coreuicontroller.mapCal[0].text);
+        _mbfunction.rough_sphere_per_degree = float.Parse(coreuicontroller.mapCal[1].text);
+        _mbfunction.equator_latitude_per_degree = float.Parse(coreuicontroller.mapCal[2].text);
+        _mbfunction.pole_latitude_per_degree = float.Parse(coreuicontroller.mapCal[3].text);
+        _mbfunction.widest_longitude_per_degree = float.Parse(coreuicontroller.mapCal[4].text);
+        _mbfunction.one_degree_per_radian = float.Parse(coreuicontroller.mapCal[5].text);
+        _mbfunction.GridSize = float.Parse(coreuicontroller.mapCal[6].text);
+    }
+
+    private void setParamDogBehavior_MBToCoreUI(){
+        coreuicontroller.dogBehavior[0].text = "" + distribution_criteria;
+        coreuicontroller.dogBehavior[1].text = "" + loopCriteria;
+        coreuicontroller.dogBehavior[2].text = "" + homeRangeMultiplier;
+        coreuicontroller.dogBehavior[3].text = "" + _mbfunction.walkable_degree;
+        coreuicontroller.dogBehavior[4].text = "" + biterate;
+        coreuicontroller.dogBehavior[5].text = "" + infectedrate;
+        coreuicontroller.openElevation.isOn = true;
+    }
+
+    private void setParamDogBehavior_CoreUIToMB(){
+        distribution_criteria = float.Parse(coreuicontroller.dogBehavior[0].text);
+        loopCriteria = (int)float.Parse(coreuicontroller.dogBehavior[1].text);
+        homeRangeMultiplier = float.Parse(coreuicontroller.dogBehavior[2].text);
+        _mbfunction.walkable_degree = float.Parse(coreuicontroller.dogBehavior[3].text);
+        biterate = float.Parse(coreuicontroller.dogBehavior[4].text);
+        infectedrate = float.Parse(coreuicontroller.dogBehavior[5].text);
+        allowElevation = coreuicontroller.openElevation.isOn;
+    }
+
+    private void setParamImageGen_MBToCoreUI(){
+        coreuicontroller.imageGen[0].text = "" + hordeMoveRate;
+        coreuicontroller.imageGen[1].text = "" + exploreMoveRate;
+        coreuicontroller.singleBehavior.text = "" + (1.0f - hordeMoveRate - exploreMoveRate);
+        coreuicontroller.imageGen[2].text = "" + time_length;
+        coreuicontroller.imageGen[3].text = "" + time_cycle;
+        coreuicontroller.imageGen[4].text = "" + highest_activity_rate;
+        coreuicontroller.imageGen[5].text = "" + lowest_activity_rate;
+    }
+
+    private void setParamImageGen_CoreUIToMB(){
+        hordeMoveRate = float.Parse(coreuicontroller.imageGen[0].text);
+        exploreMoveRate = float.Parse(coreuicontroller.imageGen[1].text);
+        singleMoveRate = float.Parse(coreuicontroller.singleBehavior.text);
+        time_length = (int)float.Parse(coreuicontroller.imageGen[2].text);
+        time_cycle = (int)float.Parse(coreuicontroller.imageGen[3].text);
+        highest_activity_rate = float.Parse(coreuicontroller.imageGen[4].text);
+        lowest_activity_rate = float.Parse(coreuicontroller.imageGen[5].text);
     }
 }
