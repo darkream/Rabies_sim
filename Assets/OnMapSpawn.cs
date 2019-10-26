@@ -367,14 +367,9 @@ public class OnMapSpawn : MonoBehaviour
             Debug.Log("Extend Map Array is created with size (" +extend_xgridsize + ", " + extend_ygridsize + ")");
         }
 
+        //ALL OF MY INPUT ARE REDUCED INTO 3 MAIN FUNCTIONS
         overallUIFlowController();
         overallOnClickHandlerUIController();
-
-        if (Input.GetKeyDown("v"))
-        {
-            initialPreDataRegister();
-        }
-
         registerUIControllerData();
     }
 
