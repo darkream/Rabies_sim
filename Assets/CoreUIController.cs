@@ -37,10 +37,13 @@ public class CoreUIController : MonoBehaviour
     //PARAMETER SETTING UI (FIRST PAGE)
     public GameObject paramSetMapCalScreen;
     public bool initMapCalculationParameter = false;
+    public Text[] mapCalText;
     public InputField[] mapCal;
     public Button mapCalNext;
     public Text errorMapCalNotNumber;
     public bool resetMapCalculationParameter = false;
+    public Button showWorldAdvancedSetting;
+    public Text worldAdvancedSettingText;
 
     //PARAMETER SETTING UI (SECOND PAGE)
     public GameObject paramSetDogBehaviorScreen;
@@ -75,6 +78,7 @@ public class CoreUIController : MonoBehaviour
         addDogButton.GetComponent<Button>().onClick.AddListener(addDogPopulation);
         acceptDogPopButton.GetComponent<Button>().onClick.AddListener(moveToChangeParameters2);
         mapCalNext.GetComponent<Button>().onClick.AddListener(moveToMapSelection);
+        showWorldAdvancedSetting.GetComponent<Button>().onClick.AddListener(showOrHideWorldAdvancedSetting);
         dogBehaviorNext.GetComponent<Button>().onClick.AddListener(moveToChangeParameters3);
         imageGenNext.GetComponent<Button>().onClick.AddListener(moveToRunProgram);
         imageGen[0].onValueChanged.AddListener(delegate {hordeMustNotExceedOne();});
@@ -138,12 +142,29 @@ public class CoreUIController : MonoBehaviour
     private void moveToRunProgram(){
         if (checkImageGenParamIntegrity()){
             hideAllScreens();
+            runProgramNotification = true;
         } else {
             errorImageGenNotNumber.text = "*some values are not number*";
         }
     }
 
     //OTHER UTILITY FUNCTIONS
+    private void showOrHideWorldAdvancedSetting(){
+        if (worldAdvancedSettingText.text == "Show World Advanced Setting"){
+            resetWorldAdvancedSetting("Hide World Advanced Setting", true);
+        } else {
+            resetWorldAdvancedSetting("Show World Advanced Setting", false);
+        }
+    }
+
+    private void resetWorldAdvancedSetting(string changedText, bool isEnabled) {
+        worldAdvancedSettingText.text = changedText;
+            for (int i = 0 ; i < mapCal.Length - 1 ; i++){
+                mapCal[i].gameObject.SetActive(isEnabled);
+                mapCalText[i].gameObject.SetActive(isEnabled);
+            }
+    }
+
     public void initializeDogPopulationInput(){
         switchAllowInput(false);
         useDefaultDataButton.enabled = false;
