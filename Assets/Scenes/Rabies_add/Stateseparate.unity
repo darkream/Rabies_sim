@@ -467,7 +467,7 @@ MonoBehaviour:
   _options:
     locationOptions:
       latitudeLongitude: 7.00762969112312, 100.501147439112
-      zoom: 18
+      zoom: 16.5
     extentOptions:
       extentType: 0
       cameraBoundsOptions:
@@ -622,6 +622,7 @@ MonoBehaviour:
   uicontroller: {fileID: 990755673}
   Matref: {fileID: 2100000, guid: 33aee362d72d0914aab7b133bbc7a647, type: 2}
   quadmap: {fileID: 0}
+  cutoff_percentage: 0.05
   pictextrender: {fileID: 1451207683}
   ren_texture: {fileID: 8400000, guid: 097138801091d3c4a9eb5829c74fad36, type: 2}
 --- !u!114 &555018386

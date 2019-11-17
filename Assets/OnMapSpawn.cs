@@ -169,13 +169,14 @@ public class OnMapSpawn : MonoBehaviour
     //+++++++++++++++++++++++++++++++++++++++++++++++
 
     
-    private float biterate=1.0f; //100%
+    private float biterate=0.7f; //100%
     private float infectedrate=0.5f; //100% for test
 
     float daily_rzero=0.0f;
 
     float daily_rabiesbite=0.0f;
-
+	
+	
 
     //
 
@@ -194,7 +195,7 @@ public class OnMapSpawn : MonoBehaviour
 
     private int sysdate=0;
     private int loopperday=288;
-    private int dayloop=30;
+    private int dayloop=2;
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //pic creation relate
@@ -1491,7 +1492,16 @@ private void rabiesEnvironmentSet()
                  roamingrabies[i][infectdogdata[i].lonid ,  infectdogdata[i].latid]=1.0f;
                  roamingrabiesgroupID.Add ((findNearestGroupNeighbour(infectdogdata[i].lonid,infectdogdata[i].latid)));
                  roamingrabieslifespan.Add (0);*/
+
+                
                 }
+                //for data test only
+                dogeverygroup.infectamount[ 150 , 100,0]=1.0f;
+                //end data test 
+
+
+               
+
 
 
         //Set group
@@ -1948,7 +1958,7 @@ private void rabies_bite_and_spread()
     float[] rabiestranfer_plusval = new float[dogeachgroup.Count];
      float rabietranfer=0.0f;
         for(int gg =0;gg<dogeachgroup.Count;gg++) rabiestranfer_plusval[gg]=0;
-
+		
      for (int m = 0; m < xgridsize; m++)
                 {
                     for (int n = 0; n < ygridsize; n++)
@@ -1960,6 +1970,8 @@ private void rabies_bite_and_spread()
                             //this tranfer amount is suspect that turn to Expose from "Everygroup"
                             //Share to group
                             //------------------ R zero calculating
+							//is possible that same dog bite so use avrage
+						
                             daily_rabiesbite+=infectsumatpoint(m,n);
                             daily_rzero+=rabietranfer;
                             //------------------ end R zero calculating
@@ -2354,14 +2366,23 @@ private void bitearea_calculated()
 private void text_file_creation()
 {
     string path = (Application.dataPath + "/../Assets/Resources/test/Report_day"+rentext_sysdate+".txt");
-    float inf_rad_temp=0,temp_rzero=0.0f;
+    float inf_rad_temp=0,temp_rzero=0.0f,justwannaknow=0.0f,justwannaknow2=0.0f,justwannaknow3=0.0f;
         
             temp_rzero=daily_rzero;
+
+            justwannaknow=daily_rzero;
+            justwannaknow2=daily_rabiesbite;
+
             daily_rzero=0.0f;
-            temp_rzero=(temp_rzero*(1.0f/(float)i_to_r_date))/daily_rabiesbite;
+			daily_rabiesbite=daily_rabiesbite/288.0f;
+
+            justwannaknow3=daily_rabiesbite;
+
+            temp_rzero=(temp_rzero*((float)i_to_r_date))/daily_rabiesbite;
             daily_rabiesbite=0.0f;
             // Create a file to write to.
             StreamWriter sw = File.CreateText(path);
+            sw.WriteLine("Tester : All sum rabies tranfer"+justwannaknow+" Tester : All sum rabies bite"+justwannaknow2+" Tester : avg rabie bite"+justwannaknow3+"\n");
             sw.WriteLine("Rabies Report day "+rentext_sysdate+"\n");
             sw.WriteLine("All Dog Amount : "+sumeverypoint());
             sw.WriteLine("Suspect amount : "+suspectsum());
