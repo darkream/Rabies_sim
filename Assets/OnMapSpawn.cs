@@ -3301,7 +3301,7 @@ private void createImage_extendmap(int route, int imagetype)
                 doggroupsize.Add(size);
                 _mbfunction.addDogLocation(latlonDelta, size);
                 dogdata.Add(_mbfunction.getNewDog());
-               
+                coreuicontroller.setDeletableDogToContent();
             }
         }
         Debug.Log(doggroupsize.Count);
@@ -3635,6 +3635,7 @@ private void createImage_extendmap(int route, int imagetype)
             float quantity = coreuicontroller.getDogPopulation();
             if (quantity != -1){
                 addNormalDogObject(_mbfunction.temp_latlondelta, quantity);
+                coreuicontroller.setDeletableDogToContent();
                 coreuicontroller.showDogErrorInput("");
             } 
             else {
@@ -3645,6 +3646,24 @@ private void createImage_extendmap(int route, int imagetype)
         if (coreuicontroller.useDefaultDogNotification){
             coreuicontroller.useDefaultDogNotification = false;
             readDogPopulationPoint("Assets/Dogpop_3provinces.csv", 1, 2, 3);
+        }
+        if (coreuicontroller.deleteOneDogNotification != -1){
+            int index = coreuicontroller.deleteOneDogNotification;
+            coreuicontroller.deleteOneDogNotification = -1;
+            doggroupsize.RemoveAt(index);
+            dogdata.RemoveAt(index);
+            _mbfunction.clearDogObjectMemoryAt(index);
+            coreuicontroller.stepTheRestChildUp();
+        }
+        if (coreuicontroller.deleteAllDogsNotification){
+            coreuicontroller.deleteAllDogsNotification = false;
+            int count = doggroupsize.Count;
+            coreuicontroller.destroyAllDogContents();
+            for (int i = 0; i < count ; i++){
+                doggroupsize.RemoveAt(0);
+                dogdata.RemoveAt(0);
+                _mbfunction.clearDogObjectMemory();
+            }
         }
 
         //HANDLING DEFAULT PARAMETERS

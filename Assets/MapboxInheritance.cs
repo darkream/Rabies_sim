@@ -343,6 +343,16 @@ public class MapboxInheritance : MonoBehaviour
         factradius.RemoveAt(removeIndex);
         Destroy(DogLayer.GetComponent<Transform>().GetChild(removeIndex).gameObject);
     }
+
+    public void clearDogObjectMemoryAt(int index){
+        doglocations.RemoveAt(index);
+        dogObjs.RemoveAt(index);
+        Debug.Log(dogObjs.Count);
+        dogradius.RemoveAt(index);
+        factradius.RemoveAt(index);
+        Destroy(DogLayer.GetComponent<Transform>().GetChild(index).gameObject);
+    }
+
     //Add map point reference to the world
 
      public void addInfectedLocation(float lat , float lon, int groupsize)

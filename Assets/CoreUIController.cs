@@ -33,6 +33,17 @@ public class CoreUIController : MonoBehaviour
     public bool allowAddDogObject = false;
     public bool useDefaultDogNotification = false;
     public bool usedDefaultData = false;
+    public Button deleteButton;
+    public GameObject deleteList;
+    public Button deleteAllButton;
+    public Text deleteButtonText;
+    public bool deleteAllDogsNotification = false;
+    public GameObject dogListContent;
+    public GameObject dogDeleteInContent;
+    private float dogDeletePosition = 145.0f;
+    private int dogContentID = 1;
+    public int deleteOneDogNotification = -1;
+    public GameObject dumpingSite;
 
     //PARAMETER SETTING UI (FIRST PAGE)
     public GameObject paramSetMapCalScreen;
@@ -81,6 +92,8 @@ public class CoreUIController : MonoBehaviour
         showWorldAdvancedSetting.GetComponent<Button>().onClick.AddListener(showOrHideWorldAdvancedSetting);
         dogBehaviorNext.GetComponent<Button>().onClick.AddListener(moveToChangeParameters3);
         imageGenNext.GetComponent<Button>().onClick.AddListener(moveToRunProgram);
+        deleteButton.GetComponent<Button>().onClick.AddListener(showOrHideDeleteList);
+        deleteAllButton.GetComponent<Button>().onClick.AddListener(notifyDeleteAll);
         imageGen[0].onValueChanged.AddListener(delegate {hordeMustNotExceedOne();});
         imageGen[1].onValueChanged.AddListener(delegate {exploreMustNotExceedOne();});
         moveToChangeParameters();
@@ -170,6 +183,7 @@ public class CoreUIController : MonoBehaviour
         useDefaultDataButton.enabled = false;
         acceptDogPopButton.enabled = false;
         dogQuantity.GetComponent<InputField>().text = "";
+        showDogErrorInput("");
         populationQuantBox.SetActive(true);
     }
 
@@ -193,6 +207,42 @@ public class CoreUIController : MonoBehaviour
             return value;
         }
         return -1;
+    }
+
+    public void setDeletableDogToContent(){
+        var newDog = Instantiate(dogDeleteInContent, new Vector3(0.0f, 0.0f, 1.0f), Quaternion.identity);
+        newDog.transform.SetParent(dogListContent.transform, false);
+        newDog.GetComponent<RectTransform>().anchoredPosition = new Vector2(60.0f, dogDeletePosition);
+        newDog.transform.GetChild(0).GetComponent<Text>().text = "delete dog " + dogContentID;
+        newDog.GetComponent<Button>().onClick.AddListener( () => { destroyDogSelfContent(newDog); } );
+        dogDeletePosition -= 20.0f;
+        dogContentID++;
+    }
+
+    public void destroyAllDogContents(){
+        int count = dogListContent.transform.childCount;
+        for (int i = 0 ; i < count ; i++){
+            dogListContent.transform.GetChild(0).SetParent(dumpingSite.transform, false);
+            dogListContent.transform.GetChild(0).gameObject.SetActive(false);
+        }
+        dogDeletePosition = 145.0f;
+    }
+
+    private void destroyDogSelfContent(GameObject thisButton){
+        int index = thisButton.transform.GetSiblingIndex();
+        Debug.Log("This is deleted index : " + index);
+        dogDeletePosition += 20.0f;
+        deleteOneDogNotification = index;
+        thisButton.transform.SetParent(dumpingSite.transform, false);
+        thisButton.SetActive(false);
+    }
+
+    public void stepTheRestChildUp(){
+        float yposition = 145.0f;
+        for (int i = 0 ; i < dogListContent.transform.childCount ; i++){
+            dogListContent.transform.GetChild(i).GetComponent<RectTransform>().anchoredPosition = new Vector2(60.0f, yposition);
+            yposition -= 20.0f;
+        }
     }
 
     public void showDogErrorInput(string text){
@@ -266,6 +316,23 @@ public class CoreUIController : MonoBehaviour
             }
             singleBehavior.text = "" + (1.0f - (horde + explore));
         }
+    }
+
+    private void showOrHideDeleteList(){
+        if (deleteButtonText.text == "DELETE"){
+            deleteList.SetActive(true);
+            deleteButtonText.text = "CLOSE";
+        } else {
+            deleteList.SetActive(false);
+            deleteButtonText.text = "DELETE";
+        }
+    }
+
+    private void notifyDeleteAll(){
+        deleteAllDogsNotification = true;
+    }
+
+    private void notifyDeleteAt(int id){
 
     }
 }
