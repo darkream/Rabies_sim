@@ -170,10 +170,14 @@ public class OnMapSpawn : MonoBehaviour
 
     
     [SerializeField]
-    float biterate=0.1f; 
+    float biterate=0.7f; 
 
     [SerializeField]
-    float infectedrate=0.1f;
+    float infectedrate=0.5f;
+
+    float daily_rzero=0.0f;
+
+    float daily_rabiesbite=0.0f;
 
     int rabiespreadloop=-1;
    
@@ -1670,6 +1674,8 @@ private void rabies_bite_and_spread()
                             //this tranfer amount is suspect that turn to Expose from "Everygroup"
                             //Share to group
 
+                            daily_rabiesbite+=infectsumatpoint(m,n);
+                            daily_rzero+=rabietranfer;
 
                             for(int gg=0; gg<dogeachgroup.Count;gg++)
                             {
@@ -2062,15 +2068,30 @@ private void bitearea_calculated()
 private void text_file_creation()
 {
     string path = (Application.dataPath + "/../Assets/Resources/test/Report_day"+rentext_sysdate+".txt");
-    float inf_rad_temp=0;
+     float inf_rad_temp=0,temp_rzero=0.0f,justwannaknow=0.0f,justwannaknow2=0.0f,justwannaknow3=0.0f,newr0=0.0f;
         
+            temp_rzero=daily_rzero;
+
+            justwannaknow=daily_rzero;
+            justwannaknow2=daily_rabiesbite;
+
+            daily_rzero=0.0f;
+			daily_rabiesbite=daily_rabiesbite/288.0f;
+
+            justwannaknow3=daily_rabiesbite;
+            newr0=(temp_rzero*((float)i_to_r_date))/infectsum();
+            temp_rzero=(temp_rzero*((float)i_to_r_date))/daily_rabiesbite;
+            
+            daily_rabiesbite=0.0f;
             // Create a file to write to.
             StreamWriter sw = File.CreateText(path);
+            sw.WriteLine("Tester : All sum rabies tranfer"+justwannaknow+" Tester : All sum rabies bite"+justwannaknow2+" Tester : avg rabie bite"+justwannaknow3+"  New r0 with all r use to divide "+newr0+"\n");
             sw.WriteLine("Rabies Report day "+rentext_sysdate+"\n");
             sw.WriteLine("All Dog Amount : "+sumeverypoint());
             sw.WriteLine("Suspect amount : "+suspectsum());
             sw.WriteLine("Expose amount : "+exposesum());
             sw.WriteLine("Infect amount : "+infectsum());
+            sw.WriteLine("Daily R-zero : "+temp_rzero);
             sw.WriteLine("==================================");
             sw.WriteLine("Group Report day"+rentext_sysdate);
             sw.WriteLine("==================================");

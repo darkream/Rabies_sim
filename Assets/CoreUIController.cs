@@ -45,6 +45,20 @@ public class CoreUIController : MonoBehaviour
     public int deleteOneDogNotification = -1;
     public GameObject dumpingSite;
 
+    //ADD Infect DOG UI
+    public GameObject addInfectDogScreen;
+    public GameObject populationQuantBox_I;
+    public InputField dogQuantity_I;
+    public Button cancelDogButton_I;
+    public Button addDogButton_I;
+    public Button acceptDogPopButton_I;
+    public Text errorDogInput_I;
+    public Text allowDogInputStatus_I;
+    public Image inputState_I;
+    public bool dogIsCancelledNotification_I = false;
+    public bool dogIsAddedNotification_I = false;
+    public bool allowAddDogObject_I = false;
+     
     //PARAMETER SETTING UI (FIRST PAGE)
     public GameObject paramSetMapCalScreen;
     public bool initMapCalculationParameter = false;
@@ -88,6 +102,9 @@ public class CoreUIController : MonoBehaviour
         useDefaultDataButton.GetComponent<Button>().onClick.AddListener(useDefaultDogData);
         addDogButton.GetComponent<Button>().onClick.AddListener(addDogPopulation);
         acceptDogPopButton.GetComponent<Button>().onClick.AddListener(moveToChangeParameters2);
+        //addDogButton_I.GetComponent<Button>().onClick.AddListener(addDogPopulation);
+        //cancelDogButton_I.GetComponent<Button>().onClick.AddListener(cancelDogPopulation);
+        //acceptDogPopButton.GetComponent<Button>().onClick.AddListener(moveToChangeParameters2);
         mapCalNext.GetComponent<Button>().onClick.AddListener(moveToMapSelection);
         showWorldAdvancedSetting.GetComponent<Button>().onClick.AddListener(showOrHideWorldAdvancedSetting);
         dogBehaviorNext.GetComponent<Button>().onClick.AddListener(moveToChangeParameters3);
@@ -104,9 +121,11 @@ public class CoreUIController : MonoBehaviour
         mapSelection.SetActive(false);
         populationQuantBox.SetActive(false);
         addNormalDogScreen.SetActive(false);
+        addInfectDogScreen.SetActive(false);
         paramSetMapCalScreen.SetActive(false);
         paramSetDogBehaviorScreen.SetActive(false);
         paramSetImageGenParameter.SetActive(false);
+
     }
 
     //LIST OF "MOVE TO" FUNCTION
@@ -131,6 +150,13 @@ public class CoreUIController : MonoBehaviour
         allowAddDogObject = true;
         mapIsLocked = true;
         addNormalDogScreen.SetActive(true);
+    }
+
+    private void moveToAddInfectDog(){
+        hideAllScreens();
+       // allowAddDogObject = true;
+       // mapIsLocked = true;
+        addInfectDogScreen.SetActive(true);
     }
 
     private void moveToChangeParameters2(){
