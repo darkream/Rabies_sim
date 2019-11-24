@@ -260,12 +260,12 @@ public class CoreUIController : MonoBehaviour
         allowAddDogObject = active;
         if (active) {
             allowDogInputStatus.text = "Unlocked: you can add dog location";
-            allowDogInputStatus.fontSize = 12;
+            allowDogInputStatus.fontSize = 18;
             inputState.enabled = true;
         }
         else {
             allowDogInputStatus.text = "Locked: dog is not allowed to be added";
-            allowDogInputStatus.fontSize = 12;
+            allowDogInputStatus.fontSize = 18;
             inputState.enabled = false;
         }
     }
