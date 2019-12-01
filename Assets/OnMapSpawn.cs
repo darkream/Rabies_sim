@@ -3660,7 +3660,7 @@ private void createImage_extendmap(int route, int imagetype)
                 coreuicontroller.showDogErrorInput("");
             } 
             else {
-                coreuicontroller.showDogErrorInput("Error Input Field");
+                coreuicontroller.showDogErrorInput(coreuicontroller.stringScript.getErrorInputField());
             }
             coreuicontroller.switchAllowInput(true);
         }

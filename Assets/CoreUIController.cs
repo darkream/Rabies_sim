@@ -87,6 +87,12 @@ public class CoreUIController : MonoBehaviour
     public bool resetImageGenParameter = false;
     public bool runProgramNotification = false;
 
+    //LANGUAGE SELECTOR UI
+    public GameObject languageSelectorScreen;
+    public GameObject thaiFlag;
+    public GameObject engFlag;
+    public StringUIController stringScript;
+
     public int getScreenMode(){
         return screenMode;
     }
@@ -97,6 +103,8 @@ public class CoreUIController : MonoBehaviour
 
     //CALL THIS FUNCTION TO INITIATE PROCESS
     public void setupActivation(){
+        engFlag.GetComponent<Button>().onClick.AddListener(moveToChangeParameters);
+        thaiFlag.GetComponent<Button>().onClick.AddListener(moveToChangeParametersButThai);
         mapSelectionButton.GetComponent<Button>().onClick.AddListener(moveToAddNormalDog);
         cancelDogButton.GetComponent<Button>().onClick.AddListener(cancelDogPopulation);
         useDefaultDataButton.GetComponent<Button>().onClick.AddListener(useDefaultDogData);
@@ -113,11 +121,12 @@ public class CoreUIController : MonoBehaviour
         deleteAllButton.GetComponent<Button>().onClick.AddListener(notifyDeleteAll);
         imageGen[0].onValueChanged.AddListener(delegate {hordeMustNotExceedOne();});
         imageGen[1].onValueChanged.AddListener(delegate {exploreMustNotExceedOne();});
-        moveToChangeParameters();
+        moveToLanguageSelector();
     }
 
     //TO HIDE ALL UI BEFORE PLACING ANOTHER ONE
     private void hideAllScreens(){
+        languageSelectorScreen.SetActive(false);
         mapSelection.SetActive(false);
         populationQuantBox.SetActive(false);
         addNormalDogScreen.SetActive(false);
@@ -129,7 +138,19 @@ public class CoreUIController : MonoBehaviour
     }
 
     //LIST OF "MOVE TO" FUNCTION
-    public void moveToChangeParameters(){
+    private void moveToLanguageSelector(){
+        hideAllScreens();
+        languageSelectorScreen.SetActive(true);
+    }
+
+    private void moveToChangeParametersButThai(){
+        hideAllScreens();
+        stringScript.changeToThaiLanguage("Assets/thaitranslated.txt");
+        paramSetMapCalScreen.SetActive(true);
+        initMapCalculationParameter = true;
+    }
+
+    private void moveToChangeParameters(){
         hideAllScreens();
         paramSetMapCalScreen.SetActive(true);
         initMapCalculationParameter = true;
@@ -141,7 +162,7 @@ public class CoreUIController : MonoBehaviour
             resetMapCalculationParameter = true;
             mapSelection.SetActive(true);
         } else {
-            errorMapCalNotNumber.text = "*some values are not number*";
+            errorMapCalNotNumber.text = stringScript.getErrorMapCalNotNumberText();
         }
     }
 
@@ -174,7 +195,7 @@ public class CoreUIController : MonoBehaviour
             paramSetImageGenParameter.SetActive(true);
             initImageGenParameter = true;
         } else {
-            errorDogBehaviorNotNumber.text = "*some values are not number*";
+            errorDogBehaviorNotNumber.text = stringScript.getErrorMapCalNotNumberText();
         }
     }
 
@@ -183,16 +204,16 @@ public class CoreUIController : MonoBehaviour
             hideAllScreens();
             runProgramNotification = true;
         } else {
-            errorImageGenNotNumber.text = "*some values are not number*";
+            errorImageGenNotNumber.text = stringScript.getErrorMapCalNotNumberText();
         }
     }
 
     //OTHER UTILITY FUNCTIONS
     private void showOrHideWorldAdvancedSetting(){
-        if (worldAdvancedSettingText.text == "Show World Advanced Setting"){
-            resetWorldAdvancedSetting("Hide World Advanced Setting", true);
+        if (worldAdvancedSettingText.text == stringScript.getShowAdvancedSettingText()){
+            resetWorldAdvancedSetting(stringScript.getHideAdvancedSettingText(), true);
         } else {
-            resetWorldAdvancedSetting("Show World Advanced Setting", false);
+            resetWorldAdvancedSetting(stringScript.getShowAdvancedSettingText(), false);
         }
     }
 
@@ -239,7 +260,7 @@ public class CoreUIController : MonoBehaviour
         var newDog = Instantiate(dogDeleteInContent, new Vector3(0.0f, 0.0f, 1.0f), Quaternion.identity);
         newDog.transform.SetParent(dogListContent.transform, false);
         newDog.GetComponent<RectTransform>().anchoredPosition = new Vector2(60.0f, dogDeletePosition);
-        newDog.transform.GetChild(0).GetComponent<Text>().text = "delete dog " + dogContentID;
+        newDog.transform.GetChild(0).GetComponent<Text>().text = stringScript.getDeleteDogText() + dogContentID;
         newDog.GetComponent<Button>().onClick.AddListener( () => { destroyDogSelfContent(newDog); } );
         dogDeletePosition -= 20.0f;
         dogContentID++;
@@ -247,9 +268,10 @@ public class CoreUIController : MonoBehaviour
 
     public void destroyAllDogContents(){
         int count = dogListContent.transform.childCount;
+        Debug.Log("Dog number to destroy: " + count);
         for (int i = 0 ; i < count ; i++){
-            dogListContent.transform.GetChild(0).SetParent(dumpingSite.transform, false);
             dogListContent.transform.GetChild(0).gameObject.SetActive(false);
+            dogListContent.transform.GetChild(0).SetParent(dumpingSite.transform, false);
         }
         dogDeletePosition = 145.0f;
     }
@@ -285,12 +307,12 @@ public class CoreUIController : MonoBehaviour
     public void switchAllowInput(bool active){
         allowAddDogObject = active;
         if (active) {
-            allowDogInputStatus.text = "Unlocked: you can add dog location";
+            allowDogInputStatus.text = stringScript.getUnlockDogInputText();
             allowDogInputStatus.fontSize = 18;
             inputState.enabled = true;
         }
         else {
-            allowDogInputStatus.text = "Locked: dog is not allowed to be added";
+            allowDogInputStatus.text = stringScript.getLockedDogInputText();
             allowDogInputStatus.fontSize = 18;
             inputState.enabled = false;
         }
@@ -345,20 +367,16 @@ public class CoreUIController : MonoBehaviour
     }
 
     private void showOrHideDeleteList(){
-        if (deleteButtonText.text == "DELETE"){
+        if (deleteButtonText.text == stringScript.getDeleteText()){
             deleteList.SetActive(true);
-            deleteButtonText.text = "CLOSE";
+            deleteButtonText.text = stringScript.getCloseText();
         } else {
             deleteList.SetActive(false);
-            deleteButtonText.text = "DELETE";
+            deleteButtonText.text = stringScript.getDeleteText();
         }
     }
 
     private void notifyDeleteAll(){
         deleteAllDogsNotification = true;
-    }
-
-    private void notifyDeleteAt(int id){
-
     }
 }
