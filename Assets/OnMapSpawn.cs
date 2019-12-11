@@ -292,7 +292,7 @@ public class OnMapSpawn : MonoBehaviour
             //quadObject.transform.localScale = new Vector3(_mbfunction._spawnScale , _mbfunction._spawnScale , _mbfunction._spawnScale);
        // }
 
-
+/*
         //Press Q to after z to create onsite heatmap
         if (Input.GetKeyDown("q"))
         {
@@ -337,19 +337,11 @@ public class OnMapSpawn : MonoBehaviour
          }
 //end
        
-
+*/
 
 
 //add for infected
-         //Press E to add dog to the map
-        if (Input.GetKeyDown("e"))
-        {
-            Vector2d latlonDelta = _mbfunction.getLatLonFromMousePosition();
-           // doggroupsize.Add(1); //size is static at 625
-            _mbfunction.addInfectedLocation(latlonDelta, 1); //add new dog object from clicked position
-            infectdogdata.Add(_mbfunction.getNewInfect());
-            
-        }
+        
 //end
 
         if (Input.GetKeyDown("t")) //temp map
@@ -3385,6 +3377,12 @@ private void createImage_extendmap(int route, int imagetype)
         attracter.Add(_mbfunction.getNewAttracter());
     }
 
+    private void addInfectObject(Vector2d latlondelta,int groupsize){
+         Vector2d latlonDelta = _mbfunction.getLatLonFromMousePosition();
+        _mbfunction.addInfectedLocation(latlonDelta,groupsize); //add new dog object from clicked position
+        infectdogdata.Add(_mbfunction.getNewInfect());
+    }
+
     private void initialPreDataRegister(){
         startPreDataRegister = true;
         uicontroller.setupActivation(true);
@@ -3637,9 +3635,12 @@ private void createImage_extendmap(int route, int imagetype)
 
     private void overallUIFlowController(){
         if (coreuicontroller.getScreenMode() == coreuicontroller.MODE_MAP_SELECTION){
-            if (coreuicontroller.mapIsLocked){
+            if (coreuicontroller.mapIsLocked && coreuicontroller.Normaldog_finish==false){
                 coreuicontroller.setScreenMode(coreuicontroller.MODE_NORMAL_DOG_SELECTION);
                 screenSelection();
+            }
+            if (coreuicontroller.mapIsLocked && coreuicontroller.Normaldog_finish){
+                coreuicontroller.setScreenMode(coreuicontroller.MODE_INFECT_DOG_SELECTION);
             }
         }
 
@@ -3687,6 +3688,30 @@ private void createImage_extendmap(int route, int imagetype)
             }
         }
 
+        //HANDLING INFECT DOG BEHAVIOR INPUT
+        if (coreuicontroller.dogIsCancelledNotification_I){
+            coreuicontroller.dogIsCancelledNotification_I = false;
+           // _mbfunction.clearDogObjectMemory();
+            coreuicontroller.showDogErrorInput_I("");
+            coreuicontroller.switchAllowInput_I(true);
+        }
+        if (coreuicontroller.dogIsAddedNotification_I){
+            coreuicontroller.dogIsAddedNotification_I = false;
+          //  _mbfunction.clearDogObjectMemory();
+            int quantity = coreuicontroller.getDogPopulation_I();
+            if (quantity != -1){
+               addInfectObject(_mbfunction.temp_latlondelta, (int)quantity);
+               // coreuicontroller.setDeletableDogToContent();
+                coreuicontroller.showDogErrorInput_I("");
+            } 
+            else {
+                coreuicontroller.showDogErrorInput_I(coreuicontroller.stringScript.getErrorInputField());
+            }
+            coreuicontroller.switchAllowInput_I(true);
+        }
+       
+
+
         //HANDLING DEFAULT PARAMETERS
         if (coreuicontroller.initMapCalculationParameter){
             coreuicontroller.initMapCalculationParameter = false;
@@ -3730,12 +3755,21 @@ private void createImage_extendmap(int route, int imagetype)
                     coreuicontroller.initializeDogPopulationInput();
                 }
             }
+            if (coreuicontroller.getScreenMode() == 3){
+                if (coreuicontroller.allowAddDogObject_I){
+                    _mbfunction.createInfectDogObjectForShow();
+                    coreuicontroller.initializeDogPopulationInput_I();
+                }
+            }
         }
 
         //if right click
         if (Input.GetMouseButtonDown(1)){
             if (coreuicontroller.getScreenMode() == 2){
                 coreuicontroller.switchAllowInput(!coreuicontroller.allowAddDogObject);
+            }
+            if (coreuicontroller.getScreenMode() == 3){
+                coreuicontroller.switchAllowInput_I(!coreuicontroller.allowAddDogObject_I);
             }
         }
     }

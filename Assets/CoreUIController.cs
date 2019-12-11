@@ -9,8 +9,10 @@ public class CoreUIController : MonoBehaviour
     //INITIAL VALUE
     public int MODE_MAP_SELECTION = 1;
     public int MODE_NORMAL_DOG_SELECTION = 2;
+    public int MODE_INFECT_DOG_SELECTION = 3;
     private int screenMode = 1;
     public bool mapIsLocked = false;
+    public bool Normaldog_finish = false;
     public bool startPreRegisterData = false;
 
     //MAP SELECTION UI
@@ -109,10 +111,12 @@ public class CoreUIController : MonoBehaviour
         cancelDogButton.GetComponent<Button>().onClick.AddListener(cancelDogPopulation);
         useDefaultDataButton.GetComponent<Button>().onClick.AddListener(useDefaultDogData);
         addDogButton.GetComponent<Button>().onClick.AddListener(addDogPopulation);
-        acceptDogPopButton.GetComponent<Button>().onClick.AddListener(moveToChangeParameters2);
-        //addDogButton_I.GetComponent<Button>().onClick.AddListener(addDogPopulation);
-        //cancelDogButton_I.GetComponent<Button>().onClick.AddListener(cancelDogPopulation);
-        //acceptDogPopButton.GetComponent<Button>().onClick.AddListener(moveToChangeParameters2);
+        acceptDogPopButton.GetComponent<Button>().onClick.AddListener(moveToAddInfectDog);
+
+        addDogButton_I.GetComponent<Button>().onClick.AddListener(addDogPopulation_I);
+        cancelDogButton_I.GetComponent<Button>().onClick.AddListener(cancelDogPopulation_I);
+        acceptDogPopButton_I.GetComponent<Button>().onClick.AddListener(moveToChangeParameters2);
+
         mapCalNext.GetComponent<Button>().onClick.AddListener(moveToMapSelection);
         showWorldAdvancedSetting.GetComponent<Button>().onClick.AddListener(showOrHideWorldAdvancedSetting);
         dogBehaviorNext.GetComponent<Button>().onClick.AddListener(moveToChangeParameters3);
@@ -175,14 +179,19 @@ public class CoreUIController : MonoBehaviour
 
     private void moveToAddInfectDog(){
         hideAllScreens();
-       // allowAddDogObject = true;
-       // mapIsLocked = true;
+       // switchAllowInput(false);
+        switchAllowInput_I(true);
+        allowAddDogObject_I = true;
+        mapIsLocked = true;
+        Normaldog_finish=true;
         addInfectDogScreen.SetActive(true);
+        setScreenMode(MODE_INFECT_DOG_SELECTION);
     }
 
     private void moveToChangeParameters2(){
         allowAddDogObject = false;
         switchAllowInput(false);
+        switchAllowInput_I(false);
         hideAllScreens();
         paramSetDogBehaviorScreen.SetActive(true);
         initDogBehaviorParameter = true;
@@ -232,6 +241,14 @@ public class CoreUIController : MonoBehaviour
         dogQuantity.GetComponent<InputField>().text = "";
         showDogErrorInput("");
         populationQuantBox.SetActive(true);
+    }
+
+    public void initializeDogPopulationInput_I(){
+        switchAllowInput_I(false);
+        acceptDogPopButton_I.enabled = false;
+        dogQuantity_I.GetComponent<InputField>().text = "";
+        showDogErrorInput("");
+        populationQuantBox_I.SetActive(true);
     }
 
     private void cancelDogPopulation(){
@@ -304,6 +321,40 @@ public class CoreUIController : MonoBehaviour
         }
     }
 
+private void cancelDogPopulation_I(){
+        populationQuantBox_I.SetActive(false);
+        dogIsCancelledNotification_I = true;
+        acceptDogPopButton_I.enabled = true;
+    }
+
+    private void addDogPopulation_I(){
+        populationQuantBox.SetActive(false);
+        dogIsAddedNotification_I = true;
+        acceptDogPopButton_I.enabled = true;
+    }
+
+    public int getDogPopulation_I(){
+        float value = 0;
+        if (float.TryParse(dogQuantity_I.text, out value)) {
+            return (int)value;
+        }
+        return -1;
+    }
+
+    public void showDogErrorInput_I(string text){
+        errorDogInput_I.GetComponent<Text>().text = text;
+    }
+
+
+
+
+
+
+
+
+
+
+
     public void switchAllowInput(bool active){
         allowAddDogObject = active;
         if (active) {
@@ -317,6 +368,28 @@ public class CoreUIController : MonoBehaviour
             inputState.enabled = false;
         }
     }
+
+    public void switchAllowInput_I(bool active){
+        allowAddDogObject_I = active;
+        if (active) {
+            allowDogInputStatus_I.text = stringScript.getUnlockDogInputText();
+            allowDogInputStatus_I.fontSize = 18;
+            inputState_I.enabled = true;
+        }
+        else {
+            allowDogInputStatus_I.text = stringScript.getLockedDogInputText();
+            allowDogInputStatus_I.fontSize = 18;
+            inputState_I.enabled = false;
+        }
+    }
+
+
+
+
+
+
+
+
 
 
     //UTILITY FUNCTIONS FOR PARAMETER SETTINGS

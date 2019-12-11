@@ -381,6 +381,14 @@ public class MapboxInheritance : MonoBehaviour
         spawninfectedPrefab(lat , lon);
     }
  
+    public void createInfectDogObjectForShow(){
+        temp_latlondelta = getLatLonFromMousePosition();
+        infectedlocations.Add(spawnLatLonWithinGrid(temp_latlondelta));
+        int lastIndex = infectedlocations.Count - 1;
+        float lat = (float)infectedlocations[lastIndex].x;
+        float lon = (float)infectedlocations[lastIndex].y;
+        spawninfectedPrefab(lat , lon);
+    }
     public void spawninfectedPrefab(double lat , double lon)
     {
          UnityTile tile = getTileAt(lat , lon);
