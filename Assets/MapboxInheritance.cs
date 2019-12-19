@@ -131,6 +131,9 @@ public class MapboxInheritance : MonoBehaviour
     GameObject DogLayer; //Dog Layer, their child elements are in here
 
     [SerializeField]
+    GameObject InfectLayer;
+
+    [SerializeField]
     public float GridSize = 5.0f; //default: "5", unit: meters
 
     //Data List of dog objects
@@ -353,6 +356,13 @@ public class MapboxInheritance : MonoBehaviour
         Destroy(DogLayer.GetComponent<Transform>().GetChild(index).gameObject);
     }
 
+    public void clearInfectObjectMemory(){
+        int removeIndex = infectObjs.Count - 1;
+        infectedlocations.RemoveAt(removeIndex);
+        infectObjs.RemoveAt(removeIndex);
+        Destroy(InfectLayer.GetComponent<Transform>().GetChild(removeIndex).gameObject);
+    }
+
     //Add map point reference to the world
 
      public void addInfectedLocation(float lat , float lon, int groupsize)
@@ -400,6 +410,7 @@ public class MapboxInheritance : MonoBehaviour
         var obj = Instantiate(infectedpanel);
         obj.transform.position = location;
         obj.transform.localScale = new Vector3(_spawnScale , _spawnScale , _spawnScale);
+        obj.transform.parent = InfectLayer.transform; //let the infect becomes the child of InfectLayer game object
         
         infectObjs.Add(obj);
        

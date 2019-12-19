@@ -8,7 +8,7 @@ public class StringUIController : MonoBehaviour
 {
     public Text[] textToChangeLanguage;
     public Font Arial;
-    private bool isThai;
+    public bool isThai;
 
     public void changeToThaiLanguage(string path){
         StreamReader reader = new StreamReader(path);

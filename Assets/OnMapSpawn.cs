@@ -343,7 +343,7 @@ public class OnMapSpawn : MonoBehaviour
 //add for infected
         
 //end
-
+/*
         if (Input.GetKeyDown("t")) //temp map
         {
             Vector2d extendlatlondelta = _mbfunction.getLatLonFromXY(0, Screen.height);
@@ -362,7 +362,7 @@ public class OnMapSpawn : MonoBehaviour
             createImage_extendmap(0, 1001); //Create Height Map
             Debug.Log("Extend Map Array is created with size (" +extend_xgridsize + ", " + extend_ygridsize + ")");
         }
-
+*/
         //ALL OF MY INPUT ARE REDUCED INTO 3 MAIN FUNCTIONS
         overallUIFlowController();
         overallOnClickHandlerUIController();
@@ -1192,7 +1192,7 @@ private void rabiesEnvironmentSet()
   
                 for (int i = 0; i < infectdogdata.Count; i++)
                 {
-                 dogeverygroup.infectamount[ infectdogdata[i].lonid ,  infectdogdata[i].latid,0] =1.0f;// infectdogdata[i].size;
+                 dogeverygroup.infectamount[ infectdogdata[i].lonid ,  infectdogdata[i].latid,0] =infectdogdata[i].size;// infectdogdata[i].size;
               /*   roamingrabies.Add (new float[xgridsize,ygridsize]);
                  roamingrabies[i][infectdogdata[i].lonid ,  infectdogdata[i].latid]=1.0f;
                  roamingrabiesgroupID.Add ((findNearestGroupNeighbour(infectdogdata[i].lonid,infectdogdata[i].latid)));
@@ -3366,6 +3366,24 @@ private void createImage_extendmap(int route, int imagetype)
         Debug.Log("Map Array is created with size (" + xgridsize + ", " + ygridsize + ")");
     }
 
+    private void extendmapSelection(){
+         Vector2d extendlatlondelta = _mbfunction.getLatLonFromXY(0, Screen.height);
+            //_mbfunction.setStartLatLon(extendlatlondelta);
+            extend_slat=(float)extendlatlondelta.x;
+            extend_slon=(float)extendlatlondelta.y;
+            extendlatlondelta = _mbfunction.getLatLonFromXY(Screen.width, 0);
+
+            extend_ygridsize = _mbfunction.getLatGridIndex(abs(extend_slat - (float)extendlatlondelta.x));
+            extend_xgridsize = _mbfunction.getLonGridIndex(abs(extend_slon - (float)extendlatlondelta.y));
+            extend_height = new float[extend_xgridsize, extend_ygridsize];
+
+            
+            extendmapping(extend_slat ,  extend_slon ,  extend_xgridsize , extend_ygridsize);
+           // pointToColorMap(startlat , startlon , xgridsize , ygridsize);
+            createImage_extendmap(0, 1001); //Create Height Map
+            Debug.Log("Extend Map Array is created with size (" +extend_xgridsize + ", " + extend_ygridsize + ")");
+    }
+
     private void addNormalDogObject(Vector2d latlondelta, float groupsize){
         doggroupsize.Add(groupsize); //size is static at 625
         _mbfunction.addDogLocation(latlondelta, groupsize); //add new dog object from clicked position
@@ -3378,8 +3396,8 @@ private void createImage_extendmap(int route, int imagetype)
     }
 
     private void addInfectObject(Vector2d latlondelta,int groupsize){
-         Vector2d latlonDelta = _mbfunction.getLatLonFromMousePosition();
-        _mbfunction.addInfectedLocation(latlonDelta,groupsize); //add new dog object from clicked position
+         //Vector2d latlonDelta = _mbfunction.getLatLonFromMousePosition();
+        _mbfunction.addInfectedLocation(latlondelta,groupsize); //add new dog object from clicked position
         infectdogdata.Add(_mbfunction.getNewInfect());
     }
 
@@ -3638,6 +3656,7 @@ private void createImage_extendmap(int route, int imagetype)
             if (coreuicontroller.mapIsLocked && coreuicontroller.Normaldog_finish==false){
                 coreuicontroller.setScreenMode(coreuicontroller.MODE_NORMAL_DOG_SELECTION);
                 screenSelection();
+                extendmapSelection();
             }
             if (coreuicontroller.mapIsLocked && coreuicontroller.Normaldog_finish){
                 coreuicontroller.setScreenMode(coreuicontroller.MODE_INFECT_DOG_SELECTION);
@@ -3691,13 +3710,13 @@ private void createImage_extendmap(int route, int imagetype)
         //HANDLING INFECT DOG BEHAVIOR INPUT
         if (coreuicontroller.dogIsCancelledNotification_I){
             coreuicontroller.dogIsCancelledNotification_I = false;
-           // _mbfunction.clearDogObjectMemory();
+            _mbfunction.clearInfectObjectMemory();
             coreuicontroller.showDogErrorInput_I("");
             coreuicontroller.switchAllowInput_I(true);
         }
         if (coreuicontroller.dogIsAddedNotification_I){
             coreuicontroller.dogIsAddedNotification_I = false;
-          //  _mbfunction.clearDogObjectMemory();
+             _mbfunction.clearInfectObjectMemory();
             int quantity = coreuicontroller.getDogPopulation_I();
             if (quantity != -1){
                addInfectObject(_mbfunction.temp_latlondelta, (int)quantity);

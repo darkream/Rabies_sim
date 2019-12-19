@@ -54,6 +54,7 @@ public class CoreUIController : MonoBehaviour
     public Button cancelDogButton_I;
     public Button addDogButton_I;
     public Button acceptDogPopButton_I;
+    
     public Text errorDogInput_I;
     public Text allowDogInputStatus_I;
     public Image inputState_I;
@@ -116,6 +117,7 @@ public class CoreUIController : MonoBehaviour
         addDogButton_I.GetComponent<Button>().onClick.AddListener(addDogPopulation_I);
         cancelDogButton_I.GetComponent<Button>().onClick.AddListener(cancelDogPopulation_I);
         acceptDogPopButton_I.GetComponent<Button>().onClick.AddListener(moveToChangeParameters2);
+        
 
         mapCalNext.GetComponent<Button>().onClick.AddListener(moveToMapSelection);
         showWorldAdvancedSetting.GetComponent<Button>().onClick.AddListener(showOrHideWorldAdvancedSetting);
@@ -152,6 +154,7 @@ public class CoreUIController : MonoBehaviour
         stringScript.changeToThaiLanguage("Assets/thaitranslated.txt");
         paramSetMapCalScreen.SetActive(true);
         initMapCalculationParameter = true;
+       stringScript.isThai=true;
     }
 
     private void moveToChangeParameters(){
@@ -182,6 +185,7 @@ public class CoreUIController : MonoBehaviour
        // switchAllowInput(false);
         switchAllowInput_I(true);
         allowAddDogObject_I = true;
+        infecttextsetter();
         mapIsLocked = true;
         Normaldog_finish=true;
         addInfectDogScreen.SetActive(true);
@@ -354,7 +358,6 @@ private void cancelDogPopulation_I(){
 
 
 
-
     public void switchAllowInput(bool active){
         allowAddDogObject = active;
         if (active) {
@@ -380,6 +383,19 @@ private void cancelDogPopulation_I(){
             allowDogInputStatus_I.text = stringScript.getLockedDogInputText();
             allowDogInputStatus_I.fontSize = 18;
             inputState_I.enabled = false;
+        }
+    }
+    public void infecttextsetter()
+    {
+        if(stringScript.isThai==true)
+        {
+            allowDogInputStatus_I.text = "วางกลุ่มประชากรสุนัขติดเชื้อ";
+         allowDogInputStatus_I.fontSize = 17;
+        }
+        else
+        {
+             allowDogInputStatus_I.text = "Infect Population Attachment";
+              allowDogInputStatus_I.fontSize = 22;
         }
     }
 
