@@ -47,6 +47,8 @@ public class CoreUIController : MonoBehaviour
     public int deleteOneDogNotification = -1;
     public GameObject dumpingSite;
 
+    public bool onDoginputNotification = false;
+
     //ADD Infect DOG UI
     public GameObject addInfectDogScreen;
     public GameObject populationQuantBox_I;
@@ -54,13 +56,13 @@ public class CoreUIController : MonoBehaviour
     public Button cancelDogButton_I;
     public Button addDogButton_I;
     public Button acceptDogPopButton_I;
-    
     public Text errorDogInput_I;
     public Text allowDogInputStatus_I;
     public Image inputState_I;
     public bool dogIsCancelledNotification_I = false;
     public bool dogIsAddedNotification_I = false;
     public bool allowAddDogObject_I = false;
+    public bool onDoginputNotification_I = false;
      
     //PARAMETER SETTING UI (FIRST PAGE)
     public GameObject paramSetMapCalScreen;
@@ -245,6 +247,7 @@ public class CoreUIController : MonoBehaviour
         dogQuantity.GetComponent<InputField>().text = "";
         showDogErrorInput("");
         populationQuantBox.SetActive(true);
+         onDoginputNotification=true;
     }
 
     public void initializeDogPopulationInput_I(){
@@ -253,6 +256,7 @@ public class CoreUIController : MonoBehaviour
         dogQuantity_I.GetComponent<InputField>().text = "";
         showDogErrorInput("");
         populationQuantBox_I.SetActive(true);
+        onDoginputNotification_I=true;
     }
 
     private void cancelDogPopulation(){

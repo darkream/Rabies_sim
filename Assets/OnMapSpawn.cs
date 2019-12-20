@@ -3669,6 +3669,7 @@ private void createImage_extendmap(int route, int imagetype)
             _mbfunction.clearDogObjectMemory();
             coreuicontroller.showDogErrorInput("");
             coreuicontroller.switchAllowInput(true);
+            coreuicontroller.onDoginputNotification=false;
         }
         if (coreuicontroller.dogIsAddedNotification){
             coreuicontroller.dogIsAddedNotification = false;
@@ -3678,11 +3679,13 @@ private void createImage_extendmap(int route, int imagetype)
                 addNormalDogObject(_mbfunction.temp_latlondelta, quantity);
                 coreuicontroller.setDeletableDogToContent();
                 coreuicontroller.showDogErrorInput("");
+
             } 
             else {
                 coreuicontroller.showDogErrorInput(coreuicontroller.stringScript.getErrorInputField());
             }
             coreuicontroller.switchAllowInput(true);
+            coreuicontroller.onDoginputNotification=false;
         }
         if (coreuicontroller.useDefaultDogNotification){
             coreuicontroller.useDefaultDogNotification = false;
@@ -3713,6 +3716,7 @@ private void createImage_extendmap(int route, int imagetype)
             _mbfunction.clearInfectObjectMemory();
             coreuicontroller.showDogErrorInput_I("");
             coreuicontroller.switchAllowInput_I(true);
+              coreuicontroller.onDoginputNotification_I=false;
         }
         if (coreuicontroller.dogIsAddedNotification_I){
             coreuicontroller.dogIsAddedNotification_I = false;
@@ -3727,6 +3731,7 @@ private void createImage_extendmap(int route, int imagetype)
                 coreuicontroller.showDogErrorInput_I(coreuicontroller.stringScript.getErrorInputField());
             }
             coreuicontroller.switchAllowInput_I(true);
+              coreuicontroller.onDoginputNotification_I=false;
         }
        
 
@@ -3785,10 +3790,14 @@ private void createImage_extendmap(int route, int imagetype)
         //if right click
         if (Input.GetMouseButtonDown(1)){
             if (coreuicontroller.getScreenMode() == 2){
-                coreuicontroller.switchAllowInput(!coreuicontroller.allowAddDogObject);
+                if(coreuicontroller.onDoginputNotification==false)
+                 coreuicontroller.switchAllowInput(!coreuicontroller.allowAddDogObject);
+              
             }
             if (coreuicontroller.getScreenMode() == 3){
-                coreuicontroller.switchAllowInput_I(!coreuicontroller.allowAddDogObject_I);
+                if(coreuicontroller.onDoginputNotification_I==false)
+               coreuicontroller.switchAllowInput_I(!coreuicontroller.allowAddDogObject_I);
+               
             }
         }
     }
