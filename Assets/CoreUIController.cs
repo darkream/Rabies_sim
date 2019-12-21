@@ -120,7 +120,6 @@ public class CoreUIController : MonoBehaviour
         cancelDogButton_I.GetComponent<Button>().onClick.AddListener(cancelDogPopulation_I);
         acceptDogPopButton_I.GetComponent<Button>().onClick.AddListener(moveToChangeParameters2);
         
-
         mapCalNext.GetComponent<Button>().onClick.AddListener(moveToMapSelection);
         showWorldAdvancedSetting.GetComponent<Button>().onClick.AddListener(showOrHideWorldAdvancedSetting);
         dogBehaviorNext.GetComponent<Button>().onClick.AddListener(moveToChangeParameters3);
@@ -129,7 +128,11 @@ public class CoreUIController : MonoBehaviour
         deleteAllButton.GetComponent<Button>().onClick.AddListener(notifyDeleteAll);
         imageGen[0].onValueChanged.AddListener(delegate {hordeMustNotExceedOne();});
         imageGen[1].onValueChanged.AddListener(delegate {exploreMustNotExceedOne();});
-        moveToLanguageSelector();
+        if (PlayerPrefs.GetString("isThai") == "True") {
+            stringScript.changeToThaiLanguage("Assets/thaitranslated.txt");
+            stringScript.isThai=true;
+        }
+        moveToChangeParameters();
     }
 
     //TO HIDE ALL UI BEFORE PLACING ANOTHER ONE
@@ -156,7 +159,7 @@ public class CoreUIController : MonoBehaviour
         stringScript.changeToThaiLanguage("Assets/thaitranslated.txt");
         paramSetMapCalScreen.SetActive(true);
         initMapCalculationParameter = true;
-       stringScript.isThai=true;
+        stringScript.isThai=true;
     }
 
     private void moveToChangeParameters(){

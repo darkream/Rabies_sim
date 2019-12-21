@@ -7,7 +7,7 @@ using UnityEngine.UI;
 public class StringUIController : MonoBehaviour
 {
     public Text[] textToChangeLanguage;
-    public Font Arial;
+    public Font thaiFont;
     public bool isThai;
 
     public void changeToThaiLanguage(string path){
@@ -19,7 +19,7 @@ public class StringUIController : MonoBehaviour
             if (count > textToChangeLanguage.Length){
                 break;
             }
-            textToChangeLanguage[count].font = Arial;
+            textToChangeLanguage[count].font = thaiFont;
             textToChangeLanguage[count].text = reader.ReadLine();
             textToChangeLanguage[count].fontSize = (int)(textToChangeLanguage[count].fontSize * 0.8f);
             count++;

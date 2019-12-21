@@ -6,6 +6,12 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/SampleScene.unity
-    guid: 99c9720ab356a0642a771bea13969a05
+    path: Assets/Scenes/Rabies_add/StartingScreen.unity
+    guid: ce9716e108742e24898411e75cdece17
+  - enabled: 1
+    path: Assets/Scenes/Rabies_add/Stateseparate.unity
+    guid: 39ea5c959ce785442ad36782eaa77e28
+  - enabled: 1
+    path: Assets/Scenes/Rabies_add/StopReporting.unity
+    guid: 8ab722bc1dcb7bd499e7366161957988
   m_configObjects: {}
