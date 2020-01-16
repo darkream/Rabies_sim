@@ -39,6 +39,8 @@
 		private bool _shouldDrag;
 		private bool _isInitialized = false;
 		private Plane _groundPlane = new Plane(Vector3.up, 0);
+		public float tempzoomsize=0.0f;
+		private bool tempzoomsizeget=false;
 
 		void Awake()
 		{
@@ -75,6 +77,13 @@
 					HandleMouseAndKeyBoard();
 				}
 			}
+
+			if(_coreUI.extendmapNotification==true&&tempzoomsizeget==false)
+			{
+				//lock zoomsize
+				tempzoomsize=_mapManager.Zoom;
+				tempzoomsizeget=true;
+			}
 		}
 
 		void HandleMouseAndKeyBoard()
@@ -82,7 +91,13 @@
 			// zoom
 			float scrollDelta = 0.0f;
 			scrollDelta = Input.GetAxis("Mouse ScrollWheel");
-			ZoomMapUsingTouchOrMouse(scrollDelta);
+			//this lock zooming in
+			//if(_coreUI.extendmapNotification==true)//lock zoom in
+			//if(scrollDelta>0.0f)scrollDelta=0.0f;
+			if(_coreUI.zoomlock==false)
+			{
+				ZoomMapUsingTouchOrMouse(scrollDelta);
+			}
 
 
 			//pan keyboard
@@ -99,6 +114,7 @@
 
 		void HandleTouch()
 		{
+
 			float zoomFactor = 0.0f;
 			//pinch to zoom. 
 			switch (Input.touchCount)
@@ -124,6 +140,7 @@
 
 						// Find the difference in the distances between each frame.
 						zoomFactor = 0.01f * (touchDeltaMag - prevTouchDeltaMag);
+		
 					}
 					ZoomMapUsingTouchOrMouse(zoomFactor);
 					break;
@@ -137,7 +154,14 @@
 			var zoom = Mathf.Max(0.0f, Mathf.Min(_mapManager.Zoom + zoomFactor * _zoomSpeed, 21.0f));
 			if (Math.Abs(zoom - _mapManager.Zoom) > 0.0f)
 			{
-				_mapManager.UpdateMap(_mapManager.CenterLatitudeLongitude, zoom);
+				if(_coreUI.extendmapNotification==false)
+				{
+					_mapManager.UpdateMap(_mapManager.CenterLatitudeLongitude, zoom);
+				}
+				else if(_coreUI.extendmapNotification==true && zoom<tempzoomsize)
+				{
+					_mapManager.UpdateMap(_mapManager.CenterLatitudeLongitude, zoom);
+				}
 			}
 		}
 

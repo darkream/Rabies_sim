@@ -14,6 +14,9 @@ using UnityEngine.SceneManagement;
 public class OnMapSpawn : MonoBehaviour
 {
     [SerializeField]
+		AbstractMap _mapManager;
+
+    [SerializeField]
     MapboxInheritance _mbfunction;
 
     List<float> doggroupsize; //initial group size of the list of dogs above
@@ -96,12 +99,10 @@ public class OnMapSpawn : MonoBehaviour
 
 
     private float[] dogstate_proposion;
-    public Material Matref;
-    public GameObject quadmap;
-    Vector2d quadlocation;
-    Renderer renA;
+ 
 
-    Texture2D quadmaptexture;
+    public float tempzoomsize;
+
 
     //--------------------------------------------------------------------------------------------
     //Rabies test zone
@@ -194,8 +195,11 @@ public class OnMapSpawn : MonoBehaviour
     bool step_factor = true, step_apply = false, step_create = false, step_first = true;
 
     private int sysdate = 0;
-    private int loopperday = 5;
-    private int dayloop = 5;
+  
+    [System.NonSerialized]
+    public int loopperday = 20;
+    [System.NonSerialized]
+    public int dayloop = 5;
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //pic creation relate
@@ -216,14 +220,21 @@ public class OnMapSpawn : MonoBehaviour
     float[,] extend_suspectamount;
     public float cutoff_percentage = 0.05f;
     //-----------------------------------------------------------------------------------------------
-    Texture2D[] runtexture = new Texture2D[100];
+    //Texture2D[] runtexture = new Texture2D[100];
     public Text pictextrender;
     public RenderTexture ren_texture;
+
+    public Camera mapcap_cam;
 
     int rentext_sysdate = 0;
     int rentext_frame = 0;
     bool runanimate = false;
     //end test zone
+
+    //frameskipper
+    bool frameskipper=false;
+    //report page UI
+    public GameObject reportpage;
 
     void Start()
     {
@@ -238,6 +249,7 @@ public class OnMapSpawn : MonoBehaviour
         uicontroller.initialValue();
         uicontroller.setTotalProcess(10);
         coreuicontroller.setupActivation();
+        mapcap_cam.targetTexture = new RenderTexture( Screen.width, Screen.height, 24 );
         //clustering.pixelReaderAndFileWritten("Assets/mapcolor.txt");
         //clustering.createStringColorListFromReadFile("Assets/mapcolor.txt");
         //clustering.kMeanClustering();
@@ -340,34 +352,25 @@ public class OnMapSpawn : MonoBehaviour
 
         */
 
-
-        //add for infected
-
-        //end
-        /*
-                if (Input.GetKeyDown("t")) //temp map
-                {
-                    Vector2d extendlatlondelta = _mbfunction.getLatLonFromXY(0, Screen.height);
-                    //_mbfunction.setStartLatLon(extendlatlondelta);
-                    extend_slat=(float)extendlatlondelta.x;
-                    extend_slon=(float)extendlatlondelta.y;
-                    extendlatlondelta = _mbfunction.getLatLonFromXY(Screen.width, 0);
-
-                    extend_ygridsize = _mbfunction.getLatGridIndex(abs(extend_slat - (float)extendlatlondelta.x));
-                    extend_xgridsize = _mbfunction.getLonGridIndex(abs(extend_slon - (float)extendlatlondelta.y));
-                    extend_height = new float[extend_xgridsize, extend_ygridsize];
-
-
-                    extendmapping(extend_slat ,  extend_slon ,  extend_xgridsize , extend_ygridsize);
-                   // pointToColorMap(startlat , startlon , xgridsize , ygridsize);
-                    createImage_extendmap(0, 1001); //Create Height Map
-                    Debug.Log("Extend Map Array is created with size (" +extend_xgridsize + ", " + extend_ygridsize + ")");
-                }
-        */
         //ALL OF MY INPUT ARE REDUCED INTO 3 MAIN FUNCTIONS
+        //Because of render texture need to update frame first so...
+      
         overallUIFlowController();
         overallOnClickHandlerUIController();
+        
         registerUIControllerData();
+
+        if(coreuicontroller.runProgramNotification==false && frameskipper==true)
+        {
+            coreuicontroller.ShowDogObject();
+        }
+        if(coreuicontroller.runProgramNotification==true && frameskipper==false)
+        {
+         frameskipper=true;
+         coreuicontroller.hideDogObject();
+        }
+        //frame skipping
+        
     }
 
     //add for rabies testing
@@ -428,10 +431,6 @@ public class OnMapSpawn : MonoBehaviour
         //rabies_cutoff();
         //potential bitearea calculation
         bitearea_calculated();
-    }
-    private void rabies_cutoff()
-    {
-
     }
 
     private void Alldogmovement()
@@ -2051,7 +2050,7 @@ public class OnMapSpawn : MonoBehaviour
     //create image by image tag where 0=map, 1=dog, 2=mapanddog, 3=edge, 4=walking
     private void createImage(int route, int imagetype)
     {
-        Texture2D texture = new Texture2D(xgridsize, ygridsize, TextureFormat.RGB24, false);
+        Texture2D texture = new Texture2D(xgridsize, ygridsize, TextureFormat.RGBA32, false);
 
         for (int lat = 0; lat < ygridsize; lat++)
         {
@@ -2133,7 +2132,7 @@ public class OnMapSpawn : MonoBehaviour
         if (realxsize < xgridsize) realxsize = xgridsize;
 
         //RenderTexture.active = ren_texture;
-        Texture2D texture = new Texture2D(realxsize, ygridsize + 90, TextureFormat.RGB24, false);
+        Texture2D texture = new Texture2D(realxsize, ygridsize + 90, TextureFormat.RGBA32, false);
 
         texture.ReadPixels(new Rect(0, 0, ren_texture.width, ren_texture.height - 110), 0, 0);
 
@@ -2167,7 +2166,7 @@ public class OnMapSpawn : MonoBehaviour
         if (realxsize < extend_xgridsize) realxsize = extend_xgridsize;
 
         //RenderTexture.active = ren_texture;
-        Texture2D texture = new Texture2D(realxsize, extend_ygridsize + 90, TextureFormat.RGB24, false);
+        Texture2D texture = new Texture2D(realxsize, extend_ygridsize + 90, TextureFormat.RGBA32, false);
 
         texture.ReadPixels(new Rect(0, 0, ren_texture.width, ren_texture.height - 110), 0, 0);
 
@@ -2323,7 +2322,7 @@ public class OnMapSpawn : MonoBehaviour
             {
                 return new Color(0.0f, ((dogeverygroup.suspectamount[lon, lat] / maxsuspect) * 0.5f) + 0.5f, 0.0f);
             }
-            else return Color.white;
+            else return Color.clear;
 
         }
 
@@ -2337,7 +2336,7 @@ public class OnMapSpawn : MonoBehaviour
             {
                 return new Color(((exsum / maxexposed) * 0.5f) + 0.5f, ((exsum / maxexposed) * 0.5f) + 0.5f, 0.0f);
             }
-            else return Color.white;
+            else return Color.clear;
 
         }
         //show dog i state
@@ -2348,7 +2347,7 @@ public class OnMapSpawn : MonoBehaviour
             {
                 return new Color(((infsum / maxinfect) * 0.5f) + 0.5f, 0.0f, 0.0f);
             }
-            else return Color.white;
+            else return Color.clear;
 
         }
 
@@ -2477,8 +2476,49 @@ public class OnMapSpawn : MonoBehaviour
         {
             return "/../Assets/Resources/testextend/extendmap_day" + rentext_sysdate + ".png";
         }
+        else if (imagetype == 1004)
+        {
+            return "/../Assets/Resources/RealMap.png";
+        }
+          else if (imagetype == 1005)
+        {
+            return "/../Assets/Resources/RealMapextend.png";
+        }
         return "/../Assets/MickRendered/createdImage" + route + ".png";
+        
+       
     }
+
+    private void Mapcapture()
+    {
+        RenderTexture rTex = mapcap_cam.targetTexture;
+        Texture2D tex = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
+        RenderTexture.active = rTex;
+        tex.ReadPixels(new Rect(0, 0, rTex.width, rTex.height), 0, 0);
+        tex.Apply();
+         //encode to png
+        byte[] bytes = tex.EncodeToPNG();
+        Destroy(tex);
+
+        File.WriteAllBytes(Application.dataPath + getFileNameTag(1004,0), bytes);
+        //return tex;
+    }
+
+    private void ExtendMapcapture()
+    {
+        RenderTexture rTex = mapcap_cam.targetTexture;
+        Texture2D tex = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
+        RenderTexture.active = rTex;
+        tex.ReadPixels(new Rect(0, 0, rTex.width, rTex.height), 0, 0);
+        tex.Apply();
+         //encode to png
+        byte[] bytes = tex.EncodeToPNG();
+        Destroy(tex);
+
+        File.WriteAllBytes(Application.dataPath + getFileNameTag(1005,0), bytes);
+    }
+
+
 
     //(reference: https://en.wikipedia.org/wiki/Multivariate_kernel_density_estimation)
     private void kernelDensityEstimation(bool apply_edge = true)
@@ -3487,6 +3527,7 @@ public class OnMapSpawn : MonoBehaviour
         pointToColorMap(startlat, startlon, xgridsize, ygridsize);
         createImage(0, 0); //Create Height Map
         Debug.Log("Map Array is created with size (" + xgridsize + ", " + ygridsize + ")");
+        tempzoomsize=_mapManager.Zoom;
     }
 
     private void extendmapSelection()
@@ -3532,6 +3573,8 @@ public class OnMapSpawn : MonoBehaviour
     {
         startPreDataRegister = true;
         uicontroller.setupActivation(true);
+        //frame skipping complete
+        ExtendMapcapture();
     }
 
     private void registerUIControllerData()
@@ -3711,18 +3754,18 @@ public class OnMapSpawn : MonoBehaviour
                             if (rabiespreadloop == 0 && sysdate == 0)
                             {
                                 createImage_withtext(rentext_frame, 100);
-                                createImage_withtext(rentext_frame, 9);
-                                createImage_withtext(rentext_frame, 10);
-                                createImage_withtext(rentext_frame, 11);
+                                createImage(rentext_frame, 9);
+                                createImage(rentext_frame, 10);
+                                createImage(rentext_frame, 11);
                                 rentext_frame++;
                             }
 
                             else if (rabiespreadloop != 0 || sysdate != 0)
                             {
                                 createImage_withtext(rentext_frame, 100);
-                                createImage_withtext(rentext_frame, 9);
-                                createImage_withtext(rentext_frame, 10);
-                                createImage_withtext(rentext_frame, 11);
+                                createImage(rentext_frame, 9);
+                                createImage(rentext_frame, 10);
+                                createImage(rentext_frame, 11);
                                 rentext_frame++;
                                 if (rentext_frame >= loopperday)//edit ----------------------------------
                                 {
@@ -3791,14 +3834,17 @@ public class OnMapSpawn : MonoBehaviour
                 {
                     //finish last date
                     createImage_withtext(rentext_frame, 100);
-                    createImage_withtext(rentext_frame, 9);
-                    createImage_withtext(rentext_frame, 10);
-                    createImage_withtext(rentext_frame, 11);
+                    createImage(rentext_frame, 9);
+                    createImage(rentext_frame, 10);
+                    createImage(rentext_frame, 11);
                     Debug.Log("COMPLETE!");
                     uicontroller.triggerCompleteProcess();
                     uicontroller.setupActivation(false);
                     startPreDataRegister = false;
-                    SceneManager.LoadScene("StopReporting", LoadSceneMode.Single);
+                    reportpage.SetActive(true);
+                    float zoom = Mathf.Max(0.0f, Mathf.Min(tempzoomsize, 21.0f));
+                    _mapManager.UpdateMap(_mapManager.CenterLatitudeLongitude, zoom);
+                    //SceneManager.LoadScene("StopReporting", LoadSceneMode.Single);
                 }
             }
         }
@@ -3812,7 +3858,8 @@ public class OnMapSpawn : MonoBehaviour
             {
                 coreuicontroller.setScreenMode(coreuicontroller.MODE_NORMAL_DOG_SELECTION);
                 screenSelection();
-                extendmapSelection();
+                Mapcapture();
+                //extendmapSelection();
             }
             if (coreuicontroller.mapIsLocked && coreuicontroller.Normaldog_finish)
             {
@@ -3937,12 +3984,22 @@ public class OnMapSpawn : MonoBehaviour
             setParamImageGen_CoreUIToMB();
             coreuicontroller.runProgramNotification = true;
         }
+
+         if (coreuicontroller.extendmapset)
+        {
+            coreuicontroller.extendmapset = false;
+            coreuicontroller.hideDogObject();
+            extendmapSelection();
+        }
+
         //AND HANDLING RESET PARAMETERS
 
         //HANDLING RUNNING WHOLE PROGRAM
-        if (coreuicontroller.runProgramNotification)
+        if (coreuicontroller.runProgramNotification==true && frameskipper==true)
         {
             coreuicontroller.runProgramNotification = false;
+            //frame skipping
+           
             initialPreDataRegister();
         }
     }

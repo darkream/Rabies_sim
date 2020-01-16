@@ -87,16 +87,34 @@ public class CoreUIController : MonoBehaviour
     public bool initImageGenParameter = false;
     public InputField[] imageGen;
     public Text singleBehavior;
+    public Button extendmapnext;
     public Button imageGenNext;
     public Text errorImageGenNotNumber;
     public bool resetImageGenParameter = false;
     public bool runProgramNotification = false;
+    public bool extendmapNotification=false;
 
     //LANGUAGE SELECTOR UI
     public GameObject languageSelectorScreen;
     public GameObject thaiFlag;
     public GameObject engFlag;
     public StringUIController stringScript;
+
+    //Extend map
+    public GameObject ExtendmapSelection;
+
+    public bool extendmapset=false;
+    //Report page
+    //Due to core UI behaviour ,report page need to open on onmapspawn
+    //public GameObject thaiFlag;
+    public Button Openfolder_button;
+
+    //dog layer hiding
+    public GameObject Normaldoglayer;
+    public GameObject Infectdoglayer;
+
+    public bool zoomlock=false;
+
 
     public int getScreenMode(){
         return screenMode;
@@ -124,6 +142,8 @@ public class CoreUIController : MonoBehaviour
         showWorldAdvancedSetting.GetComponent<Button>().onClick.AddListener(showOrHideWorldAdvancedSetting);
         dogBehaviorNext.GetComponent<Button>().onClick.AddListener(moveToChangeParameters3);
         imageGenNext.GetComponent<Button>().onClick.AddListener(moveToRunProgram);
+        
+        extendmapnext.GetComponent<Button>().onClick.AddListener(moveToExtendMapSelection);
         deleteButton.GetComponent<Button>().onClick.AddListener(showOrHideDeleteList);
         deleteAllButton.GetComponent<Button>().onClick.AddListener(notifyDeleteAll);
         imageGen[0].onValueChanged.AddListener(delegate {hordeMustNotExceedOne();});
@@ -136,6 +156,8 @@ public class CoreUIController : MonoBehaviour
     }
 
     //TO HIDE ALL UI BEFORE PLACING ANOTHER ONE
+
+
     private void hideAllScreens(){
         languageSelectorScreen.SetActive(false);
         mapSelection.SetActive(false);
@@ -145,9 +167,18 @@ public class CoreUIController : MonoBehaviour
         paramSetMapCalScreen.SetActive(false);
         paramSetDogBehaviorScreen.SetActive(false);
         paramSetImageGenParameter.SetActive(false);
+        ExtendmapSelection.SetActive(false);
 
     }
 
+    public void hideDogObject(){
+        Normaldoglayer.SetActive(false);
+        Infectdoglayer.SetActive(false);
+    }
+    public void ShowDogObject(){
+        Normaldoglayer.SetActive(true);
+        Infectdoglayer.SetActive(true);
+    }
     //LIST OF "MOVE TO" FUNCTION
     private void moveToLanguageSelector(){
         hideAllScreens();
@@ -176,6 +207,13 @@ public class CoreUIController : MonoBehaviour
         } else {
             errorMapCalNotNumber.text = stringScript.getErrorMapCalNotNumberText();
         }
+    }
+
+     private void moveToExtendMapSelection(){
+            hideAllScreens();
+           // resetMapCalculationParameter = true;
+           extendmapNotification=true;
+            ExtendmapSelection.SetActive(true);
     }
 
     private void moveToAddNormalDog(){
@@ -220,7 +258,10 @@ public class CoreUIController : MonoBehaviour
     private void moveToRunProgram(){
         if (checkImageGenParamIntegrity()){
             hideAllScreens();
+            extendmapset=true;
+            extendmapNotification=false;
             runProgramNotification = true;
+            zoomlock=true;
         } else {
             errorImageGenNotNumber.text = stringScript.getErrorMapCalNotNumberText();
         }
@@ -474,5 +515,22 @@ private void cancelDogPopulation_I(){
 
     private void notifyDeleteAll(){
         deleteAllDogsNotification = true;
+    }
+
+     private void openreportfolder(){
+         string path; 
+         path=Application.dataPath + "/Resources/test/"; 
+         path = path.Replace(@"/", @"\");   // explorer doesn't like front slashes
+         Debug.Log(path);
+         try
+         {
+              System.Diagnostics.Process.Start("explorer.exe", "/root,"+path);
+         }
+         catch(System.ComponentModel.Win32Exception e)
+         {
+             // just silently skip error
+             // we currently have no platform define for the current OS we are in, so we resort to this
+             e.HelpLink = ""; // do anything with this variable to silence warning about not using it
+         }
     }
 }

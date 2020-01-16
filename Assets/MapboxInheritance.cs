@@ -526,7 +526,7 @@ public class MapboxInheritance : MonoBehaviour
         destroyAllDogs();
         s_lat = (float)latlondelta.x;
         s_lon = (float)latlondelta.y;
-        spawnMapPointer(s_lat , s_lon);
+        //spawnMapPointer(s_lat , s_lon);
     }
 
     //Initialize the bottom-right array index
@@ -534,7 +534,7 @@ public class MapboxInheritance : MonoBehaviour
     {
         y_gsize = getLatGridIndex(abs(s_lat - (float)latlondelta.x));
         x_gsize = getLonGridIndex(abs(s_lon - (float)latlondelta.y));
-        spawnMapPointer(latlondelta.x , latlondelta.y);
+       // spawnMapPointer(latlondelta.x , latlondelta.y);
     }
 
     //Reset dog values
