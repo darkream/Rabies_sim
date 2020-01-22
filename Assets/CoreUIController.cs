@@ -380,7 +380,7 @@ private void cancelDogPopulation_I(){
     }
 
     private void addDogPopulation_I(){
-        populationQuantBox.SetActive(false);
+        populationQuantBox_I.SetActive(false);
         dogIsAddedNotification_I = true;
         acceptDogPopButton_I.enabled = true;
     }

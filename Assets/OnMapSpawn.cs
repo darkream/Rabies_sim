@@ -197,7 +197,7 @@ public class OnMapSpawn : MonoBehaviour
     private int sysdate = 0;
   
     [System.NonSerialized]
-    public int loopperday = 20;
+    public int loopperday = 5;
     [System.NonSerialized]
     public int dayloop = 5;
 
@@ -236,6 +236,8 @@ public class OnMapSpawn : MonoBehaviour
     //report page UI
     public GameObject reportpage;
 
+    private Texture2D temp_realmap,temp_extendmap;
+
     void Start()
     {
         _mbfunction.initializeLocations();
@@ -250,6 +252,7 @@ public class OnMapSpawn : MonoBehaviour
         uicontroller.setTotalProcess(10);
         coreuicontroller.setupActivation();
         mapcap_cam.targetTexture = new RenderTexture( Screen.width, Screen.height, 24 );
+        Debug.Log(Application.streamingAssetsPath);
         //clustering.pixelReaderAndFileWritten("Assets/mapcolor.txt");
         //clustering.createStringColorListFromReadFile("Assets/mapcolor.txt");
         //clustering.kMeanClustering();
@@ -296,61 +299,6 @@ public class OnMapSpawn : MonoBehaviour
             infectObject.transform.localScale = new Vector3(_mbfunction._spawnScale, _mbfunction._spawnScale, _mbfunction._spawnScale);
         }
 
-
-
-        //add for quad
-        // for (int i = 0; i < 1 ; i++) //for quad
-        // {
-        //    quadmap.transform.localPosition = _mbfunction._map.GeoToWorldPosition(quadlocation , true);
-        //quadObject.transform.localScale = new Vector3(_mbfunction._spawnScale , _mbfunction._spawnScale , _mbfunction._spawnScale);
-        // }
-
-        /*
-                //Press Q to after z to create onsite heatmap
-                if (Input.GetKeyDown("q"))
-                {
-
-                     quadmap= GameObject.CreatePrimitive(PrimitiveType.Quad);
-                    // quadmap.transform.position = new Vector3(0, 90, 0);
-                     quadmap.transform.localScale = new Vector3(68.43009f, 36.5747f, 1.310921f);
-                     quadmap.transform.eulerAngles = new Vector3(90.0f,0.0f,0.0f);
-                    Material quadMaterial = (Material)Resources.Load( "Mapmat" );
-                   renA=quadmap.GetComponent<Renderer>();
-                   renA.material = quadMaterial;
-                   Texture2D myTexture = Resources.Load( "test/selectedMapAndDog0" ) as Texture2D;
-                    Vector2d latlondelta = _mbfunction.getLatLonFromXY(Screen.width/2, Screen.height/2);
-                    Vector3 location = Conversions.GeoToWorldPosition(latlondelta.x , latlondelta.y , _mbfunction._map.CenterMercator , _mbfunction._map.WorldRelativeScale).ToVector3xz();
-                    quadmap.transform.position = new Vector3(location.x ,172.0f , location.z);//fixed map
-                    quadlocation = new Vector2d(location.x,location.z);
-                    renA.material.mainTexture = myTexture;
-
-
-                }
-        //end
-
-        //rotate running animate
-                 if (Input.GetKeyDown("r"))
-                {
-                     //add generate run animate
-                    string tempstr;
-                    for(int i = 0;i<100;i++)
-                    {
-                        tempstr = "test/run" + i  ;
-                        runtexture[i]=Resources.Load( tempstr ) as Texture2D;
-                    }
-
-                    runanimate = true;
-                }
-
-                 if (runanimate)
-                 {
-                    float framepersec=10.0f;
-                    int animateindex = (int)((Time.time * framepersec) % runtexture.Length);
-                    renA.material.mainTexture = runtexture[animateindex];
-                 }
-        //end
-
-        */
 
         //ALL OF MY INPUT ARE REDUCED INTO 3 MAIN FUNCTIONS
         //Because of render texture need to update frame first so...
@@ -2066,13 +2014,13 @@ public class OnMapSpawn : MonoBehaviour
         byte[] bytes = texture.EncodeToPNG();
         Destroy(texture);
 
-        File.WriteAllBytes(Application.dataPath + getFileNameTag(imagetype, route), bytes);
+        File.WriteAllBytes(Application.streamingAssetsPath + getFileNameTag(imagetype, route), bytes);
     }
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     private void text_file_creation()
     {
-        string path = (Application.dataPath + "/../Assets/Resources/test/Report_day" + rentext_sysdate + ".txt");
+        string path = (Application.streamingAssetsPath +"/Textreport/Report_day" + rentext_sysdate + ".txt");
         float inf_rad_temp = 0, temp_rzero = 0.0f, justwannaknow = 0.0f, justwannaknow2 = 0.0f, justwannaknow3 = 0.0f, newr0 = 0.0f;
 
         temp_rzero = daily_rzero;
@@ -2132,7 +2080,7 @@ public class OnMapSpawn : MonoBehaviour
         if (realxsize < xgridsize) realxsize = xgridsize;
 
         //RenderTexture.active = ren_texture;
-        Texture2D texture = new Texture2D(realxsize, ygridsize + 90, TextureFormat.RGBA32, false);
+        Texture2D texture = new Texture2D(realxsize, ygridsize + 90, TextureFormat.RGB24, false);
 
         texture.ReadPixels(new Rect(0, 0, ren_texture.width, ren_texture.height - 110), 0, 0);
 
@@ -2154,7 +2102,7 @@ public class OnMapSpawn : MonoBehaviour
         byte[] bytes = texture.EncodeToPNG();
         Destroy(texture);
 
-        File.WriteAllBytes(Application.dataPath + getFileNameTag(imagetype, route), bytes);
+        File.WriteAllBytes(Application.streamingAssetsPath + getFileNameTag(imagetype, route), bytes);
     }
 
     private void createImage_extendmap(int route, int imagetype)
@@ -2210,7 +2158,7 @@ public class OnMapSpawn : MonoBehaviour
         byte[] bytes = texture.EncodeToPNG();
         Destroy(texture);
 
-        File.WriteAllBytes(Application.dataPath + getFileNameTag(imagetype, route), bytes);
+        File.WriteAllBytes(Application.streamingAssetsPath + getFileNameTag(imagetype, route), bytes);
     }
 
 
@@ -2332,7 +2280,7 @@ public class OnMapSpawn : MonoBehaviour
         else if (imagetype == 10)
         {
             float exsum = exposesumatpoint(lon, lat);
-            if (exsum > 0.0f)
+            if (exsum > 0.0f )
             {
                 return new Color(((exsum / maxexposed) * 0.5f) + 0.5f, ((exsum / maxexposed) * 0.5f) + 0.5f, 0.0f);
             }
@@ -2381,6 +2329,27 @@ public class OnMapSpawn : MonoBehaviour
             }
         }
 
+        else if (imagetype == 101)
+        {
+             if (infectsumatpoint(lon, lat) > 0.0f)
+            {
+                return new Color(((infectsumatpoint(lon, lat) / maxinfect) * 0.5f) + 0.5f, 0.0f, 0.0f);
+            }
+            else if (exposesumatpoint(lon, lat) > 0.0f)
+            {
+                return new Color(((exposesumatpoint(lon, lat) / maxexposed) * 0.5f) + 0.5f, ((exposesumatpoint(lon, lat) / maxexposed) * 0.5f) + 0.5f, 0.0f);
+            }
+            else if (dogeverygroup.suspectamount[lon, lat] > 0.0f)
+            {
+                return new Color(0.0f, ((dogeverygroup.suspectamount[lon, lat] / maxsuspect) * 0.5f) + 0.5f, 0.0f);
+            }
+            else
+            {
+                return temp_realmap.GetPixel(lon,lat);
+            }
+        }
+
+
         //extend map
         else if (imagetype == 1001)
         {
@@ -2414,77 +2383,81 @@ public class OnMapSpawn : MonoBehaviour
         }
         else if (imagetype == 1)
         {
-            return "/../Assets/Resources/test/selectedDogTerrain" + route + ".png";
+            return "/PictureReport/selectedDogTerrain" + route + ".png";
         }
         else if (imagetype == 2)
         {
-            return "/../Assets/Resources/test/selectedMapAndDog" + route + ".png";
+            return "/PictureReport/selectedMapAndDog" + route + ".png";
         }
         else if (imagetype == 3)
         {
-            return "/../Assets/MickRendered/selectedEdge" + route + ".png";
+            return "/Assets/MickRendered/selectedEdge" + route + ".png";
         }
         else if (imagetype == 4)
         {
-            return "/../Assets/MickRendered/selectedHabits" + route + ".png";
+            return "/Assets/MickRendered/selectedHabits" + route + ".png";
         }
         else if (imagetype == 5)
         {
-            return "/../Assets/MickRendered/selectedHabitsDownscape" + route + ".png";
+            return "/Assets/MickRendered/selectedHabitsDownscape" + route + ".png";
         }
         else if (imagetype == 6)
         {
-            return "/../Assets/MickRendered/selectedHabitsAndDog" + route + ".png";
+            return "/Assets/MickRendered/selectedHabitsAndDog" + route + ".png";
         }
         else if (imagetype == 7)
         {
-            return "/../Assets/MickRendered/selectedAfford" + route + ".png";
+            return "/Assets/MickRendered/selectedAfford" + route + ".png";
         }
         else if (imagetype == 8)
         {
-            return "/../Assets/MickRendered/SingleDay/" + route + ".png";
+            return "/Assets/MickRendered/SingleDay/" + route + ".png";
         }
         else if (imagetype == 9)
         {
-            return "/../Assets/Resources/S_state/state_s_dog" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
+            return "/S_state/state_s_dog" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
         }
         else if (imagetype == 10)
         {
-            return "/../Assets/Resources/E_state/state_e_dog" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
+            return "/E_state/state_e_dog" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
         }
         else if (imagetype == 11)
         {
-            return "/../Assets/Resources/I_state/state_i_dog" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
+            return "/I_state/state_i_dog" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
         }
         else if (imagetype == 12)
         {
-            return "/../Assets/Resources/test/Bitearea" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
+            return "/PictureReport/Bitearea" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
         }
         else if (imagetype == 100)
         {
-            return "/../Assets/Resources/test/day" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
+            return "/PictureReport/day" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
+        }
+          else if (imagetype == 101)
+        {
+            return "/PictureReport/WithBG_day" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
         }
         else if (imagetype == 1001)
         {
-            return "/../Assets/Resources/test/extendmap.png";
+            return "/PictureReport/extendmap.png";
         }
         else if (imagetype == 1002)
         {
-            return "/../Assets/Resources/testextend/extend_rabiespotetial_day" + rentext_sysdate + ".png";
+            return "/PictureReport_Extend/extend_rabiespotetial_day" + rentext_sysdate + ".png";
         }
         else if (imagetype == 1003)
         {
-            return "/../Assets/Resources/testextend/extendmap_day" + rentext_sysdate + ".png";
+            return "/PictureReport_Extend/extendmap_day" + rentext_sysdate + ".png";
         }
         else if (imagetype == 1004)
         {
-            return "/../Assets/Resources/RealMap.png";
+            return "/RealMap.png";
         }
           else if (imagetype == 1005)
         {
-            return "/../Assets/Resources/RealMapextend.png";
+            return "/RealMapextend.png";
         }
-        return "/../Assets/MickRendered/createdImage" + route + ".png";
+        return "/../createdImage" + route + ".png";
         
        
     }
@@ -2493,14 +2466,17 @@ public class OnMapSpawn : MonoBehaviour
     {
         RenderTexture rTex = mapcap_cam.targetTexture;
         Texture2D tex = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
+        temp_realmap = new Texture2D(Screen.width, Screen.height, TextureFormat.ARGB32, false);
         RenderTexture.active = rTex;
         tex.ReadPixels(new Rect(0, 0, rTex.width, rTex.height), 0, 0);
+        temp_realmap.ReadPixels(new Rect(0, 0, rTex.width, rTex.height), 0, 0);
         tex.Apply();
          //encode to png
         byte[] bytes = tex.EncodeToPNG();
         Destroy(tex);
 
-        File.WriteAllBytes(Application.dataPath + getFileNameTag(1004,0), bytes);
+        File.WriteAllBytes(Application.streamingAssetsPath + getFileNameTag(1004,0), bytes);
+       
         //return tex;
     }
 
@@ -2508,14 +2484,16 @@ public class OnMapSpawn : MonoBehaviour
     {
         RenderTexture rTex = mapcap_cam.targetTexture;
         Texture2D tex = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
+        temp_extendmap = new Texture2D(Screen.width, Screen.height, TextureFormat.ARGB32, false);
         RenderTexture.active = rTex;
         tex.ReadPixels(new Rect(0, 0, rTex.width, rTex.height), 0, 0);
+        temp_extendmap.ReadPixels(new Rect(0, 0, rTex.width, rTex.height), 0, 0);
         tex.Apply();
          //encode to png
         byte[] bytes = tex.EncodeToPNG();
         Destroy(tex);
 
-        File.WriteAllBytes(Application.dataPath + getFileNameTag(1005,0), bytes);
+        File.WriteAllBytes(Application.streamingAssetsPath + getFileNameTag(1005,0), bytes);
     }
 
 
@@ -3063,13 +3041,13 @@ public class OnMapSpawn : MonoBehaviour
         normalizeAfford(); //create image of afford normalization
 
         maxColor(2);
-        createImage(1, 6);
+        //createImage(1, 6);
 
         //express the walkable
         findBehaviouricRatio();
         normalizeReach(); //create image of afford combination
 
-        createImage(2, 6);
+        //createImage(2, 6);
     }
 
     private void normalizeAfford()
@@ -3525,7 +3503,7 @@ public class OnMapSpawn : MonoBehaviour
         ygridsize = _mbfunction.y_gsize;
         heightxy = new float[xgridsize, ygridsize];
         pointToColorMap(startlat, startlon, xgridsize, ygridsize);
-        createImage(0, 0); //Create Height Map
+       // createImage(0, 0); //Create Height Map
         Debug.Log("Map Array is created with size (" + xgridsize + ", " + ygridsize + ")");
         tempzoomsize=_mapManager.Zoom;
     }
@@ -3616,9 +3594,9 @@ public class OnMapSpawn : MonoBehaviour
                 uicontroller.updateProcessDetail("creating image for distribution");
                 uicontroller.updateCurrentProgress(0.0f);
                 maxColor(0);
-                createImage(0, 1);
+               // createImage(0, 1);
 
-                createImage(0, 2);
+              //  createImage(0, 2);
                 uicontroller.triggerCompleteProcess();
             }
             //to apply kernel density
@@ -3637,7 +3615,7 @@ public class OnMapSpawn : MonoBehaviour
                 {
                     edgeExpansion();
                     maxColor(1); //type 1 is walk type
-                    createImage(0, 4); //create walk extension image image
+                 //   createImage(0, 4); //create walk extension image image
 
                     normalizeWalkingExtension();
                     kernelDensityEstimation(false);
@@ -3736,6 +3714,7 @@ public class OnMapSpawn : MonoBehaviour
 
                     if (rabiespreadloop == -1 && sysdate == 0 && step_factor == true)
                     {
+                        Backgroundscale();
                         rabiesEnvironmentSet();
                         InclineFactorCalculated();
                         HomeFactorCalculated();
@@ -3754,6 +3733,7 @@ public class OnMapSpawn : MonoBehaviour
                             if (rabiespreadloop == 0 && sysdate == 0)
                             {
                                 createImage_withtext(rentext_frame, 100);
+                                createImage(rentext_frame, 101);
                                 createImage(rentext_frame, 9);
                                 createImage(rentext_frame, 10);
                                 createImage(rentext_frame, 11);
@@ -3763,6 +3743,7 @@ public class OnMapSpawn : MonoBehaviour
                             else if (rabiespreadloop != 0 || sysdate != 0)
                             {
                                 createImage_withtext(rentext_frame, 100);
+                                createImage(rentext_frame, 101);
                                 createImage(rentext_frame, 9);
                                 createImage(rentext_frame, 10);
                                 createImage(rentext_frame, 11);
@@ -3834,6 +3815,7 @@ public class OnMapSpawn : MonoBehaviour
                 {
                     //finish last date
                     createImage_withtext(rentext_frame, 100);
+                    createImage(rentext_frame, 101);
                     createImage(rentext_frame, 9);
                     createImage(rentext_frame, 10);
                     createImage(rentext_frame, 11);
@@ -4109,5 +4091,11 @@ public class OnMapSpawn : MonoBehaviour
         time_cycle = (int)float.Parse(coreuicontroller.imageGen[3].text);
         highest_activity_rate = float.Parse(coreuicontroller.imageGen[4].text);
         lowest_activity_rate = float.Parse(coreuicontroller.imageGen[5].text);
+    }
+
+    private void Backgroundscale()
+    {
+        TextureScale.Bilinear(temp_realmap,xgridsize,ygridsize);
+        TextureScale.Bilinear(temp_extendmap,extend_xgridsize,extend_ygridsize);
     }
 }

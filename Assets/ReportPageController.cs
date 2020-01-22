@@ -75,12 +75,8 @@ public class ReportPageController : MonoBehaviour
       animate_texture_S=new Texture2D[frameperday];
       animate_texture_E=new Texture2D[frameperday];
       animate_texture_I=new Texture2D[frameperday];
-      for(int i = 0;i<frameperday;i++)
-        {
-            animate_texture_S[i]=Resources.Load ("S_state/state_s_dog"+ dropdownday_heatmappage.value+"_runloop_"+i) as Texture2D;
-            animate_texture_E[i]=Resources.Load ("E_state/state_e_dog"+ dropdownday_heatmappage.value+"_runloop_"+i) as Texture2D;
-            animate_texture_I[i]=Resources.Load ("I_state/state_i_dog"+ dropdownday_heatmappage.value+"_runloop_"+i) as Texture2D;
-        }
+
+      
     }
     // Update is called once per frame
     void Update()
@@ -112,7 +108,7 @@ public class ReportPageController : MonoBehaviour
 
     private void openreportfolder(){
          string path; 
-         path=Application.dataPath + "/Resources/test/"; 
+         path=Application.streamingAssetsPath ; 
          path = path.Replace(@"/", @"\");   // explorer doesn't like front slashes
          Debug.Log(path);
          try
@@ -133,6 +129,7 @@ public class ReportPageController : MonoBehaviour
         heatmappage.SetActive(true);
         doglayer.SetActive(false);
         infectlayer.SetActive(false);
+        Rereadanimate_Image(dropdownday_heatmappage);
     }
     private void showreportpage()
     {
@@ -143,7 +140,7 @@ public class ReportPageController : MonoBehaviour
 
     private void readtextfile(int indexvalue)
     {
-        string path = (Application.dataPath + "/../Assets/Resources/test/Report_day"+(indexvalue+1)+".txt");
+        string path = (Application.streamingAssetsPath + "/Textreport/Report_day"+(indexvalue+1)+".txt");
 
         //Read the text from directly from the test.txt file
         StreamReader reader = new StreamReader(path); 
@@ -153,25 +150,36 @@ public class ReportPageController : MonoBehaviour
 
     private void readimage_S(int indexvalue)
     {
-        Texture2D pictexture;
-        pictexture = Resources.Load("S_state/state_s_dog"+indexvalue+"_runloop_0") as Texture2D;
+        Texture2D pictexture = new Texture2D(2,2);
+        string path = (Application.streamingAssetsPath+"/S_state/state_s_dog"+indexvalue+"_runloop_0"+".png");
+        byte[] pngBytes = System.IO.File.ReadAllBytes(path);
+
+        pictexture.LoadImage(pngBytes);
         S_image.texture = pictexture;
 
     }
 
     private void readimage_E(int indexvalue)
     {
-        Texture2D pictexture;
-        pictexture = Resources.Load("E_state/state_e_dog"+indexvalue+"_runloop_0") as Texture2D;
+        Texture2D pictexture = new Texture2D(2,2);
+        string path = (Application.streamingAssetsPath+"/E_state/state_e_dog"+indexvalue+"_runloop_0"+".png");
+        byte[] pngBytes = System.IO.File.ReadAllBytes(path);
+
+        pictexture.LoadImage(pngBytes);
         E_image.texture = pictexture;
+
 
     }
 
     private void readimage_I(int indexvalue)
     {
-        Texture2D pictexture;
-        pictexture = Resources.Load("I_state/state_i_dog"+indexvalue+"_runloop_0") as Texture2D;
+        Texture2D pictexture = new Texture2D(2,2);
+        string path = (Application.streamingAssetsPath+"/I_state/state_i_dog"+indexvalue+"_runloop_0"+".png");
+        byte[] pngBytes = System.IO.File.ReadAllBytes(path);
+
+        pictexture.LoadImage(pngBytes);
         I_image.texture = pictexture;
+
 
     }
 
@@ -214,37 +222,35 @@ public class ReportPageController : MonoBehaviour
     private void Rereadanimate_Image(Dropdown change)
     {
         Animate_onrun=false; //stop run animate suddenly
+
+       // Texture2D pictexture_s = new Texture2D(2,2);
+       // Texture2D pictexture_e = new Texture2D(2,2);
+      //  Texture2D pictexture_i = new Texture2D(2,2);
+        string path_s ;
+        string path_e ;
+        string path_i ;
+        byte[] pngBytes_S ;
+        byte[] pngBytes_E ;
+        byte[] pngBytes_I ;
+       
+        
         for(int i = 0;i<frameperday;i++)
         {
-            animate_texture_S[i]=Resources.Load ("S_state/state_s_dog"+change.value+"_runloop_"+i) as Texture2D;
-            animate_texture_E[i]=Resources.Load ("E_state/state_e_dog"+change.value+"_runloop_"+i) as Texture2D;
-            animate_texture_I[i]=Resources.Load ("I_state/state_i_dog"+change.value+"_runloop_"+i) as Texture2D;
+            animate_texture_S[i]=new Texture2D(2,2);
+            animate_texture_E[i]=new Texture2D(2,2);
+            animate_texture_I[i]=new Texture2D(2,2);
+            path_s = (Application.streamingAssetsPath+"/S_state/state_s_dog"+change.value+"_runloop_"+i+".png");
+            path_e = (Application.streamingAssetsPath+"/E_state/state_e_dog"+change.value+"_runloop_"+i+".png");
+            path_i = (Application.streamingAssetsPath+"/I_state/state_i_dog"+change.value+"_runloop_"+i+".png");
+            pngBytes_S=System.IO.File.ReadAllBytes(path_s);
+            animate_texture_S[i].LoadImage(pngBytes_S);
+            pngBytes_E=System.IO.File.ReadAllBytes(path_e);
+            animate_texture_E[i].LoadImage(pngBytes_E);
+            pngBytes_I=System.IO.File.ReadAllBytes(path_i);
+            animate_texture_I[i].LoadImage(pngBytes_I);
         }
     }
 
 }
 
 
-/*
-//rotate running animate
-                 if (Input.GetKeyDown("r"))
-                {
-                     //add generate run animate
-                    string tempstr;
-                    for(int i = 0;i<100;i++)
-                    {
-                        tempstr = "test/run" + i  ;
-                        runtexture[i]=Resources.Load( tempstr ) as Texture2D;
-                    }
-
-                    runanimate = true;
-                }
-
-                 if (runanimate)
-                 {
-                    float framepersec=10.0f;
-                    int animateindex = (int)((Time.time * framepersec) % runtexture.Length);
-                    renA.material.mainTexture = runtexture[animateindex];
-                 }
-        //end
-*/
