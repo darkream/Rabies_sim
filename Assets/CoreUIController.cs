@@ -115,6 +115,11 @@ public class CoreUIController : MonoBehaviour
 
     public bool zoomlock=false;
 
+    //INSTRUCTION TEXT UI
+    public Text[] instructiontext;
+    string[] title;
+    string[] instruction;
+    public int changeableAmount = 42;
 
     public int getScreenMode(){
         return screenMode;
@@ -152,6 +157,8 @@ public class CoreUIController : MonoBehaviour
             stringScript.changeToThaiLanguage("Assets/thaitranslated.txt");
             stringScript.isThai=true;
         }
+        readInstructionTextList();
+
         moveToChangeParameters();
     }
 
@@ -168,7 +175,9 @@ public class CoreUIController : MonoBehaviour
         paramSetDogBehaviorScreen.SetActive(false);
         paramSetImageGenParameter.SetActive(false);
         ExtendmapSelection.SetActive(false);
-
+        for (int i = 0 ; i < instructiontext.Length ; i++){
+            instructiontext[i].text = "";
+        }
     }
 
     public void hideDogObject(){
@@ -373,7 +382,7 @@ public class CoreUIController : MonoBehaviour
         }
     }
 
-private void cancelDogPopulation_I(){
+    private void cancelDogPopulation_I(){
         populationQuantBox_I.SetActive(false);
         dogIsCancelledNotification_I = true;
         acceptDogPopButton_I.enabled = true;
@@ -396,15 +405,6 @@ private void cancelDogPopulation_I(){
     public void showDogErrorInput_I(string text){
         errorDogInput_I.GetComponent<Text>().text = text;
     }
-
-
-
-
-
-
-
-
-
 
     public void switchAllowInput(bool active){
         allowAddDogObject = active;
@@ -446,15 +446,6 @@ private void cancelDogPopulation_I(){
               allowDogInputStatus_I.fontSize = 22;
         }
     }
-
-
-
-
-
-
-
-
-
 
     //UTILITY FUNCTIONS FOR PARAMETER SETTINGS
     public bool checkMapCalParamIntegrity(){
@@ -532,5 +523,52 @@ private void cancelDogPopulation_I(){
              // we currently have no platform define for the current OS we are in, so we resort to this
              e.HelpLink = ""; // do anything with this variable to silence warning about not using it
          }
+    }
+
+    private void readInstructionTextList(){
+        StreamReader reader = new StreamReader("Assets/instructiontext.txt");
+        string line = reader.ReadLine();
+        int count = 0;
+        title = new string[changeableAmount];
+        instruction = new string[changeableAmount];
+
+        while(!reader.EndOfStream){
+            if (count >= changeableAmount){
+                break;
+            }
+            string[] thisline = reader.ReadLine().Split('_');
+            title[count] = thisline[0];
+            instruction[count] = thisline[1];
+            count++;
+        }
+    }
+
+    public void notifyInstructionTextChange(int index){
+        int trueindex = 0;
+        if (PlayerPrefs.GetString("isThai") == "True"){
+            trueindex = index - (title.Length/2);
+        } else {
+            trueindex = index;
+        }
+        for (int i = 0 ; i < instructiontext.Length ; i++){
+            instructiontext[i].text = title[trueindex] + "\n" + instruction[index];
+            instructiontext[i].font = stringScript.thaiFont;
+            instructiontext[i].fontSize = (int)(instructiontext[i].fontSize * 0.8f);
+        }
+    }
+
+    public int getInstructionIDFromString(string thistitle){
+        for (int i = 0 ; i < changeableAmount ; i++){
+            if (thistitle == title[i]){
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private void changeInstructionText(string newtext){
+        for (int i = 0 ; i < 3 ; i++){
+            instructiontext[i].text = newtext;
+        }
     }
 }

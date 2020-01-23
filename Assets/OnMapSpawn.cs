@@ -10,6 +10,7 @@ using System.IO;
 using System.Collections.Generic;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using UnityEngine.EventSystems;
 
 public class OnMapSpawn : MonoBehaviour
 {
@@ -237,6 +238,10 @@ public class OnMapSpawn : MonoBehaviour
     public GameObject reportpage;
 
     private Texture2D temp_realmap,temp_extendmap;
+
+    //FOR INSTRUCTION UI
+    Ray ray;
+    RaycastHit hit;
 
     void Start()
     {
@@ -3984,6 +3989,13 @@ public class OnMapSpawn : MonoBehaviour
            
             initialPreDataRegister();
         }
+
+        //HANDLING ON MOUSE OVER TO UI FOR INSTRUCTION UI
+        string foundObject = checkRayCastTargetList();
+        int foundIndex = coreuicontroller.getInstructionIDFromString(foundObject);
+        if (foundIndex != -1){
+            coreuicontroller.notifyInstructionTextChange(foundIndex);
+        }
     }
     private void overallOnClickHandlerUIController()
     {
@@ -4097,5 +4109,19 @@ public class OnMapSpawn : MonoBehaviour
     {
         TextureScale.Bilinear(temp_realmap,xgridsize,ygridsize);
         TextureScale.Bilinear(temp_extendmap,extend_xgridsize,extend_ygridsize);
+    }
+
+    private string checkRayCastTargetList(){
+        PointerEventData pointerEventData = new PointerEventData(EventSystem.current);
+        pointerEventData.position = Input.mousePosition;
+
+        List<RaycastResult> raycastResults = new List<RaycastResult>();
+        EventSystem.current.RaycastAll(pointerEventData, raycastResults);
+        for (int i = 0 ; i < raycastResults.Count ; i++){
+            if (raycastResults[i].gameObject.tag == "Instructable"){
+                return raycastResults[i].gameObject.GetComponent<Text>().text;
+            }
+        }
+        return "";
     }
 }
