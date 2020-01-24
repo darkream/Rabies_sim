@@ -238,7 +238,7 @@ public class OnMapSpawn : MonoBehaviour
     public GameObject reportpage;
 
     private Texture2D temp_realmap,temp_extendmap;
-
+    
     //FOR INSTRUCTION UI
     Ray ray;
     RaycastHit hit;
@@ -2045,10 +2045,10 @@ public class OnMapSpawn : MonoBehaviour
         StreamWriter sw = File.CreateText(path);
         sw.WriteLine("Tester : All sum rabies tranfer" + justwannaknow + " Tester : All sum rabies bite" + justwannaknow2 + " Tester : avg rabie bite" + justwannaknow3 + "  New r0 with all r use to divide " + newr0 + "\n");
         sw.WriteLine("Rabies Report day " + rentext_sysdate + "\n");
-        sw.WriteLine("All Dog Amount : " + sumeverypoint());
-        sw.WriteLine("Suspect amount : " + suspectsum());
-        sw.WriteLine("Expose amount : " + exposesum());
-        sw.WriteLine("Infect amount : " + infectsum());
+        sw.WriteLine("All Dog  : " + sumeverypoint());
+        sw.WriteLine("Suspected : " + suspectsum());
+        sw.WriteLine("Exposed  : " + exposesum());
+        sw.WriteLine("Infected : " + infectsum());
         sw.WriteLine("Daily R-zero : " + temp_rzero);
         sw.WriteLine("==================================");
         sw.WriteLine("Group Report day" + rentext_sysdate);
@@ -2056,14 +2056,14 @@ public class OnMapSpawn : MonoBehaviour
         for (int i = 0; i < dogeachgroup.Count; i++)
         {
             sw.WriteLine("Group " + (i + 1) + "Report");
-            sw.WriteLine("Group Dog Amount : " + everypointsum_group(i));
-            sw.WriteLine("Group Suspect amount : " + suspectsum_group(i));
-            sw.WriteLine("Group Expose amount : " + exposesum_group(i));
+            sw.WriteLine("Group Dog  : " + everypointsum_group(i));
+            sw.WriteLine("Group Suspected : " + suspectsum_group(i));
+            sw.WriteLine("Group Exposed  : " + exposesum_group(i));
             inf_rad_temp = infectsum_group(i);
-            sw.WriteLine("Group Infect amount : " + inf_rad_temp);
+            sw.WriteLine("Group Infected : " + inf_rad_temp);
             if (inf_rad_temp != 0)
             {
-                sw.WriteLine("Infect Group (sim) Radius : " + simple_inf_radius(i));
+                sw.WriteLine("Infected Group (sim) Radius : " + simple_inf_radius(i));
             }
             else
             {
@@ -2350,7 +2350,7 @@ public class OnMapSpawn : MonoBehaviour
             }
             else
             {
-                return temp_realmap.GetPixel(lon,lat);
+                return temp_realmap.GetPixel(lon,ygridsize-lat);//need flip
             }
         }
 
@@ -3989,7 +3989,7 @@ public class OnMapSpawn : MonoBehaviour
            
             initialPreDataRegister();
         }
-
+        
         //HANDLING ON MOUSE OVER TO UI FOR INSTRUCTION UI
         string foundObject = checkRayCastTargetList();
         int foundIndex = coreuicontroller.getInstructionIDFromString(foundObject);
@@ -3997,6 +3997,7 @@ public class OnMapSpawn : MonoBehaviour
             coreuicontroller.notifyInstructionTextChange(foundIndex);
         }
     }
+    
     private void overallOnClickHandlerUIController()
     {
         //if left click
@@ -4110,8 +4111,7 @@ public class OnMapSpawn : MonoBehaviour
         TextureScale.Bilinear(temp_realmap,xgridsize,ygridsize);
         TextureScale.Bilinear(temp_extendmap,extend_xgridsize,extend_ygridsize);
     }
-
-    private string checkRayCastTargetList(){
+     private string checkRayCastTargetList(){
         PointerEventData pointerEventData = new PointerEventData(EventSystem.current);
         pointerEventData.position = Input.mousePosition;
 

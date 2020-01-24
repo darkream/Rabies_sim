@@ -45,6 +45,10 @@ public class ReportPageController : MonoBehaviour
     Texture2D[] animate_texture_E;
     Texture2D[] animate_texture_I;
 
+    bool finishread_text=false;
+    bool finishread_pic=true;
+
+    bool firsttimeread=true;
     //end object
 //==============================================
     //Other Script
@@ -53,6 +57,7 @@ public class ReportPageController : MonoBehaviour
     public GameObject doglayer;
 
     public GameObject infectlayer;
+
 
 //==============================================
     
@@ -64,6 +69,7 @@ public class ReportPageController : MonoBehaviour
       Showreport_button.GetComponent<Button>().onClick.AddListener(showreportpage);
       Animation_button.GetComponent<Button>().onClick.AddListener(Runanimate_map);
       dropdownday_heatmappage.onValueChanged.AddListener(delegate {Rereadanimate_Image(dropdownday_heatmappage);});
+      dropdownday_reportpage.onValueChanged.AddListener(delegate { readtextfile(dropdownday_reportpage.value);});
       systemday=mapdata.dayloop;
       frameperday=mapdata.loopperday;
       for(int j=1;j<systemday;j++)
@@ -83,7 +89,15 @@ public class ReportPageController : MonoBehaviour
     {
        if(reportpage.activeSelf)
         {
-            readtextfile(dropdownday_reportpage.value);
+            if(firsttimeread)
+            {
+                firsttimeread=false;
+                Rereadanimate_Image(dropdownday_heatmappage);
+                readtextfile(dropdownday_reportpage.value);
+                readimage_S(dropdownday_heatmappage.value);
+                readimage_E(dropdownday_heatmappage.value);
+                readimage_I(dropdownday_heatmappage.value);
+            }
         }
         else if (heatmappage.activeSelf)
         {
@@ -91,6 +105,7 @@ public class ReportPageController : MonoBehaviour
             if(Animate_onrun)
             {
                     Animation_button_text.text="Stop Animation";
+                    finishread_pic=true;
                     int animateindex = (int)((Time.time * framepersec) % animate_texture_S.Length);
                     S_image.texture=animate_texture_S[animateindex];
                     E_image.texture=animate_texture_E[animateindex];
@@ -98,10 +113,15 @@ public class ReportPageController : MonoBehaviour
             }
             if(!Animate_onrun)
             {
+                if(finishread_pic)
+                {
+                finishread_pic=false;
                 Animation_button_text.text="Run Animation";
-                 readimage_S(dropdownday_heatmappage.value);
-                 readimage_E(dropdownday_heatmappage.value);
-                 readimage_I(dropdownday_heatmappage.value);
+                readimage_S(dropdownday_heatmappage.value);
+                readimage_E(dropdownday_heatmappage.value);
+                readimage_I(dropdownday_heatmappage.value);
+                }
+                
             }
         }
     }
@@ -129,7 +149,6 @@ public class ReportPageController : MonoBehaviour
         heatmappage.SetActive(true);
         doglayer.SetActive(false);
         infectlayer.SetActive(false);
-        Rereadanimate_Image(dropdownday_heatmappage);
     }
     private void showreportpage()
     {
@@ -248,7 +267,17 @@ public class ReportPageController : MonoBehaviour
             animate_texture_E[i].LoadImage(pngBytes_E);
             pngBytes_I=System.IO.File.ReadAllBytes(path_i);
             animate_texture_I[i].LoadImage(pngBytes_I);
+
+              
         }
+
+        if(!Animate_onrun)
+        {
+                readimage_S(dropdownday_heatmappage.value);
+                readimage_E(dropdownday_heatmappage.value);
+                readimage_I(dropdownday_heatmappage.value);
+        }
+              
     }
 
 }
