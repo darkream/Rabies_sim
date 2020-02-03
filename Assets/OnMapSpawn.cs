@@ -243,6 +243,11 @@ public class OnMapSpawn : MonoBehaviour
     Ray ray;
     RaycastHit hit;
 
+    //SEIR edge
+    int[,] edge_s;
+    int[,] edge_e;
+    int[,] edge_i;
+
     void Start()
     {
         _mbfunction.initializeLocations();
@@ -1131,6 +1136,9 @@ public class OnMapSpawn : MonoBehaviour
         finalfactor_I = new float[xgridsize, ygridsize, dogdata.Count, 4];
         extend_infectamount = new float[extend_xgridsize, extend_ygridsize];
         extend_suspectamount = new float[extend_xgridsize, extend_ygridsize];
+        edge_s=new int[xgridsize, ygridsize];
+        edge_e=new int[xgridsize, ygridsize];
+        edge_i=new int[xgridsize, ygridsize];
         //roamingrabies = new List<float[,]>();
         //let's set environment
 
@@ -2045,10 +2053,10 @@ public class OnMapSpawn : MonoBehaviour
         StreamWriter sw = File.CreateText(path);
         sw.WriteLine("Tester : All sum rabies tranfer" + justwannaknow + " Tester : All sum rabies bite" + justwannaknow2 + " Tester : avg rabie bite" + justwannaknow3 + "  New r0 with all r use to divide " + newr0 + "\n");
         sw.WriteLine("Rabies Report day " + rentext_sysdate + "\n");
-        sw.WriteLine("All Dog  : " + sumeverypoint());
-        sw.WriteLine("Suspected : " + suspectsum());
-        sw.WriteLine("Exposed  : " + exposesum());
-        sw.WriteLine("Infected : " + infectsum());
+        sw.WriteLine("All Dog  : " + System.Math.Round (sumeverypoint(),2));
+        sw.WriteLine("Suspected : " + System.Math.Round (suspectsum(),2));
+        sw.WriteLine("Exposed  : " + System.Math.Round (exposesum(),2));
+        sw.WriteLine("Infected : " + System.Math.Round (infectsum(),2));
         sw.WriteLine("Daily R-zero : " + temp_rzero);
         sw.WriteLine("==================================");
         sw.WriteLine("Group Report day" + rentext_sysdate);
@@ -2056,14 +2064,14 @@ public class OnMapSpawn : MonoBehaviour
         for (int i = 0; i < dogeachgroup.Count; i++)
         {
             sw.WriteLine("Group " + (i + 1) + "Report");
-            sw.WriteLine("Group Dog  : " + everypointsum_group(i));
-            sw.WriteLine("Group Suspected : " + suspectsum_group(i));
-            sw.WriteLine("Group Exposed  : " + exposesum_group(i));
+            sw.WriteLine("Group Dog  : " + System.Math.Round (everypointsum_group(i),2));
+            sw.WriteLine("Group Suspected : " + System.Math.Round (suspectsum_group(i),2));
+            sw.WriteLine("Group Exposed  : " + System.Math.Round (exposesum_group(i),2));
             inf_rad_temp = infectsum_group(i);
             sw.WriteLine("Group Infected : " + inf_rad_temp);
             if (inf_rad_temp != 0)
             {
-                sw.WriteLine("Infected Group (sim) Radius : " + simple_inf_radius(i));
+                sw.WriteLine("Infected Group (sim) Radius : " + System.Math.Round ((simple_inf_radius(i)*5.0f),2) + "Meters");
             }
             else
             {
@@ -2079,15 +2087,24 @@ public class OnMapSpawn : MonoBehaviour
     private void createImage_withtext(int route, int imagetype)
     {
         RenderTexture.active = ren_texture;
-
+        Color swappixel;
 
         int realxsize = 200; //rendertexture width
         if (realxsize < xgridsize) realxsize = xgridsize;
 
         //RenderTexture.active = ren_texture;
-        Texture2D texture = new Texture2D(realxsize, ygridsize + 90, TextureFormat.RGB24, false);
+        Texture2D texture = new Texture2D(realxsize, ygridsize + 90, TextureFormat.RGBA32, false);
 
         texture.ReadPixels(new Rect(0, 0, ren_texture.width, ren_texture.height - 110), 0, 0);
+
+        for (int text_y = 0;  text_y <90;  text_y++)
+        {
+            for (int text_x = 0;  text_x < ren_texture.width;  text_x++)
+            {
+                swappixel=texture.GetPixel(text_x,text_y);
+                texture.SetPixel(text_x,text_y,new Color(swappixel.r,swappixel.g,swappixel.b,1.0f));
+            }
+        }
 
         //write text from texture
 
@@ -2172,6 +2189,7 @@ public class OnMapSpawn : MonoBehaviour
     //get color from image tag where 0=map, 1=dog, 2=mapanddog, 3=edge
     private Color getColorFromColorType(int lat, int lon, int imagetype)
     {
+        Color Blend_color;
         if (imagetype == 0) //Edge Image
         {
             return new Color(((heightxy[lon, lat] - minh) / (maxh - minh)), 0.0f, 0.0f);
@@ -2271,10 +2289,18 @@ public class OnMapSpawn : MonoBehaviour
         else if (imagetype == 9)
         {
 
+            if(edge_s[lon,lat]==1)return new Color(0.0f, edge_s[lon,lat],0.0f,0.5f );
+            
+            else if (dogeverygroup.suspectamount[lon, lat] > 0.0f)
+            {
+                Blend_color = Color.Lerp(temp_realmap.GetPixel(lon,ygridsize-lat),new Color(0.0f,1.0f,0.0f,0.5f),0.2f);
+                return Blend_color ;
+            }
+            /*
             if (dogeverygroup.suspectamount[lon, lat] > 0.0f)
             {
-                return new Color(0.0f, ((dogeverygroup.suspectamount[lon, lat] / maxsuspect) * 0.5f) + 0.5f, 0.0f);
-            }
+                return new Color(0.0f, ((dogeverygroup.suspectamount[lon, lat] / maxsuspect) * 0.5f) + 0.5f, 0.0f,0.5f);
+            }*/
             else return Color.clear;
 
         }
@@ -2287,7 +2313,7 @@ public class OnMapSpawn : MonoBehaviour
             float exsum = exposesumatpoint(lon, lat);
             if (exsum > 0.0f )
             {
-                return new Color(((exsum / maxexposed) * 0.5f) + 0.5f, ((exsum / maxexposed) * 0.5f) + 0.5f, 0.0f);
+                return new Color(((exsum / maxexposed) * 0.5f) + 0.5f, ((exsum / maxexposed) * 0.5f) + 0.5f, 0.0f,0.5f);
             }
             else return Color.clear;
 
@@ -2298,7 +2324,7 @@ public class OnMapSpawn : MonoBehaviour
             float infsum = infectsumatpoint(lon, lat);
             if (infsum > 0.0f)
             {
-                return new Color(((infsum / maxinfect) * 0.5f) + 0.5f, 0.0f, 0.0f);
+                return new Color(((infsum / maxinfect) * 0.5f) + 0.5f, 0.0f, 0.0f,0.5f);
             }
             else return Color.clear;
 
@@ -2375,6 +2401,39 @@ public class OnMapSpawn : MonoBehaviour
         else if (imagetype == 1003)
         {
             return new Color(0.0f, 0.0f, ((extend_height[lon, lat] - extend_minh) / (extend_maxh - extend_minh)));
+        }
+
+        //edge type
+        else if (imagetype == 1010) //s-edge
+        {
+            if(edge_s[lon,lat]==1)return new Color(0.0f, edge_s[lon,lat],0.0f );
+            
+            else if (dogeverygroup.suspectamount[lon, lat] > 0.0f)
+            {
+                Blend_color = Color.Lerp(temp_realmap.GetPixel(lon,ygridsize-lat),new Color(0.0f,1.0f,0.0f,0.5f),0.5f);
+                return Blend_color ;
+            }
+            else return temp_realmap.GetPixel(lon,ygridsize-lat);//need flip
+        }
+         else if (imagetype == 1011) //e-edge
+        {
+              if(edge_e[lon,lat]==1)return new Color(edge_e[lon,lat], edge_e[lon,lat],0.0f );
+              else if (exposesumatpoint(lon, lat) > 0.0f )
+            {
+                Blend_color = Color.Lerp(temp_realmap.GetPixel(lon,ygridsize-lat),new Color(1.0f,1.0f,0.0f,0.5f),0.5f);
+                return Blend_color ;
+            }
+             else return temp_realmap.GetPixel(lon,ygridsize-lat);//need flip
+        }
+         else if (imagetype == 1012) //i-edge
+        {
+              if(edge_i[lon,lat]==1)return new Color(1.0f, 0.0f,0.0f );
+              else if (infectsumatpoint(lon, lat) > 0.0f)
+                {
+                Blend_color = Color.Lerp(temp_realmap.GetPixel(lon,ygridsize-lat),new Color(1.0f,0.0f,0.0f,0.5f),0.5f);
+                return Blend_color ;
+                }
+             else return temp_realmap.GetPixel(lon,ygridsize-lat);//need flip
         }
         return Color.white;
     }
@@ -2461,6 +2520,18 @@ public class OnMapSpawn : MonoBehaviour
           else if (imagetype == 1005)
         {
             return "/RealMapextend.png";
+        }
+          else if (imagetype == 1010)
+        {
+             return "/PictureReport/edge_s" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
+        }
+         else if (imagetype == 1011)
+        {
+             return "/PictureReport/edge_e" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
+        }
+         else if (imagetype == 1012)
+        {
+             return "/PictureReport/edge_i" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
         }
         return "/../createdImage" + route + ".png";
         
@@ -3725,6 +3796,9 @@ public class OnMapSpawn : MonoBehaviour
                         HomeFactorCalculated();
                         Factor_summarize();//tempolary cause no dynamic factor at moment
                         dogeverygroup_updater();
+                        EdgeforSEIR(0);
+                        EdgeforSEIR(1);
+                        EdgeforSEIR(2);
                         //Debug.Log("day " +rentext_sysdate+ " frame "+rentext_frame+" : sum"+sumeverypoint()+" s :"+suspectsum() + " e :" +exposesum()+ " i :"+infectsum());
                         pictextrender.text = ("Max Suspect: " + maxsuspect.ToString("F2") + "\n" + "Max Exposed: " + maxexposed.ToString("F2") + "\n" + "Max Infected: " + maxinfect.ToString("F2") + "\n" + "day " + rentext_sysdate + " Pic number" + rentext_frame);
                     }
@@ -3742,6 +3816,10 @@ public class OnMapSpawn : MonoBehaviour
                                 createImage(rentext_frame, 9);
                                 createImage(rentext_frame, 10);
                                 createImage(rentext_frame, 11);
+                                //edge
+                                createImage(rentext_frame, 1010);
+                                createImage(rentext_frame, 1011);
+                                createImage(rentext_frame, 1012);
                                 rentext_frame++;
                             }
 
@@ -3752,6 +3830,10 @@ public class OnMapSpawn : MonoBehaviour
                                 createImage(rentext_frame, 9);
                                 createImage(rentext_frame, 10);
                                 createImage(rentext_frame, 11);
+                                 //edge
+                                createImage(rentext_frame, 1010);
+                                createImage(rentext_frame, 1011);
+                                createImage(rentext_frame, 1012);
                                 rentext_frame++;
                                 if (rentext_frame >= loopperday)//edit ----------------------------------
                                 {
@@ -3812,6 +3894,10 @@ public class OnMapSpawn : MonoBehaviour
 
                         Stateupdater();
                         dogeverygroup_updater();
+                        //edge
+                        EdgeforSEIR(0);
+                        EdgeforSEIR(1);
+                        EdgeforSEIR(2);
                         sysdate += 1;
                         rabiespreadloop = 0;
                     }
@@ -3824,6 +3910,10 @@ public class OnMapSpawn : MonoBehaviour
                     createImage(rentext_frame, 9);
                     createImage(rentext_frame, 10);
                     createImage(rentext_frame, 11);
+                     //edge
+                    createImage(rentext_frame, 1010);
+                    createImage(rentext_frame, 1011);
+                    createImage(rentext_frame, 1012);
                     Debug.Log("COMPLETE!");
                     uicontroller.triggerCompleteProcess();
                     uicontroller.setupActivation(false);
@@ -4123,5 +4213,224 @@ public class OnMapSpawn : MonoBehaviour
             }
         }
         return "";
+    }
+
+    private void EdgeforSEIR(int statetype) //statetype 0=s 1=e 2=i
+    {
+
+        //using edge detection on dog group (image processing)
+        int[,] tempedge = new int[xgridsize, ygridsize];
+        int[,] dir_val;
+
+        //Relay array index to directional value
+        if (statetype==0)
+        {
+            prepare_edge_s();
+            dir_val = edge_s;
+        }
+       
+        else if (statetype==1)
+        {
+            prepare_edge_e();
+            dir_val = edge_e;
+        }
+
+        else if (statetype==2)
+        {
+            prepare_edge_i();
+            dir_val = edge_i;
+        }
+        else return;
+
+         // kernel is  { [ -1 -1 -1] , [ -1  8 -1], [ -1 -1 -1] }
+        for (int y = 0; y < ygridsize; y++)
+        {
+            for (int x = 0; x < xgridsize; x++)
+            {
+                if (y == 0)
+                {
+                    if (x == 0)
+                    {
+                        tempedge[x, y] = 5 * dir_val[x, y];
+                        tempedge[x, y] -= 2 * dir_val[x + 1, y];
+                        tempedge[x, y] -= 2 * dir_val[x, y + 1];
+                        tempedge[x, y] -= dir_val[x + 1, y + 1];
+                    }
+                    else if (x == xgridsize - 1)
+                    {
+                        tempedge[x, y] = 5 * dir_val[x, y];
+                        tempedge[x, y] -= 2 * dir_val[x - 1, y];
+                        tempedge[x, y] -= 2 * dir_val[x, y + 1];
+                        tempedge[x, y] -= dir_val[x - 1, y + 1];
+                    }
+                    else
+                    {
+                        tempedge[x, y] = 7 * dir_val[x, y];
+                        tempedge[x, y] -= 2 * dir_val[x - 1, y];
+                        tempedge[x, y] -= 2 * dir_val[x - 1, y];
+                        tempedge[x, y] -= dir_val[x - 1, y + 1];
+                        tempedge[x, y] -= dir_val[x, y + 1];
+                        tempedge[x, y] -= dir_val[x + 1, y + 1];
+                    }
+                }
+                else if (y == ygridsize - 1)
+                {
+                    if (x == 0)
+                    {
+                        tempedge[x, y] = 5 * dir_val[x, y];
+                        tempedge[x, y] -= 2 * dir_val[x + 1, y];
+                        tempedge[x, y] -= 2 * dir_val[x, y - 1];
+                        tempedge[x, y] -= dir_val[x + 1, y - 1];
+                    }
+                    else if (x == xgridsize - 1)
+                    {
+                        tempedge[x, y] = 5 * dir_val[x, y];
+                        tempedge[x, y] -= 2 * dir_val[x - 1, y];
+                        tempedge[x, y] -= 2 * dir_val[x, y - 1];
+                        tempedge[x, y] -= dir_val[x - 1, y - 1];
+                    }
+                    else
+                    {
+                        tempedge[x, y] = 7 * dir_val[x, y];
+                        tempedge[x, y] -= 2 * dir_val[x - 1, y];
+                        tempedge[x, y] -= 2 * dir_val[x - 1, y];
+                        tempedge[x, y] -= dir_val[x - 1, y - 1];
+                        tempedge[x, y] -= dir_val[x, y - 1];
+                        tempedge[x, y] -= dir_val[x + 1, y - 1];
+                    }
+                }
+                else if (x == 0)
+                {
+                    tempedge[x, y] = 7 * dir_val[x, y];
+                    tempedge[x, y] -= 2 * dir_val[x, y + 1];
+                    tempedge[x, y] -= 2 * dir_val[x, y - 1];
+                    tempedge[x, y] -= dir_val[x + 1, y - 1];
+                    tempedge[x, y] -= dir_val[x + 1, y];
+                    tempedge[x, y] -= dir_val[x + 1, y + 1];
+                }
+                else if (x == xgridsize - 1)
+                {
+                    tempedge[x, y] = 7 * dir_val[x, y];
+                    tempedge[x, y] -= 2 * dir_val[x, y + 1];
+                    tempedge[x, y] -= 2 * dir_val[x, y - 1];
+                    tempedge[x, y] -= dir_val[x - 1, y - 1];
+                    tempedge[x, y] -= dir_val[x - 1, y];
+                    tempedge[x, y] -= dir_val[x - 1, y + 1];
+                }
+                else
+                {
+                    tempedge[x, y] = 8 * dir_val[x, y];
+                    tempedge[x, y] -= dir_val[x - 1, y - 1];
+                    tempedge[x, y] -= dir_val[x, y - 1];
+                    tempedge[x, y] -= dir_val[x + 1, y - 1];
+                    tempedge[x, y] -= dir_val[x - 1, y];
+                    tempedge[x, y] -= dir_val[x + 1, y];
+                    tempedge[x, y] -= dir_val[x - 1, y + 1];
+                    tempedge[x, y] -= dir_val[x, y + 1];
+                    tempedge[x, y] -= dir_val[x + 1, y + 1];
+                }
+            }
+        }
+         //Reapply the detected edge
+        
+        for (int y = 0; y < ygridsize; y++)
+        {
+            for (int x = 0; x < xgridsize; x++)
+            {
+                if(statetype==0)
+                {
+                     if (tempedge[x, y] <= 0.0f)
+                    {
+                        edge_s[x, y] = 0;
+                    }
+                     else
+                    {
+                         edge_s[x, y] = 1;
+                    }
+                }
+                if(statetype==1)
+                {
+                     if (tempedge[x, y] <= 0.0f)
+                    {
+                        edge_e[x, y] = 0;
+                    }
+                     else
+                    {
+                         edge_e[x, y] = 1;
+                    }
+                }
+                 if(statetype==2)
+                {
+                     if (tempedge[x, y] <= 0.0f)
+                    {
+                        edge_i[x, y] = 0;
+                    }
+                     else
+                    {
+                         edge_i[x, y] = 1;
+                    }
+                }
+               
+            }
+        }
+
+    }
+
+    
+
+    private void prepare_edge_s()
+    {
+         for (int y = 0; y < ygridsize; y++)
+        {
+            for (int x = 0; x < xgridsize; x++)
+            {
+                if(dogeverygroup.suspectamount[x,y]>0.0f)
+                {
+                    edge_s[x,y]=1;
+                }
+                else edge_s[x,y]=0;
+            }
+        }
+
+    }
+
+    private void prepare_edge_e()
+    {
+        
+         for (int y = 0; y < ygridsize; y++)
+        {
+            for (int x = 0; x < xgridsize; x++)
+            {
+                for(int d=0; d<e_to_i_date;d++)
+                {
+                     if(dogeverygroup.exposeamount[x,y,d]>0.0f)
+                     {
+                         edge_e[x,y]=1;
+                         break;
+                     }
+                     else edge_e[x,y]=0;
+                }
+
+            }
+        }
+    }
+
+    private void prepare_edge_i()
+    {
+         for (int y = 0; y < ygridsize; y++)
+        {
+            for (int x = 0; x < xgridsize; x++)
+            {
+                for(int d=0; d<i_to_r_date;d++)
+                {
+                     if(dogeverygroup.infectamount[x,y,d]>0.0f)
+                     {
+                         edge_i[x,y]=1;
+                         break;
+                     }
+                     else edge_i[x,y]=0;
+                }
+            }
+        }
     }
 }
