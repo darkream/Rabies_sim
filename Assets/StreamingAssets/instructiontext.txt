@@ -1,0 +1,43 @@
+﻿INSTRUCTION LIST AND ITS TRANSLATION:
+Grid Square Size (meters) for Rendering_The representation size of a pixel would colorize during report session
+Average Length per Lat / Lon Degree_The average length (meters) of 1 degree on Latitude and Longitude (in case of sphere Earth)
+Equator Latitude Size per Degree_The length of 1 degree latitude from the equator (longest latitude length of Oblate Spheroid shape)
+Pole Latitude Size per Degree_The length of 1 degree latitude from the pole (shortest latitude length of Oblate Spheroid shape)
+Widest Longitude Size per Degree_The widest length of 1 degree longitude (Oblate Spheroid shape)
+One Degree per Radian_1 radian = 180/ degrees, and 1 degree = /180 radians. d(A,B) = R a /180
+Radius Size of Earth_The distance from core of the Earth to a point its surface
+Minimum Population Size Per Block_The minimum dog number that a pixel can contain where 0.2 dog, for example, means that there is 20% chance of having 1 dog at that pixel.
+Normal Distribution Converged At_How many repetitive times of Normal Distribution you want when the values at n and n+[input] doesn't change
+Home Size per Population Ratio_The multiplicative size ratio when the home range of dog population is normal distributed
+Inaccessible Incline (Degree) [0 to 90]_Distribution at 100% on 0 incline and this input determines the 0% accessible at what degree
+Bite Rate [0 to 1]_The rate of biting or fighting between "a pair" of dogs in a pixel area (your grid square size input)
+Infection Rate [0 to 1]_The rate of infection between those bitten pair in a pixel area (your grid square size input)
+Allow Elevation on Normal Distribution_Using incline as a moving factor for normal distribution and kernel density method
+Horde Activity Behavior Rate_The behavior rate that a dog decides to follow another unit regardless of their decision
+Explore Activity Behavior Rate_The behavior rate that a dog decides to move on its own will outside of the home area and territory
+Single Activity Behavior Rate_The behavior rate that a dog decide to move on its own will inside the home area
+Time Length (seconds)_Delta T (time) between a generated image: the higher number the lower frame its generated and lower
+Number of Activity Cycles_The amount of cycles that switch the rotation from highest to lowest or lowest to highest activty rate
+Highest Activity Rate_The number that indicates the multiplicative value for highest moving rate
+Lowest Activity Rate_The number that indicates the multiplicative value for lowest moving rate
+ขนาดพื้นที่ของการสำรวจ_ภาพที่ได้จากผลลัพธ์จะแสดง 1 พิกเซลต่อพื้นที่กี่ตารางเมตร
+ความกว้างเฉลี่ยของละติจูด/ลองจิจูดต่อองศา_ความกว้างเฉลี่ยต่อ 1 องศาละติจูตหรือลองจิจูต ใช้กำกับในกรณีที่คาดการณ์แผนที่แบบกลม
+ความยาวละติจูตต่อองศาที่เส้นศูนย์สูตร_ความกว้างละติจูตต่อ 1 องศาที่เส้นศูนย์สูตรในกรณีที่โลกมีรูปทรงกลมคล้ายผลส้ม (ยาวที่สุด)
+ความยาวละติจูดต่อองศาที่ขั้วโลก_ความกว้างละติจูตต่อ 1 องศาที่เส้นขั้วในกรณีที่โลกมีรูปทรงกลมคล้ายผลส้ม (สั้นที่สุด)
+ความกว้างลองจิจูดต่อองศา_ความยาวลองจิจูตที่ยาวที่สุดต่อ 1 องศา ในกรณีที่โลกมีรูปทรงกลมคล้ายผลส้ม
+หนึ่งองศาต่อเรเดี้ยน_1 องศามีกี่เรเดี้ยน แต่ 1 เรเดี้ยน มีค่าเท่ากับ 180 หารองศา หรือ 1 องศามีค่าเท่ากับ 180 หารพาย
+รัศมีของโลก_ระยะทางจากแก่นกลางของโลกจนถึง ณ จุดหนึ่งที่ปลายพื้นผิวของโลก
+จำนวนประชากรขั้นต่ำต่อจุด_จำนวนหมาที่น้อยที่สุดใน 1 พิกเซล โดยยกตัวอย่างที่จำนวนหมา 0.2 ตัว หมายถึงว่ามีโอกาส 20% ที่จะมีหมา 1 ตัวในพื้นที่นั้น
+หยุดการแจกแจงปกติเมื่อค่าไม่เปลี่ยน (กี่ครั้ง)_เมื่อผลลัพธ์การแจกแจงปกติไม่มีการเปลี่ยนแปลง คุณต้องการจะให้ดำเนินการต่อไปอีกไม่เกินกี่ครั้ง
+อัตราส่วนที่อยู่ต่อประชากร_เมื่อแจกแจงปกติเสร็จแล้ว คุณต้องการให้ขนาดพื้นที่ที่สุนัขครอบคลุมมีอัตราส่วนต่อพื้นที่การแจกแจงปกติเป็นเท่าใด
+ความชันที่เข้าถึงได้ (องศา) [0-90]_ค่าความชันที่สุนัขสามารถเดินมาได้ 0% เช่นหากตั้งไว้ "54" หมายความว่าเมื่อมีความชัน 54 องศา สุนัขจะเดินเข้ามาได้ 0%
+อัตราการกัด [0 ถึง 1]_โอกาสที่หมา "คู่หนึ่ง" ใน 1 พิกเซล จะกัดกัน เช่น ถ้ามีหมา 3 ตัว จะนับเป็นสองคู่ แล้วค่อยคำนวนตามหลักความน่าจะเป็น
+อัตราการติดเชื้อ [0 ถึง 1]_โอกาสที่เมื่อหมา "ถูกกัดแล้ว" จะติดเชื้อ
+ใช้ความชันในการแจกแจงปกติ_เปิดหรือปิดการใช้ความชันในการคำนวนการแจกแจงปกติและ kernel density methods
+อัตราส่วนการเดินแบบตาม_อัตราส่วนที่สุนัขจะมีพฤติกรรมการเดินตามสุนัขอีกตัวหนึ่ง
+อัตราส่วนการเดินออกนอกเขต_อัตราส่วนที่สุนัขจะมีพฤติกรรมการเดินออกมาจากเขตบ้านของตัวเอง
+อัตราส่วนการเดินอยู่ในเขต_อัตราส่วนที่สุนัขจะมีพฤติกรรมการเดินวนเวียนอยู่ในอาณาเขตบ้านของตัวเอง
+ความถี่ต่อภาพ (วินาที)_แต่ละภาพที่ simulation สร้างออกมาต่างกันกี่วินาที ปล. ยิ่งใส่จำนวนวินาทีมาก ภาพยิ่งน้อย ประมวลผลได้เร็ว
+จำนวนการสลับวงจรกิจกรรม_จำนวนครั้งการผันอัตรากิจกรรมจากมากที่สุดจนถึงน้อยที่สุด ไปเป็น หรือ กลับไปเป็น น้อยที่สุดจนถึงมากที่สุด
+อัตรากิจกรรมสูงสุด [0 ถึง 1]_อัตราการเดินของสุนัขเมื่อมีความน่าจะเป็นที่จะเดินสูงที่สุด
+อัตรากิจกรรมต่ำสุด [0 ถึง 1]_อัตราการเดินของสุนัขเมื่อมีความน่าจะเป็นที่จะเดินต่ำที่สุด

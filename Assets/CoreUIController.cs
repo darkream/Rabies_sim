@@ -526,7 +526,7 @@ public class CoreUIController : MonoBehaviour
     }
 
     private void readInstructionTextList(){
-        StreamReader reader = new StreamReader("Assets/instructiontext.txt");
+        StreamReader reader = new StreamReader(Application.streamingAssetsPath +"/instructiontext.txt");
         string line = reader.ReadLine();
         int count = 0;
         title = new string[changeableAmount];
