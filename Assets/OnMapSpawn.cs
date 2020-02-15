@@ -198,9 +198,9 @@ public class OnMapSpawn : MonoBehaviour
     private int sysdate = 0;
   
     [System.NonSerialized]
-    public int loopperday = 5;
+    public int loopperday = 30;
     [System.NonSerialized]
-    public int dayloop = 5;
+    public int dayloop = 2;
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //pic creation relate
@@ -2083,6 +2083,54 @@ public class OnMapSpawn : MonoBehaviour
 
 
     }
+    private void createImage_screensize(int route, int imagetype,int screenimagetype) // on real BG //200+ type
+    {
+        Texture2D dogpop_texture = new Texture2D(xgridsize, ygridsize, TextureFormat.RGBA32, false);
+
+        //first make only dog map on clear Background 
+
+        for (int lat = 0; lat < ygridsize; lat++)
+        {
+            for (int lon = 0; lon < xgridsize; lon++)
+            {
+                dogpop_texture.SetPixel(lon, lat, getColorFromColorType((ygridsize - 1) - lat, lon, imagetype));
+            }
+        }
+        //then resize dog texture to screensize
+       
+        TextureScale.Bilinear(dogpop_texture,Screen.width,Screen.height);
+
+        //and combine with map
+        //also have to flip
+        Color tempforcompare;
+        for (int x = 0; x < Screen.width ; x++)
+        {
+            for (int y = 0; y < Screen.height ; y++) //flip map
+            {
+                tempforcompare=dogpop_texture.GetPixel(x,y);
+                if(tempforcompare.a > 0.0f ) //if is dog position
+                {
+                    //remap alpha color
+                    tempforcompare= new Color(Mathf.Clamp(tempforcompare.r+1.0f-tempforcompare.a,0.0f,1.0f),Mathf.Clamp(tempforcompare.g+1.0f-tempforcompare.a,0.0f,1.0f),Mathf.Clamp(tempforcompare.b+1.0f-tempforcompare.a,0.0f,1.0f),1.0f);
+                     dogpop_texture.SetPixel(x, y,Color.Lerp(tempforcompare,temp_realmap.GetPixel(x,y),0.5f) );
+                }
+                else //map
+                {
+                   dogpop_texture.SetPixel(x, y,temp_realmap.GetPixel(x,y));
+                }
+            }
+        }
+
+        //need flip texture
+        dogpop_texture.Apply();
+
+
+        //encode to png
+        byte[] bytes = dogpop_texture.EncodeToPNG();
+        Destroy(dogpop_texture);
+
+        File.WriteAllBytes(Application.streamingAssetsPath + getFileNameTag(screenimagetype, route), bytes);
+    }
 
     private void createImage_withtext(int route, int imagetype)
     {
@@ -2291,16 +2339,16 @@ public class OnMapSpawn : MonoBehaviour
 
             if(edge_s[lon,lat]==1)return new Color(0.0f, edge_s[lon,lat],0.0f,0.5f );
             
-            else if (dogeverygroup.suspectamount[lon, lat] > 0.0f)
+          /*  else if (dogeverygroup.suspectamount[lon, lat] > 0.0f)
             {
                 Blend_color = Color.Lerp(temp_realmap.GetPixel(lon,ygridsize-lat),new Color(0.0f,1.0f,0.0f,0.5f),0.2f);
                 return Blend_color ;
-            }
-            /*
-            if (dogeverygroup.suspectamount[lon, lat] > 0.0f)
-            {
-                return new Color(0.0f, ((dogeverygroup.suspectamount[lon, lat] / maxsuspect) * 0.5f) + 0.5f, 0.0f,0.5f);
             }*/
+            
+            else if (dogeverygroup.suspectamount[lon, lat] > 0.0f)
+            {
+                return new Color(0.0f,1.0f , 0.0f,0.25f);
+            }
             else return Color.clear;
 
         }
@@ -2311,10 +2359,16 @@ public class OnMapSpawn : MonoBehaviour
         else if (imagetype == 10)
         {
             float exsum = exposesumatpoint(lon, lat);
+             if(edge_e[lon,lat]==1)return new Color(edge_e[lon,lat], edge_e[lon,lat],0.0f,0.5f );
+            else if (exsum > 0.0f )
+            {
+                return new Color(1.0f,1.0f , 0.0f,0.25f);
+            }
+           /* float exsum = exposesumatpoint(lon, lat);
             if (exsum > 0.0f )
             {
                 return new Color(((exsum / maxexposed) * 0.5f) + 0.5f, ((exsum / maxexposed) * 0.5f) + 0.5f, 0.0f,0.5f);
-            }
+            }*/
             else return Color.clear;
 
         }
@@ -2322,20 +2376,16 @@ public class OnMapSpawn : MonoBehaviour
         else if (imagetype == 11)
         {
             float infsum = infectsumatpoint(lon, lat);
-            if (infsum > 0.0f)
+             if(edge_i[lon,lat]==1)return new Color(edge_i[lon,lat], 0.0f,0.0f,0.5f );
+            else if (infsum > 0.0f)
             {
-                return new Color(((infsum / maxinfect) * 0.5f) + 0.5f, 0.0f, 0.0f,0.5f);
+                return new Color(1.0f, 0.0f, 0.0f,0.25f);
+                //return new Color(((infsum / maxinfect) * 0.5f) + 0.5f, 0.0f, 0.0f,0.5f);
             }
             else return Color.clear;
 
         }
 
-        else if (imagetype == 12)
-        {
-
-
-            return Color.black;
-        }
 
 
         else if (imagetype == 100)
@@ -2404,6 +2454,7 @@ public class OnMapSpawn : MonoBehaviour
         }
 
         //edge type
+        //=============================================
         else if (imagetype == 1010) //s-edge
         {
             if(edge_s[lon,lat]==1)return new Color(0.0f, edge_s[lon,lat],0.0f );
@@ -2435,6 +2486,7 @@ public class OnMapSpawn : MonoBehaviour
                 }
              else return temp_realmap.GetPixel(lon,ygridsize-lat);//need flip
         }
+         //=============================================
         return Color.white;
     }
 
@@ -2532,6 +2584,23 @@ public class OnMapSpawn : MonoBehaviour
          else if (imagetype == 1012)
         {
              return "/PictureReport/edge_i" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
+        }
+        //Screensize Series
+         else if (imagetype == 200)
+        {
+             return "/PictureReport/S_state_on_bg" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
+        }
+         else if (imagetype == 201)
+        {
+             return "/PictureReport/E_state_on_bg" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
+        }
+         else if (imagetype == 202)
+        {
+             return "/PictureReport/I_state_on_bg" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
+        }
+         else if (imagetype == 203)
+        {
+             return "/PictureReport/All_state_on_bg" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
         }
         return "/../createdImage" + route + ".png";
         
@@ -3790,7 +3859,7 @@ public class OnMapSpawn : MonoBehaviour
 
                     if (rabiespreadloop == -1 && sysdate == 0 && step_factor == true)
                     {
-                        Backgroundscale();
+                       // Backgroundscale();
                         rabiesEnvironmentSet();
                         InclineFactorCalculated();
                         HomeFactorCalculated();
@@ -3811,29 +3880,34 @@ public class OnMapSpawn : MonoBehaviour
 
                             if (rabiespreadloop == 0 && sysdate == 0)
                             {
-                                createImage_withtext(rentext_frame, 100);
-                                createImage(rentext_frame, 101);
+                           //     createImage_withtext(rentext_frame, 100);
+                                //createImage(rentext_frame, 101);
                                 createImage(rentext_frame, 9);
                                 createImage(rentext_frame, 10);
                                 createImage(rentext_frame, 11);
-                                //edge
-                                createImage(rentext_frame, 1010);
-                                createImage(rentext_frame, 1011);
-                                createImage(rentext_frame, 1012);
+
+                                createImage_screensize(rentext_frame, 9,200);
+                                
+                                //edge //unused for now
+                               // createImage(rentext_frame, 1010);
+                               // createImage(rentext_frame, 1011);
+                               // createImage(rentext_frame, 1012);
                                 rentext_frame++;
                             }
 
                             else if (rabiespreadloop != 0 || sysdate != 0)
                             {
-                                createImage_withtext(rentext_frame, 100);
-                                createImage(rentext_frame, 101);
+                            //    createImage_withtext(rentext_frame, 100);
+                               // createImage(rentext_frame, 101);
                                 createImage(rentext_frame, 9);
                                 createImage(rentext_frame, 10);
                                 createImage(rentext_frame, 11);
-                                 //edge
-                                createImage(rentext_frame, 1010);
-                                createImage(rentext_frame, 1011);
-                                createImage(rentext_frame, 1012);
+
+                                createImage_screensize(rentext_frame, 9,200);
+                                 //edge //unused for now
+                               // createImage(rentext_frame, 1010);
+                               // createImage(rentext_frame, 1011);
+                               // createImage(rentext_frame, 1012);
                                 rentext_frame++;
                                 if (rentext_frame >= loopperday)//edit ----------------------------------
                                 {
@@ -3873,7 +3947,9 @@ public class OnMapSpawn : MonoBehaviour
 
                             // createImage(rabiespreadloop,13);//bitearea
                             // dogeverygroup_updater();
-
+                             EdgeforSEIR(0);
+                             EdgeforSEIR(1);
+                             EdgeforSEIR(2);
                             rabiespreadloop += 1;
                             pictextrender.text = ("Max Suspect: " + maxsuspect.ToString("F2") + "\n" + "Max Exposed: " + maxexposed.ToString("F2") + "\n" + "Max Infected: " + maxinfect.ToString("F2") + "\n" + "day " + rentext_sysdate + " Pic number" + rentext_frame);
 
@@ -3888,13 +3964,13 @@ public class OnMapSpawn : MonoBehaviour
                     {
                         dogeverygroup_updater();
                         extend_rabiesestimation();
-                        createImage_extendmap(0, 1002);
-                        createImage_extendmap(0, 1003);
+                       // createImage_extendmap(0, 1002);
+                        //createImage_extendmap(0, 1003);
                         text_file_creation();
 
                         Stateupdater();
                         dogeverygroup_updater();
-                        //edge
+                        //edge 
                         EdgeforSEIR(0);
                         EdgeforSEIR(1);
                         EdgeforSEIR(2);
@@ -3905,15 +3981,16 @@ public class OnMapSpawn : MonoBehaviour
                 else
                 {
                     //finish last date
-                    createImage_withtext(rentext_frame, 100);
-                    createImage(rentext_frame, 101);
+                   // createImage_withtext(rentext_frame, 100);
+                    //createImage(rentext_frame, 101);
                     createImage(rentext_frame, 9);
                     createImage(rentext_frame, 10);
                     createImage(rentext_frame, 11);
-                     //edge
-                    createImage(rentext_frame, 1010);
-                    createImage(rentext_frame, 1011);
-                    createImage(rentext_frame, 1012);
+                    createImage_screensize(rentext_frame, 9,200);
+                     //edge //unused for now
+                    //createImage(rentext_frame, 1010);
+                    //createImage(rentext_frame, 1011);
+                    //createImage(rentext_frame, 1012);
                     Debug.Log("COMPLETE!");
                     uicontroller.triggerCompleteProcess();
                     uicontroller.setupActivation(false);
@@ -3975,7 +4052,7 @@ public class OnMapSpawn : MonoBehaviour
         if (coreuicontroller.useDefaultDogNotification)
         {
             coreuicontroller.useDefaultDogNotification = false;
-            readDogPopulationPoint("Assets/Dogpop_3provinces.csv", 1, 2, 3);
+            readDogPopulationPoint(Application.streamingAssetsPath+"/Dogpop_3provinces.csv", 1, 2, 3);
         }
         if (coreuicontroller.deleteOneDogNotification != -1)
         {
@@ -4196,11 +4273,16 @@ public class OnMapSpawn : MonoBehaviour
         lowest_activity_rate = float.Parse(coreuicontroller.imageGen[5].text);
     }
 
-    private void Backgroundscale()
+    private void Texturescale(Texture targettext,int sizeof_x,int sizeof_y) 
     {
-        TextureScale.Bilinear(temp_realmap,xgridsize,ygridsize);
-        TextureScale.Bilinear(temp_extendmap,extend_xgridsize,extend_ygridsize);
+        
+        /*TextureScale.Bilinear(temp_realmap,xgridsize,ygridsize);
+        TextureScale.Bilinear(temp_extendmap,extend_xgridsize,extend_ygridsize);*/
     }
+
+    
+
+
      private string checkRayCastTargetList(){
         PointerEventData pointerEventData = new PointerEventData(EventSystem.current);
         pointerEventData.position = Input.mousePosition;

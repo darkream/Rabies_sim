@@ -154,7 +154,7 @@ public class CoreUIController : MonoBehaviour
         imageGen[0].onValueChanged.AddListener(delegate {hordeMustNotExceedOne();});
         imageGen[1].onValueChanged.AddListener(delegate {exploreMustNotExceedOne();});
         if (PlayerPrefs.GetString("isThai") == "True") {
-            stringScript.changeToThaiLanguage("Assets/thaitranslated.txt");
+            stringScript.changeToThaiLanguage(Application.streamingAssetsPath +"/thaitranslated.txt");
             stringScript.isThai=true;
         }
         readInstructionTextList();
@@ -196,7 +196,7 @@ public class CoreUIController : MonoBehaviour
 
     private void moveToChangeParametersButThai(){
         hideAllScreens();
-        stringScript.changeToThaiLanguage("Assets/thaitranslated.txt");
+        stringScript.changeToThaiLanguage(Application.streamingAssetsPath +"/thaitranslated.txt");
         paramSetMapCalScreen.SetActive(true);
         initMapCalculationParameter = true;
         stringScript.isThai=true;
@@ -223,12 +223,14 @@ public class CoreUIController : MonoBehaviour
            // resetMapCalculationParameter = true;
            extendmapNotification=true;
             ExtendmapSelection.SetActive(true);
+            zoomlock=false;
     }
 
     private void moveToAddNormalDog(){
         hideAllScreens();
         allowAddDogObject = true;
         mapIsLocked = true;
+        zoomlock=true;
         addNormalDogScreen.SetActive(true);
     }
 
@@ -510,7 +512,7 @@ public class CoreUIController : MonoBehaviour
 
      private void openreportfolder(){
          string path; 
-         path=Application.dataPath + "/Resources/test/"; 
+         path=Application.streamingAssetsPath; 
          path = path.Replace(@"/", @"\");   // explorer doesn't like front slashes
          Debug.Log(path);
          try

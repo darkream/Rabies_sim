@@ -125,7 +125,7 @@ public class MapboxInheritance : MonoBehaviour
     GameObject mappanel; //Prefabs for map point layer
 
     [SerializeField]
-    public float _spawnScale = 10f;
+    public float _spawnScale = 1f;
 
     [SerializeField]
     GameObject DogLayer; //Dog Layer, their child elements are in here
@@ -405,7 +405,7 @@ public class MapboxInheritance : MonoBehaviour
         float h = getHeightAt((float)lat,(float)lon);
 
         Vector3 location = Conversions.GeoToWorldPosition(lat , lon , _map.CenterMercator , _map.WorldRelativeScale).ToVector3xz();
-        location = new Vector3(location.x , h * tile.TileScale, location.z);
+        location = new Vector3(location.x , (h * tile.TileScale), location.z);
 
         var obj = Instantiate(infectedpanel);
         obj.transform.position = location;
