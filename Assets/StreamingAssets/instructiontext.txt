@@ -20,7 +20,7 @@ Time Length (seconds)_Delta T (time) between a generated image: the higher numbe
 Number of Activity Cycles_The amount of cycles that switch the rotation from highest to lowest or lowest to highest activty rate
 Highest Activity Rate_The number that indicates the multiplicative value for highest moving rate
 Lowest Activity Rate_The number that indicates the multiplicative value for lowest moving rate
-ขนาดพื้นที่ของการสำรวจ_ภาพที่ได้จากผลลัพธ์จะแสดง 1 พิกเซลต่อพื้นที่กี่ตารางเมตร
+ขนาดพื้นที่ของการสำรวจ_ภาพที่ได้จากผลลัพธ์จะแสดง 1 พิกเซลต่อพื้นที่กี่ (กว้าง, ยาว) ตารางเมตร
 ความกว้างเฉลี่ยของละติจูด/ลองจิจูดต่อองศา_ความกว้างเฉลี่ยต่อ 1 องศาละติจูตหรือลองจิจูต ใช้กำกับในกรณีที่คาดการณ์แผนที่แบบกลม
 ความยาวละติจูตต่อองศาที่เส้นศูนย์สูตร_ความกว้างละติจูตต่อ 1 องศาที่เส้นศูนย์สูตรในกรณีที่โลกมีรูปทรงกลมคล้ายผลส้ม (ยาวที่สุด)
 ความยาวละติจูดต่อองศาที่ขั้วโลก_ความกว้างละติจูตต่อ 1 องศาที่เส้นขั้วในกรณีที่โลกมีรูปทรงกลมคล้ายผลส้ม (สั้นที่สุด)

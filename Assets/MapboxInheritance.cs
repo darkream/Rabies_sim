@@ -329,7 +329,11 @@ public class MapboxInheritance : MonoBehaviour
         location = new Vector3(location.x , h * tile.TileScale, location.z);
 
         var obj = Instantiate(dogpanel);
-        obj.transform.position = location;
+
+        //Try to make every dog spawn at higher level
+        //obj.transform.position = location;
+        obj.transform.position = new Vector3(location.x, location.y + 10.0f, location.z);
+
         obj.transform.localScale = new Vector3(_spawnScale , _spawnScale , _spawnScale);
         obj.transform.parent = DogLayer.transform; //let the dog becomes the child of DogLayer game object
         

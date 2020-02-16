@@ -121,6 +121,10 @@ public class CoreUIController : MonoBehaviour
     string[] instruction;
     public int changeableAmount = 42;
 
+    //ZOOM LEVEL UI
+    public Text mapZoom;
+    public Text extendZoom;
+
     public int getScreenMode(){
         return screenMode;
     }
@@ -154,7 +158,7 @@ public class CoreUIController : MonoBehaviour
         imageGen[0].onValueChanged.AddListener(delegate {hordeMustNotExceedOne();});
         imageGen[1].onValueChanged.AddListener(delegate {exploreMustNotExceedOne();});
         if (PlayerPrefs.GetString("isThai") == "True") {
-            stringScript.changeToThaiLanguage(Application.streamingAssetsPath +"/thaitranslated.txt");
+            stringScript.changeToThaiLanguage(Application.streamingAssetsPath+"/thaitranslated.txt");
             stringScript.isThai=true;
         }
         readInstructionTextList();
@@ -196,7 +200,7 @@ public class CoreUIController : MonoBehaviour
 
     private void moveToChangeParametersButThai(){
         hideAllScreens();
-        stringScript.changeToThaiLanguage(Application.streamingAssetsPath +"/thaitranslated.txt");
+        stringScript.changeToThaiLanguage(Application.streamingAssetsPath+"/thaitranslated.txt");
         paramSetMapCalScreen.SetActive(true);
         initMapCalculationParameter = true;
         stringScript.isThai=true;
@@ -300,7 +304,13 @@ public class CoreUIController : MonoBehaviour
         useDefaultDataButton.enabled = false;
         acceptDogPopButton.enabled = false;
         dogQuantity.GetComponent<InputField>().text = "";
-        showDogErrorInput("");
+        if (PlayerPrefs.GetString("isThai") == "True"){
+            showDogErrorInput("ตำแหน่งสุนัขแสดงถึง จุดกึ่งกลางของที่อยู่สุนัข โปรแกรมจะสร้างขนาดของที่อยู่ในภายหลัง");
+            errorDogInput.GetComponent<Text>().font = stringScript.thaiFont;
+            errorDogInput.GetComponent<Text>().fontSize = (int)(errorDogInput.GetComponent<Text>().fontSize * 0.8f);
+        } else {
+            showDogErrorInput("Dog position represents \"center of population\", coverage area will be operated after this.");
+        }
         populationQuantBox.SetActive(true);
          onDoginputNotification=true;
     }
@@ -309,7 +319,13 @@ public class CoreUIController : MonoBehaviour
         switchAllowInput_I(false);
         acceptDogPopButton_I.enabled = false;
         dogQuantity_I.GetComponent<InputField>().text = "";
-        showDogErrorInput("");
+        if (PlayerPrefs.GetString("isThai") == "True"){
+            showDogErrorInput_I("ตำแหน่งสุนัขแสดงถึง จุดกึ่งกลางของที่อยู่สุนัข โปรแกรมจะสร้างขนาดของการแพร่กระจายในภายหลัง");
+            errorDogInput_I.GetComponent<Text>().font = stringScript.thaiFont;
+            errorDogInput_I.GetComponent<Text>().fontSize = (int)(errorDogInput_I.GetComponent<Text>().fontSize * 0.8f);
+        } else {
+            showDogErrorInput_I("Dog position represents \"center of population\", coverage area will be operated after this.");
+        }
         populationQuantBox_I.SetActive(true);
         onDoginputNotification_I=true;
     }
@@ -377,6 +393,10 @@ public class CoreUIController : MonoBehaviour
         errorDogInput.GetComponent<Text>().text = text;
     }
 
+    public void showDogErrorInput_I(string text){
+        errorDogInput_I.GetComponent<Text>().text = text;
+    }
+
     private void useDefaultDogData(){
         if (!usedDefaultData){
             usedDefaultData = true;
@@ -402,10 +422,6 @@ public class CoreUIController : MonoBehaviour
             return (int)value;
         }
         return -1;
-    }
-
-    public void showDogErrorInput_I(string text){
-        errorDogInput_I.GetComponent<Text>().text = text;
     }
 
     public void switchAllowInput(bool active){
@@ -572,5 +588,10 @@ public class CoreUIController : MonoBehaviour
         for (int i = 0 ; i < 3 ; i++){
             instructiontext[i].text = newtext;
         }
+    }
+
+    public void updateZoomLevel(float zoomLevel) {
+        mapZoom.text = zoomLevel.ToString();
+        extendZoom.text = zoomLevel.ToString();
     }
 }

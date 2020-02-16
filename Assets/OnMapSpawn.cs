@@ -15,7 +15,7 @@ using UnityEngine.EventSystems;
 public class OnMapSpawn : MonoBehaviour
 {
     [SerializeField]
-		AbstractMap _mapManager;
+	AbstractMap _mapManager;
 
     [SerializeField]
     MapboxInheritance _mbfunction;
@@ -4163,6 +4163,9 @@ public class OnMapSpawn : MonoBehaviour
         if (foundIndex != -1){
             coreuicontroller.notifyInstructionTextChange(foundIndex);
         }
+
+        //HANDLING ZOOM LEVEL
+        coreuicontroller.updateZoomLevel(_mapManager.Zoom);
     }
     
     private void overallOnClickHandlerUIController()
