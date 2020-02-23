@@ -3869,7 +3869,10 @@ public class OnMapSpawn : MonoBehaviour
                         EdgeforSEIR(1);
                         EdgeforSEIR(2);
                         //Debug.Log("day " +rentext_sysdate+ " frame "+rentext_frame+" : sum"+sumeverypoint()+" s :"+suspectsum() + " e :" +exposesum()+ " i :"+infectsum());
-                        pictextrender.text = ("Max Suspect: " + maxsuspect.ToString("F2") + "\n" + "Max Exposed: " + maxexposed.ToString("F2") + "\n" + "Max Infected: " + maxinfect.ToString("F2") + "\n" + "day " + rentext_sysdate + " Pic number" + rentext_frame);
+                        pictextrender.text = coreuicontroller.getPicRenderText(
+                            maxsuspect.ToString("F2"), maxexposed.ToString("F2"), 
+                            maxinfect.ToString("F2"), ""+rentext_sysdate, ""+rentext_frame
+                        );
                     }
 
                     if (rabiespreadloop < loopperday && rabiespreadloop >= 0) //set loop per day here //edit ----------------------------------
@@ -3920,7 +3923,7 @@ public class OnMapSpawn : MonoBehaviour
 
                             step_apply = true;
                             step_factor = false;
-                            uicontroller.updateProcessDetail("Factor loop :" + rabiespreadloop);
+                            uicontroller.updateProcessDetail("Factor loop: " + rabiespreadloop);
                         }
 
                         if (step_apply)
@@ -3936,7 +3939,7 @@ public class OnMapSpawn : MonoBehaviour
 
                             step_create = true;
                             step_apply = false;
-                            uicontroller.updateProcessDetail("Apply Factor calculation:" + rabiespreadloop);
+                            uicontroller.updateProcessDetail("Apply Factor calculation: " + rabiespreadloop);
                         }
                         if (step_create)
                         {
@@ -3951,12 +3954,14 @@ public class OnMapSpawn : MonoBehaviour
                              EdgeforSEIR(1);
                              EdgeforSEIR(2);
                             rabiespreadloop += 1;
-                            pictextrender.text = ("Max Suspect: " + maxsuspect.ToString("F2") + "\n" + "Max Exposed: " + maxexposed.ToString("F2") + "\n" + "Max Infected: " + maxinfect.ToString("F2") + "\n" + "day " + rentext_sysdate + " Pic number" + rentext_frame);
-
+                            pictextrender.text = coreuicontroller.getPicRenderText(
+                                maxsuspect.ToString("F2"), maxexposed.ToString("F2"), 
+                                maxinfect.ToString("F2"), ""+rentext_sysdate, ""+rentext_frame
+                            );
                             //Debug.Log("day " +rentext_sysdate+ " frame "+rentext_frame+" : sum"+sumeverypoint()+" s :"+suspectsum() + " e :" +exposesum()+ " i :"+infectsum());
                             step_factor = true;
                             step_create = false;
-                            uicontroller.updateProcessDetail("day" + sysdate + "Pic creation :" + rabiespreadloop);
+                            uicontroller.updateProcessDetail("[Day: " + sysdate + "], [Pic creation :" + rabiespreadloop + "]");
                         }
                     }
                     else if (rabiespreadloop == -1) rabiespreadloop++;
@@ -4178,7 +4183,7 @@ public class OnMapSpawn : MonoBehaviour
                 if (coreuicontroller.allowAddDogObject)
                 {
                     _mbfunction.createDogObjectForShow();
-                    coreuicontroller.initializeDogPopulationInput();
+                    coreuicontroller.initializeDogPopulationInput(_mbfunction.GridSize);
                 }
             }
             if (coreuicontroller.getScreenMode() == 3)
@@ -4186,7 +4191,7 @@ public class OnMapSpawn : MonoBehaviour
                 if (coreuicontroller.allowAddDogObject_I)
                 {
                     _mbfunction.createInfectDogObjectForShow();
-                    coreuicontroller.initializeDogPopulationInput_I();
+                    coreuicontroller.initializeDogPopulationInput_I(_mbfunction.GridSize);
                 }
             }
         }

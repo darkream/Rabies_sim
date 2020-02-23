@@ -20,14 +20,14 @@ public class StringUIController : MonoBehaviour
                 break;
             }
             textToChangeLanguage[count].font = thaiFont;
-            textToChangeLanguage[count].text = reader.ReadLine();
+            textToChangeLanguage[count].text = ThaiFontAdjuster.Adjust(reader.ReadLine());
             textToChangeLanguage[count].fontSize = (int)(textToChangeLanguage[count].fontSize * 0.8f);
             count++;
         }
     }
 
     public string translationSelector(string thai, string eng){
-        if (isThai) return thai;
+        if (isThai) return ThaiFontAdjuster.Adjust(thai);
         else return eng;
     }
     public string getErrorMapCalNotNumberText(){

@@ -299,32 +299,32 @@ public class CoreUIController : MonoBehaviour
             }
     }
 
-    public void initializeDogPopulationInput(){
+    public void initializeDogPopulationInput(float gridSize){
         switchAllowInput(false);
         useDefaultDataButton.enabled = false;
         acceptDogPopButton.enabled = false;
         dogQuantity.GetComponent<InputField>().text = "";
         if (PlayerPrefs.GetString("isThai") == "True"){
-            showDogErrorInput("ตำแหน่งสุนัขแสดงถึง จุดกึ่งกลางของที่อยู่สุนัข โปรแกรมจะสร้างขนาดของที่อยู่ในภายหลัง");
+            errorDogInput.GetComponent<Text>().text = ThaiFontAdjuster.Adjust("จุดกึ่งกลางของที่อยู่สุนัข มีขนาด (x: "+ gridSize + " m., y: " + gridSize + " m.) โปรแกรมจะสร้างขนาดของที่อยู่ในภายหลัง");
             errorDogInput.GetComponent<Text>().font = stringScript.thaiFont;
             errorDogInput.GetComponent<Text>().fontSize = (int)(errorDogInput.GetComponent<Text>().fontSize * 0.8f);
         } else {
-            showDogErrorInput("Dog position represents \"center of population\", coverage area will be operated after this.");
+            showDogErrorInput("center of dog population represents the size of (x: " + gridSize + "m., y: " + gridSize +"m.), coverage area will be operated after this.");
         }
         populationQuantBox.SetActive(true);
          onDoginputNotification=true;
     }
 
-    public void initializeDogPopulationInput_I(){
+    public void initializeDogPopulationInput_I(float gridSize){
         switchAllowInput_I(false);
         acceptDogPopButton_I.enabled = false;
         dogQuantity_I.GetComponent<InputField>().text = "";
         if (PlayerPrefs.GetString("isThai") == "True"){
-            showDogErrorInput_I("ตำแหน่งสุนัขแสดงถึง จุดกึ่งกลางของที่อยู่สุนัข โปรแกรมจะสร้างขนาดของการแพร่กระจายในภายหลัง");
+            errorDogInput_I.GetComponent<Text>().text = ThaiFontAdjuster.Adjust("จุดกึ่งกลางของที่อยู่สุนัข มีขนาด (x: "+ gridSize + " m., y: " + gridSize + " m.) โปรแกรมจะสร้างขนาดของที่อยู่ในภายหลัง");
             errorDogInput_I.GetComponent<Text>().font = stringScript.thaiFont;
             errorDogInput_I.GetComponent<Text>().fontSize = (int)(errorDogInput_I.GetComponent<Text>().fontSize * 0.8f);
         } else {
-            showDogErrorInput_I("Dog position represents \"center of population\", coverage area will be operated after this.");
+            showDogErrorInput("center of infected dog represents the size of (x: " + gridSize + "m., y: " + gridSize +"m.), coverage area will be operated after this.");
         }
         populationQuantBox_I.SetActive(true);
         onDoginputNotification_I=true;
@@ -456,12 +456,12 @@ public class CoreUIController : MonoBehaviour
         if(stringScript.isThai==true)
         {
             allowDogInputStatus_I.text = "วางกลุ่มประชากรสุนัขติดเชื้อ";
-         allowDogInputStatus_I.fontSize = 17;
+            allowDogInputStatus_I.fontSize = 17;
         }
         else
         {
-             allowDogInputStatus_I.text = "Infect Population Attachment";
-              allowDogInputStatus_I.fontSize = 22;
+            allowDogInputStatus_I.text = "Infect Population Attachment";
+            allowDogInputStatus_I.fontSize = 22;
         }
     }
 
@@ -569,15 +569,18 @@ public class CoreUIController : MonoBehaviour
             trueindex = index;
         }
         for (int i = 0 ; i < instructiontext.Length ; i++){
-            instructiontext[i].text = title[trueindex] + "\n" + instruction[index];
             instructiontext[i].font = stringScript.thaiFont;
-            instructiontext[i].fontSize = (int)(instructiontext[i].fontSize * 0.8f);
+            instructiontext[i].fontStyle = FontStyle.Normal;
+            instructiontext[i].fontSize = 10;
+            instructiontext[i].text = ThaiFontAdjuster.Adjust(title[trueindex] + "\n" + instruction[index]);
         }
     }
 
     public int getInstructionIDFromString(string thistitle){
         for (int i = 0 ; i < changeableAmount ; i++){
-            if (thistitle == title[i]){
+            if (stringScript.isThai && thistitle == ThaiFontAdjuster.Adjust(title[i])) {
+                return i;
+            } else if (thistitle == title[i]) {
                 return i;
             }
         }
@@ -596,5 +599,21 @@ public class CoreUIController : MonoBehaviour
         float y = Mathf.Round(Mathf.Pow(2,(19-zoomLevel)) * 35.0f);
         mapZoom.text = "(" + x + ", " + y + ") m.";
         extendZoom.text = "(" + x + ", " + y + ") m.";
+    }
+
+    public string getPicRenderText(string suspect, string exposed, string infected, string date, string frame){
+        if (stringScript.isThai){
+            return ThaiFontAdjuster.Adjust("จำนวน Suspected: " + suspect + "\n" + 
+                "จำนวน Exposed: " + exposed + "\n" + 
+                "จำนวน Infected: " + infected + "\n" + 
+                "วันที่: " + date +  "\n" +
+                "ภาพเลขที่: " + frame);
+        } else {
+            return "Suspected Amount: " + suspect + "\n" + 
+                "Exposed Amount: " + exposed + "\n" + 
+                "Infected Amount: " + infected + "\n" + 
+                "Day: " + date +  "\n" +
+                "Frame Number: " + frame;
+        }
     }
 }
