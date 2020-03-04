@@ -1072,40 +1072,78 @@ public class OnMapSpawn : MonoBehaviour
         return fleeval;
     }
 
-    private int Nearesthome_range(int x, int y, int groupnum)
-    {
-        int maxloop = 0, range = 0, lowestrange = 0;
-        if (xgridsize >= ygridsize) maxloop = xgridsize;
-        else maxloop = ygridsize;
-        for (int k = 0; k < maxloop; k++)
+    private int[,] CreateHomeEuclidianmap (int groupnum)
         {
-            for (int i = -k; i <= k; i++)
+            int[,] HomeEuclid=new int[xgridsize,ygridsize];
+            bool nearest_get=false;
+             for (int m = 0; m < xgridsize; m++)
             {
-                for (int j = -k; j < k; j++)
+                for (int n = 0; n < ygridsize; n++)
                 {
-                    if (i == k || i == -k || j == -k || j == k)
+                    int lowest_distance=xgridsize+ygridsize;
+                    int tempdistance=0;
+                    nearest_get=false;
+                    if(founddogwithgroup(m,n,groupnum))
                     {
-                        if (homedestination[x + i, y + j] == groupnum)
-                        {
-                            range = (int)Mathf.Abs(i) + (int)Mathf.Abs(j);
-                            if (lowestrange == 0)
-                            {
-                                lowestrange = range;
-                            }
-                            else if (lowestrange > range)
-                            {
-                                lowestrange = range;
-                            }
-                        }
+                        HomeEuclid[m,n]=0;
+                        
                     }
-
+                    else // outside home
+                    {
+                        //scan on x axis from current position
+                        //check on
+                        for(int i = 0; i< (xgridsize/2)+1 ; i++)
+                        {
+                            for(int j = 0; j<ygridsize;j++)
+                            {
+                                 if(i==0) //scan on middle line
+                                {
+                                  if(founddogwithgroup(m,j,groupnum))
+                                  {
+                                      nearest_get=true;
+                                      tempdistance=(int)(Mathf.Abs(j-n));
+                                      if(lowest_distance>tempdistance) lowest_distance=tempdistance;
+                                      //calculated range
+                                  }
+                                }
+                                else
+                                {
+                                    //scan both side
+                                    //leftside
+                                    if(m-i >=0)
+                                    {
+                                        if(founddogwithgroup(m-i,j,groupnum))
+                                         {
+                                            nearest_get=true;
+                                             tempdistance=(int)(i+Mathf.Abs(j-n));
+                                             if(lowest_distance>tempdistance) lowest_distance=tempdistance;
+                                            //calculated range
+                                        }
+                                    }
+                                    //rightside
+                                    if(m+i<xgridsize)
+                                    {
+                                         if(founddogwithgroup(m+i,j,groupnum))
+                                         {
+                                            nearest_get=true;
+                                            tempdistance=(int)(i+Mathf.Abs(j-n));
+                                            if(lowest_distance>tempdistance) lowest_distance=tempdistance;
+                                            //calculated range
+                                        }
+                                    }
+                                }
+                            }
+                            if(nearest_get) break;
+                        }
+                    HomeEuclid[m,n]=lowest_distance;
+                    }
                 }
             }
-            if (lowestrange > 0) return lowestrange;
-        }
 
-        return -1;
-    }
+           return  HomeEuclid;    
+        }
+    
+    
 
     //Rabies setter
     //---------------------------------------------------------------------------------------------------------------------------
@@ -1320,9 +1358,11 @@ public class OnMapSpawn : MonoBehaviour
     {
         float left_incdis = 0.0f, right_incdis = 0.0f, up_incdis = 0.0f, down_incdis = 0.0f;
         float sumforfinalize = 0.0f;
+        int[,] Euclidianmap  ;
 
-        for (int grabies = 0; grabies < dogeachgroup.Count; grabies++)
+        for (int grabies = 0; grabies < dogeachgroup.Count; grabies++) //each group has diffirent homefactor
         {
+           Euclidianmap= CreateHomeEuclidianmap(grabies);
             for (int m = 0; m < xgridsize; m++)
             {
                 for (int n = 0; n < ygridsize; n++)
@@ -1332,17 +1372,19 @@ public class OnMapSpawn : MonoBehaviour
                     left_incdis = 0.0f;
                     right_incdis = 0.0f;
                     //homefactor[m,n,g]
+                    //calculate a trend so some side can be zero
                     if (homedestination[m, n] != grabies) //outside home
                     {
-                        if (founddogwithgroup(m, n, grabies))
-                        {
                             //find nearest route to home
                             int nearestrange = 0;
-                            int tempgroupcalc = 0;
-                            nearestrange = Nearesthome_range(m, n, grabies);
-                            for (int i = m - nearestrange; i <= m + nearestrange; i++) //x axis
+                            int tempgroupcalc=0;
+                            nearestrange = Euclidianmap[m, n];
+                            //then find vector
+                        for (int i = m - nearestrange; i <= m + nearestrange; i++) //x axis
+                        {
+                            if(i>=0&&i<xgridsize)
                             {
-                                if (i == m - nearestrange)
+                                    if (i == m - nearestrange)
                                 {
                                     if (homedestination[i, n] == grabies) left_incdis += nearestrange;
                                 }
@@ -1350,40 +1392,46 @@ public class OnMapSpawn : MonoBehaviour
                                 {
                                     if (homedestination[i, n] == grabies) right_incdis += nearestrange;
                                 }
-                                else //top and down
+                                else
                                 {
                                     tempgroupcalc = nearestrange - (int)Mathf.Abs(i - m);
-                                    if (homedestination[i, n + (tempgroupcalc)] == grabies)  //top
+                                    if(n - (tempgroupcalc)>=0 && n + (tempgroupcalc)<ygridsize)
                                     {
-                                        up_incdis += tempgroupcalc;
-                                        if (i < m)
-                                        {
-                                            left_incdis += m - i;
-                                        }
-                                        else if (i > m)
-                                        {
+                                         if (homedestination[i, n + (tempgroupcalc)] == grabies)  //top
+                                         {
+                                             up_incdis += (float)tempgroupcalc;
+                                             if (i < m)
+                                            {
+                                             left_incdis += m - i;
+                                            }
+                                            else if (i > m)
+                                            {
                                             right_incdis += i - m;
+                                            }
+                                        }
+                                        if (homedestination[i, n - (tempgroupcalc)] == grabies) //down
+                                        {
+                                            down_incdis += (float)tempgroupcalc;
+                                            if (i < m)
+                                            {
+                                                left_incdis += m - i;
+                                            }
+                                            else if (i > m)
+                                            {
+                                                right_incdis += i - m;
+                                            }
                                         }
                                     }
-                                    if (homedestination[i, n - (tempgroupcalc)] == grabies) //down
-                                    {
-                                        down_incdis += tempgroupcalc;
-                                        if (i < m)
-                                        {
-                                            left_incdis += m - i;
-                                        }
-                                        else if (i > m)
-                                        {
-                                            right_incdis += i - m;
-                                        }
-                                    }
+                                    
                                 }
-                            }
+                            }      
                         }
+                        
 
                         //complete calculation
+
                         sumforfinalize = up_incdis + down_incdis + left_incdis + right_incdis;
-                        if (sumforfinalize > 0.0f)
+                        if (sumforfinalize > 0.0f) //normalize vertor values
                         {
                             up_incdis = up_incdis / sumforfinalize;
                             down_incdis = down_incdis / sumforfinalize;
@@ -3515,7 +3563,7 @@ public class OnMapSpawn : MonoBehaviour
             h2e -= oh2s / 2.0f;
         }
         */
-        createImage(current_time, 8);
+        //createImage(createImage(current_time, 8);
     }
 
     private void normalizeDogGroup()
