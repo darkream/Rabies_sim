@@ -53,6 +53,7 @@ Assets/P2render/selectedDogTerrain0.png
 /Assets/StreamingAssets/PictureReport/*
 /Assets/StreamingAssets/PictureReport_Extend/*
 /Assets/StreamingAssets/Textreport/*
+/Assets/MickRendered/*
 !/Assets/StreamingAssets/E_state/keep_it.txt
 !/Assets/StreamingAssets/S_state/keep_it.txt
 !/Assets/StreamingAssets/I_state/keep_it.txt

@@ -97,11 +97,6 @@ public class OnMapSpawn : MonoBehaviour
     private bool startPreDataRegister = false;
     private int atAttract = 0;
     private int atTime = 0;
-
-
-    private float[] dogstate_proposion;
- 
-
     public float tempzoomsize;
 
 
@@ -192,8 +187,7 @@ public class OnMapSpawn : MonoBehaviour
     int rabiedetectrange = 5;
     int rabiechaserange = 3;
 
-    int rabies_roam_grid_radius = 500;
-    bool step_factor = true, step_apply = false, step_create = false, step_first = true;
+    bool step_factor = true, step_apply = false, step_create = false;
 
     private int sysdate = 0;
   
@@ -1914,28 +1908,28 @@ public class OnMapSpawn : MonoBehaviour
         if (upvalid)
         {
             elev_up = distributeElevationLevel(heightxy[lonid, latid], heightxy[lonid, latid + 1]);
-            up_val = (doggroup[lonid, latid + 1] / 5.0f) * elev_up;
+            up_val = (doggroup[lonid, latid + 1] /_mbfunction.GridSize) * elev_up;
             if (up_val < distribution_criteria)
                 up_val = 0.0f;
         }
         if (dnvalid)
         {
             elev_dn = distributeElevationLevel(heightxy[lonid, latid], heightxy[lonid, latid - 1]);
-            dn_val = (doggroup[lonid, latid - 1] / 5.0f) * elev_dn;
+            dn_val = (doggroup[lonid, latid - 1] /_mbfunction.GridSize) * elev_dn;
             if (dn_val < distribution_criteria)
                 dn_val = 0.0f;
         }
         if (rtvalid)
         {
             elev_rt = distributeElevationLevel(heightxy[lonid, latid], heightxy[lonid + 1, latid]);
-            rt_val = (doggroup[lonid + 1, latid] / 5.0f) * elev_rt;
+            rt_val = ( doggroup[lonid + 1, latid]/_mbfunction.GridSize) * elev_rt;
             if (rt_val < distribution_criteria)
                 rt_val = 0.0f;
         }
         if (lfvalid)
         {
             elev_lf = distributeElevationLevel(heightxy[lonid, latid], heightxy[lonid - 1, latid]);
-            lf_val = (doggroup[lonid - 1, latid] / 5.0f) * elev_lf;
+            lf_val = (doggroup[lonid - 1, latid]/_mbfunction.GridSize ) * elev_lf;
             if (lf_val < distribution_criteria)
                 lf_val = 0.0f;
         }
@@ -2027,7 +2021,8 @@ public class OnMapSpawn : MonoBehaviour
         byte[] bytes = texture.EncodeToPNG();
         Destroy(texture);
 
-        File.WriteAllBytes(Application.streamingAssetsPath + getFileNameTag(imagetype, route), bytes);
+        if(imagetype<=8) File.WriteAllBytes(Application.dataPath + getFileNameTag(imagetype, route), bytes);
+        else File.WriteAllBytes(Application.streamingAssetsPath + getFileNameTag(imagetype, route), bytes);
     }
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -2507,11 +2502,11 @@ public class OnMapSpawn : MonoBehaviour
         }
         else if (imagetype == 3)
         {
-            return "/Assets/MickRendered/selectedEdge" + route + ".png";
+            return "/MickRendered/selectedEdge" + route + ".png";
         }
         else if (imagetype == 4)
         {
-            return "/Assets/MickRendered/selectedHabits" + route + ".png";
+            return "/MickRendered/selectedHabits" + route + ".png";
         }
         else if (imagetype == 5)
         {
@@ -2527,7 +2522,7 @@ public class OnMapSpawn : MonoBehaviour
         }
         else if (imagetype == 8)
         {
-            return "/Assets/MickRendered/SingleDay/" + route + ".png";
+            return "/MickRendered/SingleDay/" + route + ".png";
         }
         else if (imagetype == 9)
         {
@@ -3520,7 +3515,7 @@ public class OnMapSpawn : MonoBehaviour
             h2e -= oh2s / 2.0f;
         }
         */
-        //createImage(current_time, 8);
+        createImage(current_time, 8);
     }
 
     private void normalizeDogGroup()
