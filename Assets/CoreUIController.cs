@@ -54,7 +54,7 @@ public class CoreUIController : MonoBehaviour
     public Text addByText;
     public InputField addByLatText;
     public InputField addByLonText; 
-    private float maxlat = 90.0f, maxlon = 180.0f, minlat = -90.0f, minlon = -180.0f;
+    public float maxlat = 90.0f, maxlon = 180.0f, minlat = -90.0f, minlon = -180.0f;
 
     public bool onDoginputNotification = false;
 

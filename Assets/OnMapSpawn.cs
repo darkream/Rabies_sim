@@ -7,6 +7,7 @@ using Mapbox.Unity.Utilities;
 using Mapbox.Map;
 using Mapbox.Unity.MeshGeneration.Data;
 using System.IO;
+using System.IO.Compression;
 using System.Collections.Generic;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
@@ -2073,8 +2074,26 @@ public class OnMapSpawn : MonoBehaviour
         byte[] bytes = texture.EncodeToPNG();
         Destroy(texture);
 
-        if(imagetype<=8) File.WriteAllBytes(Application.dataPath + getFileNameTag(imagetype, route), bytes);
-        else File.WriteAllBytes(Application.streamingAssetsPath + getFileNameTag(imagetype, route), bytes);
+        if(imagetype <= 8) 
+        {
+            File.WriteAllBytes(Application.dataPath + getFileNameTag(imagetype, route, ".png"), bytes);
+            createKMLFile(
+                Application.dataPath + getFileNameTag(imagetype, route, ".kml"), 
+                Application.dataPath + getFileNameTag(imagetype, route, ".png")
+            );
+        }
+        else 
+        {
+            File.WriteAllBytes(Application.streamingAssetsPath + getFileNameTag(imagetype, route, ".png"), bytes);
+
+            //I'LL CREATE EXAMPLE HERE FOR BOAT
+            if (imagetype == 11) {
+                createKMLFile(
+                    Application.streamingAssetsPath + "/KMLFile/" + getFileNameTag(imagetype, route, ".kml"), 
+                    "state_i_dog" + rentext_sysdate + "_runloop_" + rentext_frame + ".kml"
+                );
+            }
+        }
     }
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -2176,7 +2195,7 @@ public class OnMapSpawn : MonoBehaviour
         byte[] bytes = dogpop_texture.EncodeToPNG();
         Destroy(dogpop_texture);
 
-        File.WriteAllBytes(Application.streamingAssetsPath + getFileNameTag(screenimagetype, route), bytes);
+        File.WriteAllBytes(Application.streamingAssetsPath + getFileNameTag(screenimagetype, route, ".png"), bytes);
     }
 
     private void createImage_withtext(int route, int imagetype)
@@ -2219,7 +2238,7 @@ public class OnMapSpawn : MonoBehaviour
         byte[] bytes = texture.EncodeToPNG();
         Destroy(texture);
 
-        File.WriteAllBytes(Application.streamingAssetsPath + getFileNameTag(imagetype, route), bytes);
+        File.WriteAllBytes(Application.streamingAssetsPath + getFileNameTag(imagetype, route, ".png"), bytes);
     }
 
     private void createImage_extendmap(int route, int imagetype)
@@ -2275,7 +2294,7 @@ public class OnMapSpawn : MonoBehaviour
         byte[] bytes = texture.EncodeToPNG();
         Destroy(texture);
 
-        File.WriteAllBytes(Application.streamingAssetsPath + getFileNameTag(imagetype, route), bytes);
+        File.WriteAllBytes(Application.streamingAssetsPath + getFileNameTag(imagetype, route, ".png"), bytes);
     }
 
 
@@ -2538,120 +2557,118 @@ public class OnMapSpawn : MonoBehaviour
     }
 
     //get file name from image tag where 0=map, 1=dog, 2=mapanddog, 3=edge
-    private string getFileNameTag(int imagetype, int route)
+    private string getFileNameTag(int imagetype, int route, string datatype, bool useStarter = true)
     {
         if (imagetype == 0)
         {
-            return "/../Assets/MickRendered/plainSelectedTerrain.png";
+            return "/../Assets/MickRendered/plainSelectedTerrain" + datatype;
         }
         else if (imagetype == 1)
         {
-            return "/PictureReport/selectedDogTerrain" + route + ".png";
+            return "/PictureReport/selectedDogTerrain" + route + datatype;
         }
         else if (imagetype == 2)
         {
-            return "/PictureReport/selectedMapAndDog" + route + ".png";
+            return "/PictureReport/selectedMapAndDog" + route + datatype;
         }
         else if (imagetype == 3)
         {
-            return "/MickRendered/selectedEdge" + route + ".png";
+            return "/MickRendered/selectedEdge" + route + datatype;
         }
         else if (imagetype == 4)
         {
-            return "/MickRendered/selectedHabits" + route + ".png";
+            return "/MickRendered/selectedHabits" + route + datatype;
         }
         else if (imagetype == 5)
         {
-            return "/Assets/MickRendered/selectedHabitsDownscape" + route + ".png";
+            return "/Assets/MickRendered/selectedHabitsDownscape" + route + datatype;
         }
         else if (imagetype == 6)
         {
-            return "/Assets/MickRendered/selectedHabitsAndDog" + route + ".png";
+            return "/Assets/MickRendered/selectedHabitsAndDog" + route + datatype;
         }
         else if (imagetype == 7)
         {
-            return "/Assets/MickRendered/selectedAfford" + route + ".png";
+            return "/Assets/MickRendered/selectedAfford" + route + datatype;
         }
         else if (imagetype == 8)
         {
-            return "/MickRendered/SingleDay/" + route + ".png";
+            return "/MickRendered/SingleDay/" + route + datatype;
         }
         else if (imagetype == 9)
         {
-            return "/S_state/state_s_dog" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
+            return "/S_state/" + "state_s_dog" + rentext_sysdate + "_runloop_" + rentext_frame + datatype;
         }
         else if (imagetype == 10)
         {
-            return "/E_state/state_e_dog" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
+            return "/E_state/" + "state_e_dog" + rentext_sysdate + "_runloop_" + rentext_frame + datatype;
         }
         else if (imagetype == 11)
         {
-            return "/I_state/state_i_dog" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
+            return "/I_state/" + "state_i_dog" + rentext_sysdate + "_runloop_" + rentext_frame + datatype;
         }
         else if (imagetype == 12)
         {
-            return "/PictureReport/Bitearea" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
+            return "/PictureReport/" + "Bitearea" + rentext_sysdate + "_runloop_" + rentext_frame + datatype;
         }
         else if (imagetype == 100)
         {
-            return "/PictureReport/day" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
+            return "/PictureReport/" + "day" + rentext_sysdate + "_runloop_" + rentext_frame + datatype;
         }
           else if (imagetype == 101)
         {
-            return "/PictureReport/WithBG_day" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
+            return "/PictureReport/" + "WithBG_day" + rentext_sysdate + "_runloop_" + rentext_frame + datatype;
         }
         else if (imagetype == 1001)
         {
-            return "/PictureReport/extendmap.png";
+            return "/PictureReport/" + "extendmap" + datatype;
         }
         else if (imagetype == 1002)
         {
-            return "/PictureReport_Extend/extend_rabiespotetial_day" + rentext_sysdate + ".png";
+            return "/PictureReport_Extend/" + "extend_rabiespotetial_day" + rentext_sysdate + datatype;
         }
         else if (imagetype == 1003)
         {
-            return "/PictureReport_Extend/extendmap_day" + rentext_sysdate + ".png";
+            return "/PictureReport_Extend/" + "extendmap_day" + rentext_sysdate + datatype;
         }
         else if (imagetype == 1004)
         {
-            return "/RealMap.png";
+            return "/RealMap" + datatype;
         }
           else if (imagetype == 1005)
         {
-            return "/RealMapextend.png";
+            return "/RealMapextend" + datatype;
         }
           else if (imagetype == 1010)
         {
-             return "/PictureReport/edge_s" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
+             return "/PictureReport/" + "edge_s" + rentext_sysdate + "_runloop_" + rentext_frame + datatype;
         }
          else if (imagetype == 1011)
         {
-             return "/PictureReport/edge_e" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
+             return "/PictureReport/" + "edge_e" + rentext_sysdate + "_runloop_" + rentext_frame + datatype;
         }
          else if (imagetype == 1012)
         {
-             return "/PictureReport/edge_i" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
+             return "/PictureReport/" + "edge_i" + rentext_sysdate + "_runloop_" + rentext_frame + datatype;
         }
         //Screensize Series
          else if (imagetype == 200)
         {
-             return "/PictureReport/S_state_on_bg" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
+             return "/PictureReport/" + "S_state_on_bg" + rentext_sysdate + "_runloop_" + rentext_frame + datatype;
         }
          else if (imagetype == 201)
         {
-             return "/PictureReport/E_state_on_bg" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
+             return "/PictureReport/" + "E_state_on_bg" + rentext_sysdate + "_runloop_" + rentext_frame + datatype;
         }
          else if (imagetype == 202)
         {
-             return "/PictureReport/I_state_on_bg" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
+             return "/PictureReport/" + "I_state_on_bg" + rentext_sysdate + "_runloop_" + rentext_frame + datatype;
         }
          else if (imagetype == 203)
         {
-             return "/PictureReport/All_state_on_bg" + rentext_sysdate + "_runloop_" + rentext_frame + ".png";
+             return "/PictureReport/" + "All_state_on_bg" + rentext_sysdate + "_runloop_" + rentext_frame + datatype;
         }
-        return "/../createdImage" + route + ".png";
-        
-       
+        return "/../createdImage" + route + datatype;
     }
 
     private void Mapcapture()
@@ -2667,7 +2684,7 @@ public class OnMapSpawn : MonoBehaviour
         byte[] bytes = tex.EncodeToPNG();
         Destroy(tex);
 
-        File.WriteAllBytes(Application.streamingAssetsPath + getFileNameTag(1004,0), bytes);
+        File.WriteAllBytes(Application.streamingAssetsPath + getFileNameTag(1004, 0, ".png"), bytes);
        
         //return tex;
     }
@@ -2685,7 +2702,7 @@ public class OnMapSpawn : MonoBehaviour
         byte[] bytes = tex.EncodeToPNG();
         Destroy(tex);
 
-        File.WriteAllBytes(Application.streamingAssetsPath + getFileNameTag(1005,0), bytes);
+        File.WriteAllBytes(Application.streamingAssetsPath + getFileNameTag(1005, 0, ".png"), bytes);
     }
 
 
@@ -4609,5 +4626,34 @@ public class OnMapSpawn : MonoBehaviour
                 }
             }
         }
+    }
+
+    private void createKMLFile(string writepath, string imagepath){
+        StreamWriter sw = File.CreateText(writepath);
+        sw.WriteLine ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        sw.WriteLine ("<kml xmlns=\"http://www.opengis.net/kml/2.2\" xmlns:gx=\"http://www.google.com/kml/ext/2.2\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"");
+        sw.WriteLine ("xsi:schemaLocation=\"http://www.opengis.net/kml/2.2 http://schemas.opengis.net/kml/2.2.0/ogckml22.xsd http://www.google.com/kml/ext/2.2 http://code.google.com/apis/kml/schema/kml22gx.xsd\">");
+        sw.WriteLine ("<Document id=\"IMG.tif\">");
+        sw.WriteLine ("<name>IMG.tif</name>");
+        sw.WriteLine ("<Snippet></Snippet>");
+        sw.WriteLine ("<GroundOverlay id=\"0\">");
+        sw.WriteLine ("<Snippet></Snippet>");
+        sw.WriteLine ("<drawOrder>1000</drawOrder>");
+        sw.WriteLine ("<name>IMG.tif</name>");
+        sw.WriteLine ("<Icon>");
+        sw.WriteLine ("<href>" + imagepath + "</href>");
+        sw.WriteLine ("<viewBoundScale>1.0</viewBoundScale>");
+        sw.WriteLine ("</Icon>");
+        sw.WriteLine ("<LatLonBox>");
+        sw.WriteLine ("<north>" + coreuicontroller.maxlat + "</north>");
+        sw.WriteLine ("<south>" + coreuicontroller.minlat + "</south>");
+        sw.WriteLine ("<east>" + coreuicontroller.maxlon + "</east>");
+        sw.WriteLine ("<west>" + coreuicontroller.minlon + "</west>");
+        sw.WriteLine ("<rotation>0</rotation>");
+        sw.WriteLine ("</LatLonBox>");
+        sw.WriteLine ("</GroundOverlay>");
+        sw.WriteLine ("</Document>");
+        sw.WriteLine ("</kml>");
+        sw.Close();
     }
 }
