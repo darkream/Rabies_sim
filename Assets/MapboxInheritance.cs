@@ -302,13 +302,17 @@ public class MapboxInheritance : MonoBehaviour
     }
 
     public Vector2d temp_latlondelta;
-    public void createDogObjectForShow(){
-        temp_latlondelta = getLatLonFromMousePosition();
+    public void createDogObjectForShow(float lat = 181.0f, float lon = 181.0f){
+        if (lat != 181.0f && lon != 181.0f){
+            temp_latlondelta = new Vector2d(lat, lon);
+        } else {
+            temp_latlondelta = getLatLonFromMousePosition();
+        }
         doglocations.Add(spawnLatLonWithinGrid(temp_latlondelta));
         int lastIndex = doglocations.Count - 1;
-        float lat = (float)doglocations[lastIndex].x;
-        float lon = (float)doglocations[lastIndex].y;
-        spawnDogPrefabWithHeight(lat , lon);
+        float newlat = (float)doglocations[lastIndex].x;
+        float newlon = (float)doglocations[lastIndex].y;
+        spawnDogPrefabWithHeight(newlat , newlon);
     }
 
     public LatLonSize getNewDog(){
@@ -395,13 +399,17 @@ public class MapboxInheritance : MonoBehaviour
         spawninfectedPrefab(lat , lon);
     }
  
-    public void createInfectDogObjectForShow(){
-        temp_latlondelta = getLatLonFromMousePosition();
+    public void createInfectDogObjectForShow(float lat = 181.0f, float lon = 181.0f){
+        if (lat != 181.0f && lon != 181.0f){
+            temp_latlondelta = new Vector2d(lat, lon);
+        } else {
+            temp_latlondelta = getLatLonFromMousePosition();
+        }
         infectedlocations.Add(spawnLatLonWithinGrid(temp_latlondelta));
         int lastIndex = infectedlocations.Count - 1;
-        float lat = (float)infectedlocations[lastIndex].x;
-        float lon = (float)infectedlocations[lastIndex].y;
-        spawninfectedPrefab(lat , lon);
+        float newlat = (float)infectedlocations[lastIndex].x;
+        float newlon = (float)infectedlocations[lastIndex].y;
+        spawninfectedPrefab(newlat , newlon);
     }
     public void spawninfectedPrefab(double lat , double lon)
     {

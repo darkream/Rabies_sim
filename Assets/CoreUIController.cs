@@ -46,6 +46,15 @@ public class CoreUIController : MonoBehaviour
     private int dogContentID = 1;
     public int deleteOneDogNotification = -1;
     public GameObject dumpingSite;
+    public Button addByLatLonButton;
+    public Button addByAddButton;
+    public Button addByCancelButton;
+    public bool addByLatLonIsAdded;
+    public GameObject addByLatLonBox;
+    public Text addByText;
+    public InputField addByLatText;
+    public InputField addByLonText; 
+    private float maxlat = 90.0f, maxlon = 180.0f, minlat = -90.0f, minlon = -180.0f;
 
     public bool onDoginputNotification = false;
 
@@ -63,6 +72,14 @@ public class CoreUIController : MonoBehaviour
     public bool dogIsAddedNotification_I = false;
     public bool allowAddDogObject_I = false;
     public bool onDoginputNotification_I = false;
+    public Button iAddByLatLonButton;
+    public Button iAddByAddButton;
+    public Button iAddByCancelButton;
+    public bool iAddByLatLonIsAdded;
+    public GameObject iAddByLatLonBox;
+    public Text iAddByText;
+    public InputField iAddByLatText;
+    public InputField iAddByLonText;
      
     //PARAMETER SETTING UI (FIRST PAGE)
     public GameObject paramSetMapCalScreen;
@@ -83,16 +100,28 @@ public class CoreUIController : MonoBehaviour
     public Button dogBehaviorNext;
     public Text errorDogBehaviorNotNumber;
     public bool resetDogBehaviorParameter = false;
+
+    //PARAMETER SETTING UI (THIRD PAGE)
     public GameObject paramSetImageGenParameter;
     public bool initImageGenParameter = false;
     public InputField[] imageGen;
     public Text singleBehavior;
-    public Button extendmapnext;
     public Button imageGenNext;
     public Text errorImageGenNotNumber;
     public bool resetImageGenParameter = false;
+
+    //PARAMETER SETTING UI (FOURTH PAGE)
+    public GameObject paramSetInfectedDogParameter;
+    public bool initInfectedDogParameter = false;
+    public InputField[] rabiesInputField;
+    public Toggle openEasyRun;
+    public Button rabiesParamNext;
+    public Button extendmapnext;
+    public Text easyRunText;
+    public Text errorInfectedDogNotNumber;
+    public bool resetInfectedDogParameter = false;
     public bool runProgramNotification = false;
-    public bool extendmapNotification=false;
+    public bool extendmapNotification = false;
 
     //LANGUAGE SELECTOR UI
     public GameObject languageSelectorScreen;
@@ -119,7 +148,7 @@ public class CoreUIController : MonoBehaviour
     public Text[] instructiontext;
     string[] title;
     string[] instruction;
-    public int changeableAmount = 42;
+    public int changeableAmount = 50;
 
     //ZOOM LEVEL UI
     public Text mapZoom;
@@ -138,23 +167,41 @@ public class CoreUIController : MonoBehaviour
         engFlag.GetComponent<Button>().onClick.AddListener(moveToChangeParameters);
         thaiFlag.GetComponent<Button>().onClick.AddListener(moveToChangeParametersButThai);
         mapSelectionButton.GetComponent<Button>().onClick.AddListener(moveToAddNormalDog);
+
+        //CLICK ADD DOG IN ADD NORMAL DOG
         cancelDogButton.GetComponent<Button>().onClick.AddListener(cancelDogPopulation);
         useDefaultDataButton.GetComponent<Button>().onClick.AddListener(useDefaultDogData);
         addDogButton.GetComponent<Button>().onClick.AddListener(addDogPopulation);
         acceptDogPopButton.GetComponent<Button>().onClick.AddListener(moveToAddInfectDog);
 
+        //CLICK ADD DOG IN ADD INFECT DOG
         addDogButton_I.GetComponent<Button>().onClick.AddListener(addDogPopulation_I);
         cancelDogButton_I.GetComponent<Button>().onClick.AddListener(cancelDogPopulation_I);
         acceptDogPopButton_I.GetComponent<Button>().onClick.AddListener(moveToChangeParameters2);
+
+        //DELETE BUTTON IN ADD NORMAL DOG
+        deleteButton.GetComponent<Button>().onClick.AddListener(showOrHideDeleteList);
+        deleteAllButton.GetComponent<Button>().onClick.AddListener(notifyDeleteAll);
+
+        //ADD BY LATLON IN ADD NORMAL DOG
+        addByLatLonButton.GetComponent<Button>().onClick.AddListener(showOrHideAddByLatLonInputField);
+        addByAddButton.GetComponent<Button>().onClick.AddListener(addAddByLatLon);
+        addByCancelButton.GetComponent<Button>().onClick.AddListener(cancelAddByLatLon);
+
+        //ADD BY LATLON IN ADD INFECT DOG
+        iAddByLatLonButton.GetComponent<Button>().onClick.AddListener(showOrHideIAddByLatLonInputField);
+        iAddByAddButton.GetComponent<Button>().onClick.AddListener(addIAddByLatLon);
+        iAddByCancelButton.GetComponent<Button>().onClick.AddListener(cancelIAddByLatLon);
         
+        //Parameter Settings Button
         mapCalNext.GetComponent<Button>().onClick.AddListener(moveToMapSelection);
         showWorldAdvancedSetting.GetComponent<Button>().onClick.AddListener(showOrHideWorldAdvancedSetting);
         dogBehaviorNext.GetComponent<Button>().onClick.AddListener(moveToChangeParameters3);
-        imageGenNext.GetComponent<Button>().onClick.AddListener(moveToRunProgram);
-        
-        extendmapnext.GetComponent<Button>().onClick.AddListener(moveToExtendMapSelection);
-        deleteButton.GetComponent<Button>().onClick.AddListener(showOrHideDeleteList);
-        deleteAllButton.GetComponent<Button>().onClick.AddListener(notifyDeleteAll);
+        imageGenNext.GetComponent<Button>().onClick.AddListener(moveToChangeParameter4);
+        rabiesParamNext.GetComponent<Button>().onClick.AddListener(moveToExtendMapSelection);
+        openEasyRun.GetComponent<Toggle>().onValueChanged.AddListener(showOrHideSkipRunRadius);
+        extendmapnext.GetComponent<Button>().onClick.AddListener(moveToRunProgram);
+
         imageGen[0].onValueChanged.AddListener(delegate {hordeMustNotExceedOne();});
         imageGen[1].onValueChanged.AddListener(delegate {exploreMustNotExceedOne();});
         if (PlayerPrefs.GetString("isThai") == "True") {
@@ -178,6 +225,7 @@ public class CoreUIController : MonoBehaviour
         paramSetMapCalScreen.SetActive(false);
         paramSetDogBehaviorScreen.SetActive(false);
         paramSetImageGenParameter.SetActive(false);
+        paramSetInfectedDogParameter.SetActive(false);
         ExtendmapSelection.SetActive(false);
         for (int i = 0 ; i < instructiontext.Length ; i++){
             instructiontext[i].text = "";
@@ -222,25 +270,19 @@ public class CoreUIController : MonoBehaviour
         }
     }
 
-     private void moveToExtendMapSelection(){
-            hideAllScreens();
-           // resetMapCalculationParameter = true;
-           extendmapNotification=true;
-            ExtendmapSelection.SetActive(true);
-            zoomlock=false;
-    }
-
     private void moveToAddNormalDog(){
         hideAllScreens();
         allowAddDogObject = true;
         mapIsLocked = true;
         zoomlock=true;
+        addByLatLonBox.SetActive(false);
         addNormalDogScreen.SetActive(true);
     }
 
     private void moveToAddInfectDog(){
         hideAllScreens();
-       // switchAllowInput(false);
+        //switchAllowInput(false);
+        iAddByLatLonBox.SetActive(false);
         switchAllowInput_I(true);
         allowAddDogObject_I = true;
         infecttextsetter();
@@ -270,6 +312,29 @@ public class CoreUIController : MonoBehaviour
         }
     }
 
+    private void moveToChangeParameter4(){
+        if(checkImageGenParamIntegrity()){
+            hideAllScreens();
+            resetInfectedDogParameter = true;
+            paramSetInfectedDogParameter.SetActive(true);
+            initInfectedDogParameter = true;
+        } else {
+            errorImageGenNotNumber.text = stringScript.getErrorMapCalNotNumberText();
+        }
+    }
+
+    private void moveToExtendMapSelection(){
+        if (checkRabiesParamIntegrity()){
+            hideAllScreens();
+            // resetMapCalculationParameter = true;
+            extendmapNotification = true;
+            ExtendmapSelection.SetActive(true);
+            zoomlock = false;
+        } else {
+            errorInfectedDogNotNumber.text = stringScript.getErrorMapCalNotNumberText();
+        }
+    }
+
     private void moveToRunProgram(){
         if (checkImageGenParamIntegrity()){
             hideAllScreens();
@@ -293,10 +358,10 @@ public class CoreUIController : MonoBehaviour
 
     private void resetWorldAdvancedSetting(string changedText, bool isEnabled) {
         worldAdvancedSettingText.text = changedText;
-            for (int i = 0 ; i < mapCal.Length - 1 ; i++){
-                mapCal[i].gameObject.SetActive(isEnabled);
-                mapCalText[i].gameObject.SetActive(isEnabled);
-            }
+        for (int i = 0 ; i < mapCal.Length - 1 ; i++){
+            mapCal[i].gameObject.SetActive(isEnabled);
+            mapCalText[i].gameObject.SetActive(isEnabled);
+        }
     }
 
     public void initializeDogPopulationInput(float gridSize){
@@ -312,7 +377,7 @@ public class CoreUIController : MonoBehaviour
             showDogErrorInput("center of dog population represents the size of (x: " + gridSize + "m., y: " + gridSize +"m.), coverage area will be operated after this.");
         }
         populationQuantBox.SetActive(true);
-         onDoginputNotification=true;
+        onDoginputNotification=true;
     }
 
     public void initializeDogPopulationInput_I(float gridSize){
@@ -342,6 +407,152 @@ public class CoreUIController : MonoBehaviour
         dogIsAddedNotification = true;
         useDefaultDataButton.enabled = true;
         acceptDogPopButton.enabled = true;
+    }
+
+    private void cancelDogPopulation_I(){
+        populationQuantBox_I.SetActive(false);
+        dogIsCancelledNotification_I = true;
+        acceptDogPopButton_I.enabled = true;
+    }
+
+    private void addDogPopulation_I(){
+        populationQuantBox_I.SetActive(false);
+        dogIsAddedNotification_I = true;
+        acceptDogPopButton_I.enabled = true;
+    }
+
+    private void showOrHideAddByLatLonInputField(){
+        if (addByText.text == stringScript.getAddText()){
+            addByLatLonBox.SetActive(true);
+            addByText.text = stringScript.getCloseText();
+            addByLatText.text = "";
+            addByLonText.text = "";
+        } else {
+            addByLatLonBox.SetActive(false);
+            addByText.text = stringScript.getAddText();
+        }
+    }
+
+    private void addAddByLatLon(){
+        int latValid = latValidation(addByLatText.text);
+        int lonValid = lonValidation(addByLonText.text);
+        if (latValid == 0 && lonValid == 0){
+            addByLatLonBox.SetActive(false);
+            addByText.text = stringScript.getAddText();
+            addByLatLonIsAdded = true;
+            showDogErrorInput("");
+        } else {
+            if (PlayerPrefs.GetString("isThai") == "True"){
+                if (latValid == lonValid) {
+                    string additionalError = "";
+                    if (latValid == 1){
+                        additionalError = "อยู่นอกขอบเขตจอ";
+                    } else {
+                        additionalError = "มีความผิดพลาดจากการกรอกค่า";
+                    }
+                    errorDogInput_I.GetComponent<Text>().text = ThaiFontAdjuster.Adjust("lat, lon " + additionalError);
+                } else {
+                    errorDogInput_I.GetComponent<Text>().text = ThaiFontAdjuster.Adjust("มีค่า lat และ/หรือ lon มีความผิดพลาดในการกรอก");
+                }
+                errorDogInput.GetComponent<Text>().font = stringScript.thaiFont;
+                errorDogInput.GetComponent<Text>().fontSize = (int)(errorDogInput.GetComponent<Text>().fontSize * 0.8f);
+            } else {
+                showDogErrorInput("Error input occurred on lat and/or lon.");
+            }
+        }
+    }
+
+    private void cancelAddByLatLon(){
+        addByLatLonBox.SetActive(false);
+        addByText.text = stringScript.getAddText();
+        showDogErrorInput("");
+    }
+
+    private void showOrHideIAddByLatLonInputField(){
+        if (iAddByText.text == stringScript.getAddText()){
+            iAddByLatLonBox.SetActive(true);
+            iAddByText.text = stringScript.getCloseText();
+            iAddByLatText.text = "";
+            iAddByLonText.text = "";
+        } else {
+            iAddByLatLonBox.SetActive(false);
+            iAddByText.text = stringScript.getAddText();
+        }
+    }
+
+    private void addIAddByLatLon(){
+        int latValid = latValidation(iAddByLatText.text);
+        int lonValid = lonValidation(iAddByLonText.text);
+        if (latValid == 0 && lonValid == 0){
+            iAddByLatLonBox.SetActive(false);
+            iAddByText.text = stringScript.getAddText();
+            iAddByLatLonIsAdded = true;
+            showDogErrorInput_I("");
+        } else {
+            if (PlayerPrefs.GetString("isThai") == "True"){
+                if (latValid == lonValid) {
+                    string additionalError = "";
+                    if (latValid == 1){
+                        additionalError = "อยู่นอกขอบเขตจอ";
+                    } else {
+                        additionalError = "มีความผิดพลาดจากการกรอกค่า";
+                    }
+                    errorDogInput_I.GetComponent<Text>().text = ThaiFontAdjuster.Adjust("lat, lon " + additionalError);
+                } else {
+                    errorDogInput_I.GetComponent<Text>().text = ThaiFontAdjuster.Adjust("มีค่า lat และ/หรือ lon มีความผิดพลาดในการกรอก");
+                }
+                errorDogInput_I.GetComponent<Text>().font = stringScript.thaiFont;
+                errorDogInput_I.GetComponent<Text>().fontSize = (int)(errorDogInput.GetComponent<Text>().fontSize * 0.8f);
+            } else {
+                showDogErrorInput_I("Error input occurred on lat and/or lon.");
+            }
+        }
+    }
+
+    private void cancelIAddByLatLon(){
+        iAddByLatLonBox.SetActive(false);
+        iAddByText.text = stringScript.getAddText();
+        showDogErrorInput_I("");
+    }
+
+    private int latValidation(string lat){
+        float value = 0.0f;
+        if (float.TryParse(lat, out value)) return latlonValidation(value, minlat, maxlat);
+        else {
+            return 2;
+        }
+    }
+
+    private int lonValidation(string lon){
+        float value = 0.0f;
+        if (float.TryParse(lon, out value)) return latlonValidation(value, minlon, maxlon);
+        else { 
+            return 2;
+        }
+    }
+
+    private int latlonValidation(float value, float min, float max){
+        if (value > min && value < max) return 0;
+        else { 
+            return 1;
+        }
+    }
+
+    public void setMinMaxLatLon(float lessLat, float lessLon, float moreLat, float moreLon){
+        if (lessLat > moreLat) {
+            float temp = moreLat;
+            moreLat = lessLat;
+            lessLat = temp;
+        }
+        if (lessLon > moreLon) {
+            float temp = moreLon;
+            moreLon = lessLon;
+            lessLon = temp;
+        }
+        minlat = lessLat;
+        maxlat = moreLat;
+        minlon = lessLon;
+        maxlon = moreLon;
     }
 
     public float getDogPopulation(){
@@ -402,18 +613,6 @@ public class CoreUIController : MonoBehaviour
             usedDefaultData = true;
             useDefaultDogNotification = true;
         }
-    }
-
-    private void cancelDogPopulation_I(){
-        populationQuantBox_I.SetActive(false);
-        dogIsCancelledNotification_I = true;
-        acceptDogPopButton_I.enabled = true;
-    }
-
-    private void addDogPopulation_I(){
-        populationQuantBox_I.SetActive(false);
-        dogIsAddedNotification_I = true;
-        acceptDogPopButton_I.enabled = true;
     }
 
     public int getDogPopulation_I(){
@@ -490,6 +689,14 @@ public class CoreUIController : MonoBehaviour
         return true;
     }
 
+    public bool checkRabiesParamIntegrity(){
+        float a;
+        foreach(InputField input in rabiesInputField){
+            if (!float.TryParse(input.text, out a))return false;
+        }
+        return true;
+    }
+
     private void hordeMustNotExceedOne(){
         float horde, explore;
         if (float.TryParse(imageGen[0].text, out horde) && float.TryParse(imageGen[1].text, out explore)){
@@ -524,6 +731,11 @@ public class CoreUIController : MonoBehaviour
 
     private void notifyDeleteAll(){
         deleteAllDogsNotification = true;
+    }
+
+    public void showOrHideSkipRunRadius(bool isAllowed){
+        rabiesInputField[2].gameObject.SetActive(isAllowed);
+        easyRunText.gameObject.SetActive(isAllowed);
     }
 
      private void openreportfolder(){
@@ -588,7 +800,7 @@ public class CoreUIController : MonoBehaviour
     }
 
     private void changeInstructionText(string newtext){
-        for (int i = 0 ; i < 3 ; i++){
+        for (int i = 0 ; i < 4 ; i++){
             instructiontext[i].text = newtext;
         }
     }

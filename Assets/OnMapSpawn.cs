@@ -195,6 +195,10 @@ public class OnMapSpawn : MonoBehaviour
     public int loopperday = 30;
     [System.NonSerialized]
     public int dayloop = 2;
+    [System.NonSerialized]
+    public bool allowUsingSkipRun = false;
+    [System.NonSerialized]
+    public float skipRunRadius = 3.5f;
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //pic creation relate
@@ -3681,10 +3685,17 @@ public class OnMapSpawn : MonoBehaviour
     {
         //int w = Screen.width();
         //int h = Screen.height();
-        Vector2d latlondelta = _mbfunction.getLatLonFromXY(0, Screen.height);
-        _mbfunction.setStartLatLon(latlondelta);
-        latlondelta = _mbfunction.getLatLonFromXY(Screen.width, 0);
-        _mbfunction.setEndLatLon(latlondelta);
+        Vector2d latlondeltaLeftTop = _mbfunction.getLatLonFromXY(0, Screen.height);
+        _mbfunction.setStartLatLon(latlondeltaLeftTop);
+        Vector2d latlondeltaRightBottom = _mbfunction.getLatLonFromXY(Screen.width, 0);
+        _mbfunction.setEndLatLon(latlondeltaRightBottom);
+
+        //ADD THIS LINE LATER ON 21/03/2020 DURING CORONA VIRUS
+        coreuicontroller.setMinMaxLatLon(
+            (float)latlondeltaLeftTop.x, (float)latlondeltaLeftTop.y, 
+            (float)latlondeltaRightBottom.x, (float)latlondeltaRightBottom.y
+        );
+
         startlat = _mbfunction.s_lat;
         startlon = _mbfunction.s_lon;
         xgridsize = _mbfunction.x_gsize;
@@ -4056,7 +4067,7 @@ public class OnMapSpawn : MonoBehaviour
     {
         if (coreuicontroller.getScreenMode() == coreuicontroller.MODE_MAP_SELECTION)
         {
-            if (coreuicontroller.mapIsLocked && coreuicontroller.Normaldog_finish == false)
+            if (coreuicontroller.mapIsLocked && !coreuicontroller.Normaldog_finish)
             {
                 coreuicontroller.setScreenMode(coreuicontroller.MODE_NORMAL_DOG_SELECTION);
                 screenSelection();
@@ -4088,7 +4099,6 @@ public class OnMapSpawn : MonoBehaviour
                 addNormalDogObject(_mbfunction.temp_latlondelta, quantity);
                 coreuicontroller.setDeletableDogToContent();
                 coreuicontroller.showDogErrorInput("");
-
             }
             else
             {
@@ -4123,6 +4133,12 @@ public class OnMapSpawn : MonoBehaviour
                 _mbfunction.clearDogObjectMemory();
             }
         }
+        if (coreuicontroller.addByLatLonIsAdded) //WHEN YOU WANT TO ADD BY LAT, LON
+        {
+            coreuicontroller.addByLatLonIsAdded = false;
+            _mbfunction.createDogObjectForShow(float.Parse(coreuicontroller.addByLatText.text), float.Parse(coreuicontroller.addByLonText.text));
+            coreuicontroller.initializeDogPopulationInput(_mbfunction.GridSize);
+        }
 
         //HANDLING INFECT DOG BEHAVIOR INPUT
         if (coreuicontroller.dogIsCancelledNotification_I)
@@ -4151,8 +4167,12 @@ public class OnMapSpawn : MonoBehaviour
             coreuicontroller.switchAllowInput_I(true);
             coreuicontroller.onDoginputNotification_I = false;
         }
-
-
+        if (coreuicontroller.iAddByLatLonIsAdded) //WHEN YOU WANT TO ADD BY LAT, LON
+        {
+            coreuicontroller.iAddByLatLonIsAdded = false;
+            _mbfunction.createInfectDogObjectForShow(float.Parse(coreuicontroller.iAddByLatText.text), float.Parse(coreuicontroller.iAddByLonText.text));
+            coreuicontroller.initializeDogPopulationInput_I(_mbfunction.GridSize);
+        }
 
         //HANDLING DEFAULT PARAMETERS
         if (coreuicontroller.initMapCalculationParameter)
@@ -4184,14 +4204,24 @@ public class OnMapSpawn : MonoBehaviour
         {
             coreuicontroller.resetImageGenParameter = false;
             setParamImageGen_CoreUIToMB();
-            coreuicontroller.runProgramNotification = true;
+        }
+        if (coreuicontroller.initInfectedDogParameter)
+        {
+            coreuicontroller.initInfectedDogParameter = false;
+            setParamRabiesParam_MBToCoreUI();
+            coreuicontroller.showOrHideSkipRunRadius(coreuicontroller.openEasyRun.isOn);
+        }
+        if (coreuicontroller.resetInfectedDogParameter){
+            coreuicontroller.resetInfectedDogParameter = false;
+            setParamRabiesParam_CoreUIToMB();
         }
 
-         if (coreuicontroller.extendmapset)
+        if (coreuicontroller.extendmapset)
         {
             coreuicontroller.extendmapset = false;
             coreuicontroller.hideDogObject();
             extendmapSelection();
+            coreuicontroller.runProgramNotification = true;
         }
 
         //AND HANDLING RESET PARAMETERS
@@ -4322,6 +4352,20 @@ public class OnMapSpawn : MonoBehaviour
         time_cycle = (int)float.Parse(coreuicontroller.imageGen[3].text);
         highest_activity_rate = float.Parse(coreuicontroller.imageGen[4].text);
         lowest_activity_rate = float.Parse(coreuicontroller.imageGen[5].text);
+    }
+
+    private void setParamRabiesParam_MBToCoreUI(){
+        coreuicontroller.rabiesInputField[0].text = "" + dayloop;
+        coreuicontroller.rabiesInputField[1].text = "" + loopperday;
+        coreuicontroller.openEasyRun.isOn = allowUsingSkipRun;
+        coreuicontroller.rabiesInputField[2].text = "" + skipRunRadius;
+    }
+
+    private void setParamRabiesParam_CoreUIToMB(){
+        dayloop = (int)float.Parse(coreuicontroller.rabiesInputField[0].text);
+        loopperday = (int)float.Parse(coreuicontroller.rabiesInputField[1].text);
+        allowUsingSkipRun = coreuicontroller.openEasyRun.isOn;
+        skipRunRadius = float.Parse(coreuicontroller.rabiesInputField[2].text);
     }
 
     private void Texturescale(Texture targettext,int sizeof_x,int sizeof_y) 

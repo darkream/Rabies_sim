@@ -6,20 +6,24 @@ Pole Latitude Size per Degree_The length of 1 degree latitude from the pole (sho
 Widest Longitude Size per Degree_The widest length of 1 degree longitude (Oblate Spheroid shape)
 One Degree per Radian_1 radian = 180/ degrees, and 1 degree = /180 radians. d(A,B) = R a /180
 Radius Size of Earth_The distance from core of the Earth to a point its surface
-Minimum Population Size Per Block_The minimum dog number that a pixel can contain where 0.2 dog, for example, means that there is 20% chance of having 1 dog at that pixel.
-Normal Distribution Converged At_How many repetitive times of Normal Distribution you want when the values at n and n+[input] doesn't change
+Minimum Population Size Per Block_The minimum dog number that a pixel can contain is 0.2 dog, for example, means that there is 20% chance of having 1 dog at that pixel.
+Normal Distribution Converged At_The amount of repetitive times of Normal Distribution you want when the values at n and n+[input] doesn't change
 Home Size per Population Ratio_The multiplicative size ratio when the home range of dog population is normal distributed
 Inaccessible Incline (Degree) [0 to 90]_Distribution at 100% on 0 incline and this input determines the 0% accessible at what degree
-Bite Rate [0 to 1]_The rate of biting or fighting between "a pair" of dogs in a pixel area (your grid square size input)
-Infection Rate [0 to 1]_The rate of infection between those bitten pair in a pixel area (your grid square size input)
+Bite Rate [0 to 1]_The rate of biting or fighting between "a pair" of dogs in a pixel area (your Grid Square Size input)
+Infection Rate [0 to 1]_The rate of infection between those bitten pair in a pixel area (your Grid Square Size input)
 Allow Elevation on Normal Distribution_Using incline as a moving factor for normal distribution and kernel density method
 Horde Activity Behavior Rate_The behavior rate that a dog decides to follow another unit regardless of their decision
 Explore Activity Behavior Rate_The behavior rate that a dog decides to move on its own will outside of the home area and territory
-Single Activity Behavior Rate_The behavior rate that a dog decide to move on its own will inside the home area
+Single Activity Behavior Rate_The behavior rate that a dog decides to move on its own will inside the home area
 Time Length (seconds)_Delta T (time) between a generated image: the higher number the lower frame its generated and lower
-Number of Activity Cycles_The amount of cycles that switch the rotation from highest to lowest or lowest to highest activty rate
+Number of Activity Cycles_The amount of cycles that switch the rotation from highest to lowest or lowest to highest activity rate
 Highest Activity Rate_The number that indicates the multiplicative value for highest moving rate
 Lowest Activity Rate_The number that indicates the multiplicative value for lowest moving rate
+Spreading Day Amount_The amount of day that the spreading of rabies have occured
+Image Quantity per Day_The amount of image that you want to generate each day
+Allowed Skip Running_Using an algorithm to estimate the size of radius based on Normal Distribution in order to fasten the runtime while reduce the accuracy of the simulation
+Skip Running Radius_The maximum radius that should at least cover a possible walking path of the infected dog
 ขนาดพื้นที่ของการสำรวจ_ภาพที่ได้จากผลลัพธ์จะแสดง 1 พิกเซลต่อพื้นที่กี่ (กว้าง, ยาว) ตารางเมตร
 ความกว้างเฉลี่ยของละติจูด/ลองจิจูดต่อองศา_ความกว้างเฉลี่ยต่อ 1 องศาละติจูตหรือลองจิจูต ใช้กำกับในกรณีที่คาดการณ์แผนที่แบบกลม
 ความยาวละติจูตต่อองศาที่เส้นศูนย์สูตร_ความกว้างละติจูตต่อ 1 องศาที่เส้นศูนย์สูตรในกรณีที่โลกมีรูปทรงกลมคล้ายผลส้ม (ยาวที่สุด)
@@ -41,3 +45,7 @@ Lowest Activity Rate_The number that indicates the multiplicative value for lowe
 จำนวนการสลับวงจรกิจกรรม_จำนวนครั้งการปรับผันระหว่างอัตรากิจกรรมจากมากที่สุดและน้อยที่สุด เช่น 2 ครั้ง หมายความว่าใน 1 วันจากที่สุนัขตอนแรกจะไม่ค่อยเดิน จะมีอัตรากิจกรรมสูงขึ้นเรื่อยๆไปจนถึงครึ่งวัน และกลับไปต่ำลงในครึ่งวันช่วงหลัง
 อัตรากิจกรรมสูงสุด [0 ถึง 1]_อัตราการเดินของสุนัขเมื่อมีความน่าจะเป็นที่จะเดินสูงที่สุด
 อัตรากิจกรรมต่ำสุด [0 ถึง 1]_อัตราการเดินของสุนัขเมื่อมีความน่าจะเป็นที่จะเดินต่ำที่สุด
+จำนวนวันที่เกิดการแพร่ระบาด_กรอกจำนวนวันที่เกิดการแพร่ระบาดของพิษสุนัขบ้าเป็นจำนวนเต็ม
+จำนวนภาพที่ต้องการสร้างต่อวัน_ปริมาณภาพที่ต้องการสร้างเพื่อเอาไว้ใช้สำหรับการแสดงภาพเคลื่อนไหวของการเคลื่อนที่ของสุนัขติดเชื้อ
+ใช้การประมวลแบบรวบรัด_เป็นวิธีการประมวลผลแบบรวดเดียวจบโดยใช้หลักการเพียงแค่ Normal Distribution แบบวงกว้างเพื่อลดเวลาประมวลผลในขณะที่ลดความแม่นยำของระบบลง
+รัศมีครอบคลุมของการประมวลแบบรวบรัด_รัศมีสูงสุดที่สามารถครอบคลุมระยะการเดินของสุนัขติดเชื้อได้

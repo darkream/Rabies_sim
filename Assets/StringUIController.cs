@@ -54,6 +54,10 @@ public class StringUIController : MonoBehaviour
         return translationSelector("ลบ","DELETE");
     }
 
+    public string getAddText() {
+        return translationSelector("เพิ่ม", "ADD");
+    }
+
     public string getCloseText(){
         return translationSelector("ปิด","CLOSE");
     }
