@@ -196,6 +196,9 @@ public class OnMapSpawn : MonoBehaviour
     public int loopperday = 30;
     [System.NonSerialized]
     public int dayloop = 2;
+
+    int stackspeed = 0;
+    int grid_round_perloop = 0;
     [System.NonSerialized]
     public bool allowUsingSkipRun = false;
     [System.NonSerialized]
@@ -390,11 +393,11 @@ public class OnMapSpawn : MonoBehaviour
         bitearea_calculated();
     }
 
-    private void Alldogmovement()
+  private void Alldogmovement()
     {
-        float newdistribution_criteria = 0.0005f;
+        float newdistribution_criteria = 0.5f;
         float exposecriteria = newdistribution_criteria * (exposesum() / sumeverypoint());
-        float infectedcriteria = 0.000001f;//newdistribution_criteria*(infectsum()/sumeverypoint());
+        float infectedcriteria = newdistribution_criteria*(infectsum()/sumeverypoint())*0.2f*0.001f;//0.000001f;
         float moveinamount = 0.0f;
         float[,] tempsus = new float[xgridsize, ygridsize];
         float[,,] tempexpose = new float[xgridsize, ygridsize, e_to_i_date];
@@ -412,7 +415,7 @@ public class OnMapSpawn : MonoBehaviour
                     if (homedestination[m, n] == g) //move in only group area
                     {
                         //suspectmove
-                        if (m > 0 && dogeachgroup[g].suspectamount[m - 1, n] > 0) moveinamount = dogeachgroup[g].suspectamount[m - 1, n] * finalfactor[m - 1, n, g, 2];
+                        if (m > 0 && dogeachgroup[g].suspectamount[m - 1, n] > 0) moveinamount = dogeachgroup[g].suspectamount[m - 1, n] * finalfactor[m - 1, n, g, 3];
                         else moveinamount = 0;
                         if (moveinamount > newdistribution_criteria)
                         {
@@ -420,7 +423,7 @@ public class OnMapSpawn : MonoBehaviour
                             tempsus[m - 1, n] -= moveinamount;
                         }
 
-                        if (n > 0 && dogeachgroup[g].suspectamount[m, n - 1] > 0) moveinamount = dogeachgroup[g].suspectamount[m, n - 1] * finalfactor[m, n - 1, g, 1];//not at down
+                        if (n > 0 && dogeachgroup[g].suspectamount[m, n - 1] > 0) moveinamount = dogeachgroup[g].suspectamount[m, n - 1] * finalfactor[m, n - 1, g, 0];//not at down
                         else moveinamount = 0;
                         if (moveinamount > newdistribution_criteria)
                         {
@@ -428,7 +431,7 @@ public class OnMapSpawn : MonoBehaviour
                             tempsus[m, n - 1] -= moveinamount;
                         }
 
-                        if (m < xgridsize - 1 && dogeachgroup[g].suspectamount[m + 1, n] > 0) moveinamount = dogeachgroup[g].suspectamount[m + 1, n] * finalfactor[m + 1, n, g, 3];//not at right
+                        if (m < xgridsize - 1 && dogeachgroup[g].suspectamount[m + 1, n] > 0) moveinamount = dogeachgroup[g].suspectamount[m + 1, n] * finalfactor[m + 1, n, g, 2];//not at right
                         else moveinamount = 0;
                         if (moveinamount > newdistribution_criteria)
                         {
@@ -436,7 +439,7 @@ public class OnMapSpawn : MonoBehaviour
                             tempsus[m + 1, n] -= moveinamount;
                         }
 
-                        if (n < ygridsize - 1 && dogeachgroup[g].suspectamount[m, n + 1] > 0) moveinamount = dogeachgroup[g].suspectamount[m, n + 1] * finalfactor[m, n + 1, g, 0];//not at top
+                        if (n < ygridsize - 1 && dogeachgroup[g].suspectamount[m, n + 1] > 0) moveinamount = dogeachgroup[g].suspectamount[m, n + 1] * finalfactor[m, n + 1, g, 1];//not at top
                         else moveinamount = 0;
                         if (moveinamount > newdistribution_criteria)
                         {
@@ -447,7 +450,7 @@ public class OnMapSpawn : MonoBehaviour
                         //exposedmove
                         for (int d = 0; d < e_to_i_date; d++)
                         {
-                            if (m > 0 && dogeachgroup[g].exposeamount[m - 1, n, d] > 0) moveinamount = dogeachgroup[g].exposeamount[m - 1, n, d] * finalfactor[m - 1, n, g, 2];//eqully distrubute //not at left
+                            if (m > 0 && dogeachgroup[g].exposeamount[m - 1, n, d] > 0) moveinamount = dogeachgroup[g].exposeamount[m - 1, n, d] * finalfactor[m - 1, n, g, 3];//eqully distrubute //not at left
                             else moveinamount = 0;
                             if (moveinamount > exposecriteria)
                             {
@@ -455,7 +458,7 @@ public class OnMapSpawn : MonoBehaviour
                                 tempexpose[m - 1, n, d] -= moveinamount;
                             }
 
-                            if (n > 0 && dogeachgroup[g].exposeamount[m, n - 1, d] > 0) moveinamount = dogeachgroup[g].exposeamount[m, n - 1, d] * finalfactor[m, n - 1, g, 1];//not at down
+                            if (n > 0 && dogeachgroup[g].exposeamount[m, n - 1, d] > 0) moveinamount = dogeachgroup[g].exposeamount[m, n - 1, d] * finalfactor[m, n - 1, g, 0];//not at down
                             else moveinamount = 0;
                             if (moveinamount > exposecriteria)
                             {
@@ -463,7 +466,7 @@ public class OnMapSpawn : MonoBehaviour
                                 tempexpose[m, n - 1, d] -= moveinamount;
                             }
 
-                            if (m < xgridsize - 1 && dogeachgroup[g].exposeamount[m + 1, n, d] > 0) moveinamount = dogeachgroup[g].exposeamount[m + 1, n, d] * finalfactor[m + 1, n, g, 3];//not at right
+                            if (m < xgridsize - 1 && dogeachgroup[g].exposeamount[m + 1, n, d] > 0) moveinamount = dogeachgroup[g].exposeamount[m + 1, n, d] * finalfactor[m + 1, n, g, 2];//not at right
                             else moveinamount = 0;
                             if (moveinamount > exposecriteria)
                             {
@@ -471,7 +474,7 @@ public class OnMapSpawn : MonoBehaviour
                                 tempexpose[m + 1, n, d] -= moveinamount;
                             }
 
-                            if (n < ygridsize - 1 && dogeachgroup[g].exposeamount[m, n + 1, d] > 0) moveinamount = dogeachgroup[g].exposeamount[m, n + 1, d] * finalfactor[m, n + 1, g, 0];//not at top
+                            if (n < ygridsize - 1 && dogeachgroup[g].exposeamount[m, n + 1, d] > 0) moveinamount = dogeachgroup[g].exposeamount[m, n + 1, d] * finalfactor[m, n + 1, g, 1];//not at top
                             else moveinamount = 0;
                             if (moveinamount > exposecriteria)
                             {
@@ -484,7 +487,7 @@ public class OnMapSpawn : MonoBehaviour
                     //infectedmove 
                     for (int dd = 0; dd < i_to_r_date; dd++)
                     {
-                        if (m > 0 && dogeachgroup[g].infectamount[m - 1, n, dd] > 0) moveinamount = dogeachgroup[g].infectamount[m - 1, n, dd] * finalfactor_I[m - 1, n, g, 2];//eqully distrubute //not at left
+                        if (m > 0 && dogeachgroup[g].infectamount[m - 1, n, dd] > 0) moveinamount = dogeachgroup[g].infectamount[m - 1, n, dd] * finalfactor_I[m - 1, n, g, 3];//eqully distrubute //not at left
                         else moveinamount = 0;
                         if (moveinamount > infectedcriteria)
                         {
@@ -492,7 +495,7 @@ public class OnMapSpawn : MonoBehaviour
                             tempinf[m - 1, n, dd] -= moveinamount;
                         }
 
-                        if (n > 0 && dogeachgroup[g].infectamount[m, n - 1, dd] > 0) moveinamount = dogeachgroup[g].infectamount[m, n - 1, dd] * finalfactor_I[m, n - 1, g, 1];//not at down
+                        if (n > 0 && dogeachgroup[g].infectamount[m, n - 1, dd] > 0) moveinamount = dogeachgroup[g].infectamount[m, n - 1, dd] * finalfactor_I[m, n - 1, g, 0];//not at down
                         else moveinamount = 0;
                         if (moveinamount > infectedcriteria)
                         {
@@ -500,7 +503,7 @@ public class OnMapSpawn : MonoBehaviour
                             tempinf[m, n - 1, dd] -= moveinamount;
                         }
 
-                        if (m < xgridsize - 1 && dogeachgroup[g].infectamount[m + 1, n, dd] > 0) moveinamount = dogeachgroup[g].infectamount[m + 1, n, dd] * finalfactor_I[m + 1, n, g, 3];//not at right
+                        if (m < xgridsize - 1 && dogeachgroup[g].infectamount[m + 1, n, dd] > 0) moveinamount = dogeachgroup[g].infectamount[m + 1, n, dd] * finalfactor_I[m + 1, n, g, 2];//not at right
                         else moveinamount = 0;
                         if (moveinamount > infectedcriteria)
                         {
@@ -508,7 +511,7 @@ public class OnMapSpawn : MonoBehaviour
                             tempinf[m + 1, n, dd] -= moveinamount;
                         }
 
-                        if (n < ygridsize - 1 && dogeachgroup[g].infectamount[m, n + 1, dd] > 0) moveinamount = dogeachgroup[g].infectamount[m, n + 1, dd] * finalfactor_I[m, n + 1, g, 0];//not at top
+                        if (n < ygridsize - 1 && dogeachgroup[g].infectamount[m, n + 1, dd] > 0) moveinamount = dogeachgroup[g].infectamount[m, n + 1, dd] * finalfactor_I[m, n + 1, g, 1];//not at top
                         else moveinamount = 0;
                         if (moveinamount > infectedcriteria)
                         {
@@ -1077,10 +1080,14 @@ public class OnMapSpawn : MonoBehaviour
         return fleeval;
     }
 
-    private int[,] CreateHomeEuclidianmap (int groupnum)
+     private Vector2d[,] CreateVectorEuclidianmap (int groupnum)
         {
-            int[,] HomeEuclid=new int[xgridsize,ygridsize];
+           
+            Vector2d[,] HomeVector=new Vector2d[xgridsize,ygridsize] ;
+           
             bool nearest_get=false;
+            float nearest_Ides=0.0f;
+            float nearest_Jdes=0.0f;
              for (int m = 0; m < xgridsize; m++)
             {
                 for (int n = 0; n < ygridsize; n++)
@@ -1088,26 +1095,31 @@ public class OnMapSpawn : MonoBehaviour
                     int lowest_distance=xgridsize+ygridsize;
                     int tempdistance=0;
                     nearest_get=false;
-                    if(founddogwithgroup(m,n,groupnum))
+                    if(homedestination[m, n] == groupnum)
                     {
-                        HomeEuclid[m,n]=0;
-                        
+                        HomeVector[m,n].x=0.0f;
+                        HomeVector[m,n].y=0.0f;
+                       
                     }
                     else // outside home
                     {
                         //scan on x axis from current position
                         //check on
-                        for(int i = 0; i< (xgridsize/2)+1 ; i++)
+                        for(int i = 0; i< xgridsize ; i++)
                         {
                             for(int j = 0; j<ygridsize;j++)
                             {
                                  if(i==0) //scan on middle line
                                 {
-                                  if(founddogwithgroup(m,j,groupnum))
+                                  if(homedestination[m, j] == groupnum)
                                   {
                                       nearest_get=true;
                                       tempdistance=(int)(Mathf.Abs(j-n));
-                                      if(lowest_distance>tempdistance) lowest_distance=tempdistance;
+                                      if(lowest_distance>tempdistance) 
+                                      {lowest_distance=tempdistance;
+                                      nearest_Ides=m;
+                                      nearest_Jdes=j;
+                                      }
                                       //calculated range
                                   }
                                 }
@@ -1117,22 +1129,30 @@ public class OnMapSpawn : MonoBehaviour
                                     //leftside
                                     if(m-i >=0)
                                     {
-                                        if(founddogwithgroup(m-i,j,groupnum))
+                                        if(homedestination[m-i,j]==groupnum)
                                          {
                                             nearest_get=true;
                                              tempdistance=(int)(i+Mathf.Abs(j-n));
-                                             if(lowest_distance>tempdistance) lowest_distance=tempdistance;
+                                             if(lowest_distance>tempdistance) 
+                                              {lowest_distance=tempdistance;
+                                                nearest_Ides=m-i;
+                                                nearest_Jdes=j;
+                                              }
                                             //calculated range
                                         }
                                     }
                                     //rightside
                                     if(m+i<xgridsize)
                                     {
-                                         if(founddogwithgroup(m+i,j,groupnum))
+                                         if(homedestination[m+i,j]==groupnum)
                                          {
                                             nearest_get=true;
                                             tempdistance=(int)(i+Mathf.Abs(j-n));
-                                            if(lowest_distance>tempdistance) lowest_distance=tempdistance;
+                                            if(lowest_distance>tempdistance) 
+                                             {lowest_distance=tempdistance;
+                                              nearest_Ides=m+i;
+                                              nearest_Jdes=j;
+                                             }
                                             //calculated range
                                         }
                                     }
@@ -1140,12 +1160,14 @@ public class OnMapSpawn : MonoBehaviour
                             }
                             if(nearest_get) break;
                         }
-                    HomeEuclid[m,n]=lowest_distance;
+                    HomeVector[m,n].x= nearest_Ides-(float)m; //plus val is right,minus is left
+                    HomeVector[m,n].y= nearest_Jdes-(float)n;//plus val is up,minus is down
+                   // if(groupnum==1)Debug.Log("m"+m+"n"+n+"nearest_Ides"+nearest_Ides+"nearest_Jdes"+nearest_Jdes);
                     }
                 }
             }
 
-           return  HomeEuclid;    
+           return  HomeVector;    
         }
     
     
@@ -1359,15 +1381,17 @@ public class OnMapSpawn : MonoBehaviour
 
     }
     //-----------------------------------------------------------------------------------------------------
-    private void HomeFactorCalculated()
+     private void HomeFactorCalculated()
     {
         float left_incdis = 0.0f, right_incdis = 0.0f, up_incdis = 0.0f, down_incdis = 0.0f;
         float sumforfinalize = 0.0f;
-        int[,] Euclidianmap  ;
+        Vector2d[,] Vectorflowmap  ;
+
 
         for (int grabies = 0; grabies < dogeachgroup.Count; grabies++) //each group has diffirent homefactor
         {
-           Euclidianmap= CreateHomeEuclidianmap(grabies);
+           Vectorflowmap = CreateVectorEuclidianmap(grabies);
+           
             for (int m = 0; m < xgridsize; m++)
             {
                 for (int n = 0; n < ygridsize; n++)
@@ -1380,57 +1404,13 @@ public class OnMapSpawn : MonoBehaviour
                     //calculate a trend so some side can be zero
                     if (homedestination[m, n] != grabies) //outside home
                     {
-                            //find nearest route to home
-                            int nearestrange = 0;
-                            int tempgroupcalc=0;
-                            nearestrange = Euclidianmap[m, n];
-                            //then find vector
-                        for (int i = m - nearestrange; i <= m + nearestrange; i++) //x axis
-                        {
-                            if(i>=0&&i<xgridsize)
-                            {
-                                    if (i == m - nearestrange)
-                                {
-                                    if (homedestination[i, n] == grabies) left_incdis += nearestrange;
-                                }
-                                else if (i == m + nearestrange)
-                                {
-                                    if (homedestination[i, n] == grabies) right_incdis += nearestrange;
-                                }
-                                else
-                                {
-                                    tempgroupcalc = nearestrange - (int)Mathf.Abs(i - m);
-                                    if(n - (tempgroupcalc)>=0 && n + (tempgroupcalc)<ygridsize)
-                                    {
-                                         if (homedestination[i, n + (tempgroupcalc)] == grabies)  //top
-                                         {
-                                             up_incdis += (float)tempgroupcalc;
-                                             if (i < m)
-                                            {
-                                             left_incdis += m - i;
-                                            }
-                                            else if (i > m)
-                                            {
-                                            right_incdis += i - m;
-                                            }
-                                        }
-                                        if (homedestination[i, n - (tempgroupcalc)] == grabies) //down
-                                        {
-                                            down_incdis += (float)tempgroupcalc;
-                                            if (i < m)
-                                            {
-                                                left_incdis += m - i;
-                                            }
-                                            else if (i > m)
-                                            {
-                                                right_incdis += i - m;
-                                            }
-                                        }
-                                    }
-                                    
-                                }
-                            }      
-                        }
+                        
+                        if(Vectorflowmap[m,n].x<0.0f)left_incdis=(float)Vectorflowmap[m,n].x*-1.0f;
+                        else if(Vectorflowmap[m,n].x>0.0f)right_incdis=(float)Vectorflowmap[m,n].x;
+                        if(Vectorflowmap[m,n].y<0.0f)down_incdis=(float)Vectorflowmap[m,n].y*-1.0f;
+                        else if(Vectorflowmap[m,n].y>0.0f)up_incdis=(float)Vectorflowmap[m,n].y;
+                        
+                    }
                         
 
                         //complete calculation
@@ -1456,11 +1436,13 @@ public class OnMapSpawn : MonoBehaviour
                         homefactor[m, n, grabies, 1] = down_incdis;
                         homefactor[m, n, grabies, 2] = left_incdis;
                         homefactor[m, n, grabies, 3] = right_incdis;
-                    }
+
+                       // if(m==0&&n==0)Debug.Log("U"+up_incdis+"D"+down_incdis+"L"+left_incdis+"R"+right_incdis+"EUx"+Vectorflowmap[m,n].x+"EUy"+Vectorflowmap[m,n].y);         
                 }
             }
         }
     }
+
 
 
     //-----------------------------------------------------------------------------------------------------
@@ -4003,7 +3985,15 @@ public class OnMapSpawn : MonoBehaviour
                             //Factor_apply();
                             //Stateupdater();
 
-                            Alldogmovement();
+                           grid_round_perloop=0;
+                            stackspeed+=7*time_length;
+                            while(stackspeed>=_mbfunction.GridSize)
+                            {
+                                stackspeed=stackspeed-(int)_mbfunction.GridSize;
+                                grid_round_perloop++;
+                            }
+                            for(int roundsec=0;roundsec<grid_round_perloop;roundsec++)  Alldogmovement();
+
                             dogeverygroup_updater();
                             rabies_bite_and_spread();
                             dogeverygroup_updater();

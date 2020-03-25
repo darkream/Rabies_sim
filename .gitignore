@@ -54,9 +54,15 @@ Assets/P2render/selectedDogTerrain0.png
 /Assets/StreamingAssets/PictureReport_Extend/*
 /Assets/StreamingAssets/Textreport/*
 /Assets/MickRendered/*
+/Assets/StreamingAssets/KMLFile/S_state*
+/Assets/StreamingAssets/KMLFile/E_state*
+/Assets/StreamingAssets/KMLFile/I_state*
 !/Assets/StreamingAssets/E_state/keep_it.txt
 !/Assets/StreamingAssets/S_state/keep_it.txt
 !/Assets/StreamingAssets/I_state/keep_it.txt
 !/Assets/StreamingAssets/PictureReport/keep_it.txt
 !/Assets/StreamingAssets/PictureReport_Extend/keep_it.txt
 !/Assets/StreamingAssets/Textreport/keep_it.txt
+!/Assets/StreamingAssets/KMLFile/S_state/Keep_it.txt
+!/Assets/StreamingAssets/KMLFile/E_state/Keep_it.txt
+!/Assets/StreamingAssets/KMLFile/I_state/Keep_it.txt

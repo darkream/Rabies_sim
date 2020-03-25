@@ -69,20 +69,7 @@ public class ReportPageController : MonoBehaviour
       Showreport_button.GetComponent<Button>().onClick.AddListener(showreportpage);
       Animation_button.GetComponent<Button>().onClick.AddListener(Runanimate_map);
       dropdownday_heatmappage.onValueChanged.AddListener(delegate {Rereadanimate_Image(dropdownday_heatmappage);});
-      dropdownday_reportpage.onValueChanged.AddListener(delegate { readtextfile(dropdownday_reportpage.value);});
-      systemday=mapdata.dayloop;
-      frameperday=mapdata.loopperday;
-      for(int j=1;j<systemday;j++)
-      {
-          dropdownlist.Add("day"+j);
-      }
-      dropdownday_heatmappage.AddOptions(dropdownlist);
-      dropdownday_reportpage.AddOptions(dropdownlist);
-      animate_texture_S=new Texture2D[frameperday];
-      animate_texture_E=new Texture2D[frameperday];
-      animate_texture_I=new Texture2D[frameperday];
-
-      
+      dropdownday_reportpage.onValueChanged.AddListener(delegate { readtextfile(dropdownday_reportpage.value);});   
     }
     // Update is called once per frame
     void Update()
@@ -91,12 +78,23 @@ public class ReportPageController : MonoBehaviour
         {
             if(firsttimeread)
             {
-                firsttimeread=false;
+                systemday=mapdata.dayloop;
+                frameperday=mapdata.loopperday;
+                for(int j=1;j<systemday;j++)
+                {
+                      dropdownlist.Add("day"+j);
+                }
+                 dropdownday_heatmappage.AddOptions(dropdownlist);
+                 dropdownday_reportpage.AddOptions(dropdownlist);
+                animate_texture_S=new Texture2D[frameperday];
+                animate_texture_E=new Texture2D[frameperday];
+                animate_texture_I=new Texture2D[frameperday];
                 Rereadanimate_Image(dropdownday_heatmappage);
                 readtextfile(dropdownday_reportpage.value);
                 readimage_S(dropdownday_heatmappage.value);
                 readimage_E(dropdownday_heatmappage.value);
                 readimage_I(dropdownday_heatmappage.value);
+                firsttimeread = false;
             }
         }
         else if (heatmappage.activeSelf)
