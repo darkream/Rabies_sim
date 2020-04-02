@@ -315,7 +315,7 @@ public class CoreUIController : MonoBehaviour
     private void moveToChangeParameter4(){
         if(checkImageGenParamIntegrity()){
             hideAllScreens();
-            resetInfectedDogParameter = true;
+           // resetInfectedDogParameter = true;
             paramSetInfectedDogParameter.SetActive(true);
             initInfectedDogParameter = true;
         } else {
@@ -327,6 +327,7 @@ public class CoreUIController : MonoBehaviour
         if (checkRabiesParamIntegrity()){
             hideAllScreens();
             // resetMapCalculationParameter = true;
+            resetInfectedDogParameter = true;
             extendmapNotification = true;
             ExtendmapSelection.SetActive(true);
             zoomlock = false;
@@ -807,8 +808,8 @@ public class CoreUIController : MonoBehaviour
 
     public void updateZoomLevel(float zoomLevel) {
         //THIS IS THE ROUGH CALCULATION
-        float x = Mathf.Round(Mathf.Pow(2,(19-zoomLevel)) * 75.0f);
-        float y = Mathf.Round(Mathf.Pow(2,(19-zoomLevel)) * 35.0f);
+        float x = Mathf.Round(Mathf.Pow(2,(19-zoomLevel)) * 75.0f *5.0f);
+        float y = Mathf.Round(Mathf.Pow(2,(19-zoomLevel)) * 35.0f *5.0f);
         mapZoom.text = "(" + x + ", " + y + ") m.";
         extendZoom.text = "(" + x + ", " + y + ") m.";
     }

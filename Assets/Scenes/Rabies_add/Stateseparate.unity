@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.44657898, g: 0.4964133, b: 0.5748178, a: 1}
+  m_IndirectSpecularColor: {r: 0.44657844, g: 0.49641222, b: 0.57481694, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -5495,8 +5495,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2064709381}
   m_HandleRect: {fileID: 2064709380}
   m_Direction: 2
-  m_Value: 0.9999999
-  m_Size: 0.5905819
+  m_Value: 0.99999994
+  m_Size: 0.48165622
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -6528,7 +6528,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &446315916
 RectTransform:
   m_ObjectHideFlags: 0
@@ -24755,7 +24755,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 1.8049927, y: 0}
-  m_SizeDelta: {x: 360.83997, y: 309.16962}
+  m_SizeDelta: {x: 360.83997, y: 379.0877}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1773786762
 MonoBehaviour:
@@ -24778,11 +24778,11 @@ MonoBehaviour:
     m_TypeName: UnityEngine.UI.MaskableGraphic+CullStateChangedEvent, UnityEngine.UI,
       Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
   m_FontData:
-    m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 14
+    m_Font: {fileID: 12800000, guid: 1bd51dcfff236b949915f17ee6c191bd, type: 3}
+    m_FontSize: 12
     m_FontStyle: 0
     m_BestFit: 0
-    m_MinSize: 10
+    m_MinSize: 1
     m_MaxSize: 20
     m_Alignment: 0
     m_AlignByGeometry: 0
@@ -29905,7 +29905,7 @@ RectTransform:
   m_Father: {fileID: 467900083}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0.4094181}
+  m_AnchorMin: {x: 0, y: 0.51834375}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 20, y: 20}

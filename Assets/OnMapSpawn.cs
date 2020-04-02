@@ -2082,48 +2082,59 @@ public class OnMapSpawn : MonoBehaviour
     private void text_file_creation()
     {
         string path = (Application.streamingAssetsPath +"/Textreport/Report_day" + rentext_sysdate + ".txt");
-        float inf_rad_temp = 0, temp_rzero = 0.0f, justwannaknow = 0.0f, justwannaknow2 = 0.0f, justwannaknow3 = 0.0f, newr0 = 0.0f;
-
+        float inf_rad_temp = 0, temp_rzero = 0.0f, newr0 = 0.0f;
+        float temp=0.0f,allsumtemp=0.0f,groupsumtemp=0.0f;
         temp_rzero = daily_rzero;
 
-        justwannaknow = daily_rzero;
-        justwannaknow2 = daily_rabiesbite;
+
+       // justwannaknow = daily_rzero;
+       // justwannaknow2 = daily_rabiesbite;
 
         daily_rzero = 0.0f;
         daily_rabiesbite = daily_rabiesbite / 288.0f;
 
-        justwannaknow3 = daily_rabiesbite;
+       // justwannaknow3 = daily_rabiesbite;
         newr0 = (temp_rzero * ((float)i_to_r_date)) / infectsum();
-        temp_rzero = (temp_rzero * ((float)i_to_r_date)) / daily_rabiesbite;
+
+        if(daily_rabiesbite == 0)  temp_rzero= 0;
+        else temp_rzero = (temp_rzero * ((float)i_to_r_date)) / daily_rabiesbite;
 
         daily_rabiesbite = 0.0f;
         // Create a file to write to.
         StreamWriter sw = File.CreateText(path);
-        sw.WriteLine("Tester : All sum rabies tranfer" + justwannaknow + " Tester : All sum rabies bite" + justwannaknow2 + " Tester : avg rabie bite" + justwannaknow3 + "  New r0 with all r use to divide " + newr0 + "\n");
-        sw.WriteLine("Rabies Report day " + rentext_sysdate + "\n");
-        sw.WriteLine("All Dog  : " + System.Math.Round (sumeverypoint(),2));
-        sw.WriteLine("Suspected : " + System.Math.Round (suspectsum(),2));
-        sw.WriteLine("Exposed  : " + System.Math.Round (exposesum(),2));
-        sw.WriteLine("Infected : " + System.Math.Round (infectsum(),2));
-        sw.WriteLine("Daily R-zero : " + temp_rzero);
+       // sw.WriteLine("Tester : All sum rabies tranfer" + justwannaknow + " Tester : All sum rabies bite" + justwannaknow2 + " Tester : avg rabie bite" + justwannaknow3 + "  New r0 with all r use to divide " + newr0 + "\n");
+        sw.WriteLine("รายงานผลการจำลองการแพร่กระจายโรคพิษสุนัขบ้า วันที่ " + rentext_sysdate + "\n");
         sw.WriteLine("==================================");
-        sw.WriteLine("Group Report day" + rentext_sysdate);
+        allsumtemp=sumeverypoint();
+        sw.WriteLine("จำนวนสุนัขทั้งหมด  : " + System.Math.Round (allsumtemp,2));
+        temp=suspectsum();
+        sw.WriteLine("จำนวนสุนัขปกติ (Suspected) : " + System.Math.Round (temp,2) + "  คิดเป็น " +  System.Math.Round (temp*100.0f/allsumtemp,2) + " %");
+        temp=exposesum();
+        sw.WriteLine("จำนวนสุนัขที่ถูกกัด (Exposed)  : " + System.Math.Round (temp,2) + "   คิดเป็น  " +  System.Math.Round (temp*100.0f/allsumtemp,2) + " %");
+        temp=infectsum();
+        sw.WriteLine("จำนวนสุนัขติดเชื้อ (Infected) : " + System.Math.Round (temp,2)+ "   คิดเป็น  " +  System.Math.Round (temp*100.0f/allsumtemp,2) + " %");
+        sw.WriteLine("ค่า R-zero ของวันนี้ : " + temp_rzero);
+        sw.WriteLine("==================================");
+        sw.WriteLine("รายงานผลการจำลองการแพร่กระจายโรคพิษสุนัขบ้าแบบแยกกลุ่ม วันที่" + rentext_sysdate);
         sw.WriteLine("==================================");
         for (int i = 0; i < dogeachgroup.Count; i++)
         {
-            sw.WriteLine("Group " + (i + 1) + "Report");
-            sw.WriteLine("Group Dog  : " + System.Math.Round (everypointsum_group(i),2));
-            sw.WriteLine("Group Suspected : " + System.Math.Round (suspectsum_group(i),2));
-            sw.WriteLine("Group Exposed  : " + System.Math.Round (exposesum_group(i),2));
+            sw.WriteLine("รายงานผลการจำลองการแพร่กระจายในกลุ่มที่  " + (i + 1) );
+            groupsumtemp=everypointsum_group(i);
+            sw.WriteLine("จำนวนสุนัขทั้งหมดในกลุ่ม  : " + System.Math.Round (groupsumtemp,2) + "   คิดเป็น " + System.Math.Round (groupsumtemp*100.0f/allsumtemp,2) + " % ของจำนวนสุนัขทั้งหมด" );
+            temp=suspectsum_group(i);
+            sw.WriteLine("จำนวนสุนัขปกติ (Suspected) : " + System.Math.Round (temp,2)+"   คิดเป็น " + System.Math.Round (temp*100.0f/groupsumtemp,2) + " % ของจำนวนสุนัขในกลุ่ม");
+            temp=exposesum_group(i);
+            sw.WriteLine("จำนวนสุนัขที่ถูกกัด (Exposed)  : " + System.Math.Round (temp,2)+"   คิดเป็น " + System.Math.Round (temp*100.0f/groupsumtemp,2) + " % ของจำนวนสุนัขในกลุ่ม");
             inf_rad_temp = infectsum_group(i);
-            sw.WriteLine("Group Infected : " + inf_rad_temp);
+            sw.WriteLine("จำนวนสุนัขติดเชื้อ (Infected) : " + System.Math.Round ( inf_rad_temp,2)+"   คิดเป็น " + System.Math.Round ( inf_rad_temp*100.0f/groupsumtemp,2) + " % ของจำนวนสุนัขในกลุ่ม");
             if (inf_rad_temp != 0)
             {
-                sw.WriteLine("Infected Group (sim) Radius : " + System.Math.Round ((simple_inf_radius(i)*5.0f),2) + "Meters");
+                sw.WriteLine("รัศมีของสุนัขติดเชื้อของกลุ่ม : " + System.Math.Round ((simple_inf_radius(i)*_mbfunction.GridSize),2) + "  เมตร");
             }
             else
             {
-                sw.WriteLine("No infect Radius");
+                sw.WriteLine("ไม่พบสุนัขติดเชื้อในกลุ่ม");
             }
             sw.WriteLine("==================================");
         }
@@ -3985,14 +3996,14 @@ public class OnMapSpawn : MonoBehaviour
                             //Factor_apply();
                             //Stateupdater();
 
-                           grid_round_perloop=0;
+                            /*grid_round_perloop=0;
                             stackspeed+=7*time_length;
                             while(stackspeed>=_mbfunction.GridSize)
                             {
                                 stackspeed=stackspeed-(int)_mbfunction.GridSize;
                                 grid_round_perloop++;
                             }
-                            for(int roundsec=0;roundsec<grid_round_perloop;roundsec++)  Alldogmovement();
+                            for(int roundsec=0;roundsec<grid_round_perloop;roundsec++) */ Alldogmovement();
 
                             dogeverygroup_updater();
                             rabies_bite_and_spread();
