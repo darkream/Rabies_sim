@@ -194,10 +194,14 @@ public class OnMapSpawn : MonoBehaviour
   
     [System.NonSerialized]
     public int loopperday = 30;
+
+    int  timelenght_perday=0;
     [System.NonSerialized]
     public int dayloop = 2;
 
-    int stackspeed = 0;
+    float stackspeed = 0;
+
+    int converge_count=0;
     int grid_round_perloop = 0;
     [System.NonSerialized]
     public bool allowUsingSkipRun = false;
@@ -2106,14 +2110,14 @@ public class OnMapSpawn : MonoBehaviour
         sw.WriteLine("รายงานผลการจำลองการแพร่กระจายโรคพิษสุนัขบ้า วันที่ " + rentext_sysdate + "\n");
         sw.WriteLine("==================================");
         allsumtemp=sumeverypoint();
-        sw.WriteLine("จำนวนสุนัขทั้งหมด  : " + System.Math.Round (allsumtemp,2));
+        sw.WriteLine("จำนวนสุนัขทั้งหมด  : " + allsumtemp.ToString("F2"));
         temp=suspectsum();
-        sw.WriteLine("จำนวนสุนัขปกติ (Suspected) : " + System.Math.Round (temp,2) + "  คิดเป็น " +  System.Math.Round (temp*100.0f/allsumtemp,2) + " %");
+        sw.WriteLine("จำนวนสุนัขปกติ (Suspected) : " + temp.ToString("F2") + "  คิดเป็น " +  (temp*100.0f/allsumtemp).ToString("F2") + " %");
         temp=exposesum();
-        sw.WriteLine("จำนวนสุนัขที่ถูกกัด (Exposed)  : " + System.Math.Round (temp,2) + "   คิดเป็น  " +  System.Math.Round (temp*100.0f/allsumtemp,2) + " %");
+        sw.WriteLine("จำนวนสุนัขที่ถูกกัด (Exposed)  : " + temp.ToString("F2") + "   คิดเป็น  " +  (temp*100.0f/allsumtemp).ToString("F2") + " %");
         temp=infectsum();
-        sw.WriteLine("จำนวนสุนัขติดเชื้อ (Infected) : " + System.Math.Round (temp,2)+ "   คิดเป็น  " +  System.Math.Round (temp*100.0f/allsumtemp,2) + " %");
-        sw.WriteLine("ค่า R-zero ของวันนี้ : " + temp_rzero);
+        sw.WriteLine("จำนวนสุนัขติดเชื้อ (Infected) : " + temp.ToString("F2")+ "   คิดเป็น  " +  (temp*100.0f/allsumtemp).ToString("F2") + " %");
+        sw.WriteLine("ค่า R-zero ของวันนี้ : " + temp_rzero.ToString("F2"));
         sw.WriteLine("==================================");
         sw.WriteLine("รายงานผลการจำลองการแพร่กระจายโรคพิษสุนัขบ้าแบบแยกกลุ่ม วันที่" + rentext_sysdate);
         sw.WriteLine("==================================");
@@ -2121,16 +2125,16 @@ public class OnMapSpawn : MonoBehaviour
         {
             sw.WriteLine("รายงานผลการจำลองการแพร่กระจายในกลุ่มที่  " + (i + 1) );
             groupsumtemp=everypointsum_group(i);
-            sw.WriteLine("จำนวนสุนัขทั้งหมดในกลุ่ม  : " + System.Math.Round (groupsumtemp,2) + "   คิดเป็น " + System.Math.Round (groupsumtemp*100.0f/allsumtemp,2) + " % ของจำนวนสุนัขทั้งหมด" );
+            sw.WriteLine("จำนวนสุนัขทั้งหมดในกลุ่ม  : " + groupsumtemp.ToString("F2") + "   คิดเป็น " + (groupsumtemp*100.0f/allsumtemp).ToString("F2") + " % ของจำนวนสุนัขทั้งหมด" );
             temp=suspectsum_group(i);
-            sw.WriteLine("จำนวนสุนัขปกติ (Suspected) : " + System.Math.Round (temp,2)+"   คิดเป็น " + System.Math.Round (temp*100.0f/groupsumtemp,2) + " % ของจำนวนสุนัขในกลุ่ม");
+            sw.WriteLine("จำนวนสุนัขปกติ (Suspected) : " +temp.ToString("F2")+"   คิดเป็น " + (temp*100.0f/groupsumtemp).ToString("F2") + " % ของจำนวนสุนัขในกลุ่ม");
             temp=exposesum_group(i);
-            sw.WriteLine("จำนวนสุนัขที่ถูกกัด (Exposed)  : " + System.Math.Round (temp,2)+"   คิดเป็น " + System.Math.Round (temp*100.0f/groupsumtemp,2) + " % ของจำนวนสุนัขในกลุ่ม");
+            sw.WriteLine("จำนวนสุนัขที่ถูกกัด (Exposed)  : " + temp.ToString("F2")+"   คิดเป็น " + (temp*100.0f/groupsumtemp).ToString("F2") + " % ของจำนวนสุนัขในกลุ่ม");
             inf_rad_temp = infectsum_group(i);
-            sw.WriteLine("จำนวนสุนัขติดเชื้อ (Infected) : " + System.Math.Round ( inf_rad_temp,2)+"   คิดเป็น " + System.Math.Round ( inf_rad_temp*100.0f/groupsumtemp,2) + " % ของจำนวนสุนัขในกลุ่ม");
+            sw.WriteLine("จำนวนสุนัขติดเชื้อ (Infected) : " + inf_rad_temp.ToString("F2")+"   คิดเป็น " + (inf_rad_temp*100.0f/groupsumtemp).ToString("F2") + " % ของจำนวนสุนัขในกลุ่ม");
             if (inf_rad_temp != 0)
             {
-                sw.WriteLine("รัศมีของสุนัขติดเชื้อของกลุ่ม : " + System.Math.Round ((simple_inf_radius(i)*_mbfunction.GridSize),2) + "  เมตร");
+                sw.WriteLine("รัศมีของสุนัขติดเชื้อของกลุ่ม : " + (simple_inf_radius(i)*_mbfunction.GridSize).ToString("F2") + "  เมตร");
             }
             else
             {
@@ -3932,11 +3936,22 @@ public class OnMapSpawn : MonoBehaviour
                         EdgeforSEIR(0);
                         EdgeforSEIR(1);
                         EdgeforSEIR(2);
+                        timelenght_perday=(24*60*60)/loopperday;
                         //Debug.Log("day " +rentext_sysdate+ " frame "+rentext_frame+" : sum"+sumeverypoint()+" s :"+suspectsum() + " e :" +exposesum()+ " i :"+infectsum());
                         pictextrender.text = coreuicontroller.getPicRenderText(
                             maxsuspect.ToString("F2"), maxexposed.ToString("F2"), 
-                            maxinfect.ToString("F2"), ""+rentext_sysdate, ""+rentext_frame
-                        );
+                            maxinfect.ToString("F2"), ""+rentext_sysdate, ""+rentext_frame);
+                             //try freeroam
+                      /*       int loopc=0;
+                       /  while(converge_count<4)
+                         {
+                               Alldogmovement();
+                               EdgeforSEIR(2);
+                               createImage(rentext_frame, 11);
+                               loopc++;
+                         }
+                         Debug.Log("Loopc : "+loopc);*/
+                          
                     }
 
                     if (rabiespreadloop < loopperday && rabiespreadloop >= 0) //set loop per day here //edit ----------------------------------
@@ -3996,14 +4011,14 @@ public class OnMapSpawn : MonoBehaviour
                             //Factor_apply();
                             //Stateupdater();
 
-                            /*grid_round_perloop=0;
-                            stackspeed+=7*time_length;
+                            grid_round_perloop=0;
+                            stackspeed+=(1.0f/6.0f)*timelenght_perday;//5mp30s = 
                             while(stackspeed>=_mbfunction.GridSize)
                             {
                                 stackspeed=stackspeed-(int)_mbfunction.GridSize;
                                 grid_round_perloop++;
                             }
-                            for(int roundsec=0;roundsec<grid_round_perloop;roundsec++) */ Alldogmovement();
+                            for(int roundsec=0;roundsec<grid_round_perloop;roundsec++) Alldogmovement();
 
                             dogeverygroup_updater();
                             rabies_bite_and_spread();
@@ -4527,7 +4542,7 @@ public class OnMapSpawn : MonoBehaviour
             }
         }
          //Reapply the detected edge
-        
+        bool itchange=false;
         for (int y = 0; y < ygridsize; y++)
         {
             for (int x = 0; x < xgridsize; x++)
@@ -4556,6 +4571,8 @@ public class OnMapSpawn : MonoBehaviour
                 }
                  if(statetype==2)
                 {
+                    //test converge
+                  //  int oldegde=edge_i[x, y];
                      if (tempedge[x, y] <= 0.0f)
                     {
                         edge_i[x, y] = 0;
@@ -4564,11 +4581,11 @@ public class OnMapSpawn : MonoBehaviour
                     {
                          edge_i[x, y] = 1;
                     }
-                }
-               
+                   // if(oldegde!=edge_i[x, y])itchange=true;
+                }      
             }
         }
-
+       // if(itchange==false)converge_count++;
     }
 
     
