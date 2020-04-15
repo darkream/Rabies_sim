@@ -3924,8 +3924,45 @@ public class OnMapSpawn : MonoBehaviour
                 uicontroller.updateProcessDetail("Rabies is running");
                 if (sysdate < dayloop) //set date here
                 {
-
-                    if (rabiespreadloop == -1 && sysdate == 0 && step_factor == true)
+                  if(allowUsingSkipRun)
+                  {
+                      if(rabiespreadloop == -1)
+                      {
+                        rabiesEnvironmentSet();
+                        InclineFactorCalculated();
+                        HomeFactorCalculated();
+                        Factor_summarize();//tempolary cause no dynamic factor at moment
+                        dogeverygroup_updater();
+                        EdgeforSEIR(0);
+                        EdgeforSEIR(1);
+                        EdgeforSEIR(2);
+                        timelenght_perday=(24*60*60)/loopperday;
+                        rabiespreadloop++;
+                      } 
+                    //skiprun test
+                     int loopc=0;
+                     converge_count=0;
+                        while(converge_count<4 && loopc< (2500/(int)_mbfunction.GridSize)*4)
+                         {
+                               Alldogmovement();
+                               dogeverygroup_updater();
+                               EdgeforSEIR(2);
+                               loopc++;
+                         }   
+                        Debug.Log("Here pass");
+                        rabies_bite_and_spread(); 
+                         Debug.Log("Here pass2");
+                        dogeverygroup_updater();
+                        Stateupdater();
+                         Debug.Log("Here pass3");
+                        dogeverygroup_updater();
+                        text_file_creation();
+                        sysdate++;
+                  }
+                    //not speed run
+                    else
+                  {
+                       if (rabiespreadloop == -1 && sysdate == 0 && step_factor == true)
                     {
                        // Backgroundscale();
                         rabiesEnvironmentSet();
@@ -4069,7 +4106,9 @@ public class OnMapSpawn : MonoBehaviour
                         EdgeforSEIR(2);
                         sysdate += 1;
                         rabiespreadloop = 0;
-                    }
+                    } 
+                  }
+                    
                 }
                 else
                 {
