@@ -197,7 +197,7 @@ public class OnMapSpawn : MonoBehaviour
 
     int  timelenght_perday=0;
     [System.NonSerialized]
-    public int dayloop = 2;
+    public int dayloop = 30;
 
     float stackspeed = 0;
 
@@ -3942,12 +3942,13 @@ public class OnMapSpawn : MonoBehaviour
                             maxsuspect.ToString("F2"), maxexposed.ToString("F2"), 
                             maxinfect.ToString("F2"), ""+rentext_sysdate, ""+rentext_frame);
                              //try freeroam
-                      /*       int loopc=0;
-                       /  while(converge_count<4)
+                            /* int loopc=0;
+                        while(converge_count<4&&loopc<1000)
                          {
                                Alldogmovement();
+                               dogeverygroup_updater();
                                EdgeforSEIR(2);
-                               createImage(rentext_frame, 11);
+                               //createImage(rentext_frame, 11);
                                loopc++;
                          }
                          Debug.Log("Loopc : "+loopc);*/
@@ -4572,7 +4573,7 @@ public class OnMapSpawn : MonoBehaviour
                  if(statetype==2)
                 {
                     //test converge
-                  //  int oldegde=edge_i[x, y];
+                   int oldegde=edge_i[x, y];
                      if (tempedge[x, y] <= 0.0f)
                     {
                         edge_i[x, y] = 0;
@@ -4581,11 +4582,12 @@ public class OnMapSpawn : MonoBehaviour
                     {
                          edge_i[x, y] = 1;
                     }
-                   // if(oldegde!=edge_i[x, y])itchange=true;
+                    if(oldegde!=edge_i[x, y]){itchange=true;}
                 }      
             }
         }
-       // if(itchange==false)converge_count++;
+        if(itchange==false&&statetype==2)converge_count=converge_count+1; 
+       // else converge_count=0;
     }
 
     
