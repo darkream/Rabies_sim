@@ -3938,6 +3938,7 @@ public class OnMapSpawn : MonoBehaviour
                         EdgeforSEIR(2);
                         timelenght_perday=(24*60*60)/loopperday;
                         rabiespreadloop++;
+                        sysdate=-1;
                       } 
                     //skiprun test
                      int loopc=0;
@@ -3949,15 +3950,25 @@ public class OnMapSpawn : MonoBehaviour
                                EdgeforSEIR(2);
                                loopc++;
                          }   
-                        Debug.Log("Here pass");
+                      //  Debug.Log("Here pass");
                         rabies_bite_and_spread(); 
-                         Debug.Log("Here pass2");
+                       //  Debug.Log("Here pass2");
                         dogeverygroup_updater();
                         Stateupdater();
-                         Debug.Log("Here pass3");
+                        // Debug.Log("Here pass3");
                         dogeverygroup_updater();
                         text_file_creation();
+                        EdgeforSEIR(0);
+                        EdgeforSEIR(1);
+                        EdgeforSEIR(2);
                         sysdate++;
+                        createImage(rentext_frame, 9);
+                        createImage(rentext_frame, 10);
+                        createImage(rentext_frame, 11);
+                        rentext_sysdate++;
+                        //sysdate++;
+
+
                   }
                     //not speed run
                     else

@@ -80,6 +80,10 @@ public class ReportPageController : MonoBehaviour
             {
                 systemday=mapdata.dayloop;
                 frameperday=mapdata.loopperday;
+                if(coreui.openEasyRun.isOn)
+                {
+                    frameperday=1;
+                }
                 Debug.Log("sysday "+systemday);
                 for(int j=1;j<systemday+1;j++)
                 {
