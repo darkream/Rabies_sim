@@ -13,6 +13,7 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using UnityEngine.EventSystems;
 
+
 public class OnMapSpawn : MonoBehaviour
 {
     [SerializeField]
@@ -3938,19 +3939,18 @@ public class OnMapSpawn : MonoBehaviour
                         EdgeforSEIR(2);
                         timelenght_perday=(24*60*60)/loopperday;
                         rabiespreadloop++;
-                        sysdate=-1;
+                        
                       } 
                     //skiprun test
                      int loopc=0;
                      converge_count=0;
                         while(converge_count<4 && loopc< (2500/(int)_mbfunction.GridSize)*4)
                          {
-                               Alldogmovement();
-                               dogeverygroup_updater();
-                               EdgeforSEIR(2);
+                               //Alldogmovement();
+                               speedrun_convergecheck();//include dogeverygroup_updater and Alldogmovement(); inside()
                                loopc++;
                          }   
-                      //  Debug.Log("Here pass");
+                        Debug.Log("Loopc :"+loopc +"  Converge count: "+converge_count);
                         rabies_bite_and_spread(); 
                        //  Debug.Log("Here pass2");
                         dogeverygroup_updater();
@@ -4482,6 +4482,7 @@ public class OnMapSpawn : MonoBehaviour
         //using edge detection on dog group (image processing)
         int[,] tempedge = new int[xgridsize, ygridsize];
         int[,] dir_val;
+       
 
         //Relay array index to directional value
         if (statetype==0)
@@ -4498,6 +4499,7 @@ public class OnMapSpawn : MonoBehaviour
 
         else if (statetype==2)
         {
+          
             prepare_edge_i();
             dir_val = edge_i;
         }
@@ -4592,8 +4594,6 @@ public class OnMapSpawn : MonoBehaviour
                 }
             }
         }
-         //Reapply the detected edge
-        bool itchange=false;
         for (int y = 0; y < ygridsize; y++)
         {
             for (int x = 0; x < xgridsize; x++)
@@ -4623,7 +4623,6 @@ public class OnMapSpawn : MonoBehaviour
                  if(statetype==2)
                 {
                     //test converge
-                   int oldegde=edge_i[x, y];
                      if (tempedge[x, y] <= 0.0f)
                     {
                         edge_i[x, y] = 0;
@@ -4632,11 +4631,10 @@ public class OnMapSpawn : MonoBehaviour
                     {
                          edge_i[x, y] = 1;
                     }
-                    if(oldegde!=edge_i[x, y]){itchange=true;}
+                   // Debug.Log("old "+oldedge[x,y]+" new " + edge_i[x,y] +" at "+x+","+y);
                 }      
             }
         }
-        if(itchange==false&&statetype==2)converge_count=converge_count+1; 
        // else converge_count=0;
     }
 
@@ -4725,5 +4723,45 @@ public class OnMapSpawn : MonoBehaviour
         sw.WriteLine ("</Document>");
         sw.WriteLine ("</kml>");
         sw.Close();
+    }
+
+    private void speedrun_convergecheck()
+    {
+        int[,] oldmap= new int[xgridsize,ygridsize];
+        int[,] newmap= new int[xgridsize,ygridsize];
+        bool itchange=false;
+        oldmap=prepare_Cvcheck();
+        Alldogmovement();
+        dogeverygroup_updater();
+        newmap=prepare_Cvcheck();
+          for (int y = 0; y < ygridsize; y++)
+        {
+            for (int x = 0; x < xgridsize; x++)
+            {
+                if(oldmap[x,y]!=newmap[x,y])itchange=true;
+            }
+        }
+        if(itchange==false) converge_count++;
+    }
+
+    private int[,] prepare_Cvcheck()
+    {
+        int[,] mapforconvergecheck = new int[xgridsize,ygridsize];
+         for (int y = 0; y < ygridsize; y++)
+        {
+            for (int x = 0; x < xgridsize; x++)
+            {
+                for(int d=0; d<i_to_r_date;d++)
+                {
+                     if(dogeverygroup.infectamount[x,y,d]>0.0f)
+                     {
+                         mapforconvergecheck[x,y]=1;
+                         break;
+                     }
+                     else mapforconvergecheck[x,y]=0;
+                }
+            }
+        }
+        return mapforconvergecheck;
     }
 }

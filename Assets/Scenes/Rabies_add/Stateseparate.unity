@@ -29990,6 +29990,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9525073fca7b5ee428c6e69260ef632d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  coreui: {fileID: 1577296746}
   mapobject: {fileID: 555018382}
   reportpage: {fileID: 1656205049}
   heatmappage: {fileID: 2140749608}

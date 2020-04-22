@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 public class ReportPageController : MonoBehaviour
 {
-    CoreUIController coreui;
+    public CoreUIController coreui;
     public GameObject mapobject;
     public GameObject reportpage;
     public GameObject heatmappage;
@@ -80,7 +80,7 @@ public class ReportPageController : MonoBehaviour
             {
                 systemday=mapdata.dayloop;
                 frameperday=mapdata.loopperday;
-                if(coreui.openEasyRun.isOn)
+                if(coreui.openEasyRun.isOn==true)
                 {
                     frameperday=1;
                 }
