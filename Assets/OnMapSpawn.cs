@@ -1,5 +1,6 @@
 ﻿//add quad+qaudlocation in gloabal var list
 // add at create image and color getFileNameTag
+//kohong Destination 7.0236698116758, 100.508215314113
 using UnityEngine;
 using Mapbox.Utils;
 using Mapbox.Unity.Map;
@@ -12,6 +13,7 @@ using System.Collections.Generic;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using UnityEngine.EventSystems;
+
 
 public class OnMapSpawn : MonoBehaviour
 {
@@ -169,7 +171,7 @@ public class OnMapSpawn : MonoBehaviour
 
 
     [SerializeField]
-    float biterate = 0.7f;
+    float biterate = 0.07f;
 
     [SerializeField]
     float infectedrate = 0.5f;
@@ -204,9 +206,9 @@ public class OnMapSpawn : MonoBehaviour
     int converge_count=0;
     int grid_round_perloop = 0;
     [System.NonSerialized]
-    public bool allowUsingSkipRun = false;
+    public bool allowUsingSkipRun = true;
     [System.NonSerialized]
-    public float skipRunRadius = 3.5f;
+    public float skipRunRadius = 2.5f;
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //pic creation relate
@@ -326,7 +328,8 @@ public class OnMapSpawn : MonoBehaviour
 
         if(coreuicontroller.runProgramNotification==false && frameskipper==true)
         {
-            coreuicontroller.ShowDogObject();
+            //coreuicontroller.ShowDogObject();
+
         }
         if(coreuicontroller.runProgramNotification==true && frameskipper==false)
         {
@@ -401,7 +404,7 @@ public class OnMapSpawn : MonoBehaviour
     {
         float newdistribution_criteria = 0.5f;
         float exposecriteria = newdistribution_criteria * (exposesum() / sumeverypoint());
-        float infectedcriteria = newdistribution_criteria*(infectsum()/sumeverypoint())*0.2f*0.001f;//0.000001f;
+        float infectedcriteria = 0.000000001f;//newdistribution_criteria*((infectsum()/(float)infectdogdata.Count))*(Mathf.Pow(4.0f,((float)_mbfunction.GridSize/5.0f)))*0.000000001f;//0.000001f;
         float moveinamount = 0.0f;
         float[,] tempsus = new float[xgridsize, ygridsize];
         float[,,] tempexpose = new float[xgridsize, ygridsize, e_to_i_date];
@@ -549,6 +552,383 @@ public class OnMapSpawn : MonoBehaviour
         }
     }
     //add for check expose sum
+    private void Groupdogmovement(int group)
+    {
+        float ginfectsum=infectsum_group(group);
+        float gexposedsum=exposesum_group(group);
+        float sumofinf=infectsum();
+        float newdistribution_criteria = 0.5f;
+        float exposecriteria = newdistribution_criteria * (gexposedsum/sumeverypoint());
+        float infectedcriteria = 0.000000001f ;//newdistribution_criteria*((infectsum()/(float)infectdogdata.Count))*(Mathf.Pow(4.0f,((float)_mbfunction.GridSize/5.0f)))*0.000000001f;//0.000001f;  
+        if(sumofinf!=0.0f) {infectedcriteria = 0.000000001f * (ginfectsum/sumofinf)*(Mathf.Pow(2.5f,((float)_mbfunction.GridSize/5.0f)))*0.4f*0.1f*(float)_mbfunction.GridSize/5.0f;}
+        float moveinamount = 0.0f;
+        float[,] tempsus = new float[xgridsize, ygridsize];
+        float[,,] tempexpose = new float[xgridsize, ygridsize, e_to_i_date];
+        float[,,] tempinf = new float[xgridsize, ygridsize, i_to_r_date];
+
+        //float temp
+
+    
+            //infectedcriteria= newdistribution_criteria*(infectsum_group(g)/(sumeverypoint()*(float)i_to_r_date)); //average for each day
+            for (int m = 0; m < xgridsize; m++)
+            {
+                for (int n = 0; n < ygridsize; n++)
+                {
+                    if (homedestination[m, n] == group) //move in only group area
+                    {
+                        //suspectmove
+                        if (m > 0 && dogeachgroup[group].suspectamount[m - 1, n] > 0) moveinamount = dogeachgroup[group].suspectamount[m - 1, n] * finalfactor[m - 1, n, group, 3];
+                        else moveinamount = 0;
+                        if (moveinamount > newdistribution_criteria)
+                        {
+                            tempsus[m, n] += moveinamount;//eqully distrubute //not at left
+                            tempsus[m - 1, n] -= moveinamount;
+                        }
+
+                        if (n > 0 && dogeachgroup[group].suspectamount[m, n - 1] > 0) moveinamount = dogeachgroup[group].suspectamount[m, n - 1] * finalfactor[m, n - 1, group, 0];//not at down
+                        else moveinamount = 0;
+                        if (moveinamount > newdistribution_criteria)
+                        {
+                            tempsus[m, n] += moveinamount;//eqully distrubute //not at left
+                            tempsus[m, n - 1] -= moveinamount;
+                        }
+
+                        if (m < xgridsize - 1 && dogeachgroup[group].suspectamount[m + 1, n] > 0) moveinamount = dogeachgroup[group].suspectamount[m + 1, n] * finalfactor[m + 1, n, group, 2];//not at right
+                        else moveinamount = 0;
+                        if (moveinamount > newdistribution_criteria)
+                        {
+                            tempsus[m, n] += moveinamount;//eqully distrubute //not at left
+                            tempsus[m + 1, n] -= moveinamount;
+                        }
+
+                        if (n < ygridsize - 1 && dogeachgroup[group].suspectamount[m, n + 1] > 0) moveinamount = dogeachgroup[group].suspectamount[m, n + 1] * finalfactor[m, n + 1, group, 1];//not at top
+                        else moveinamount = 0;
+                        if (moveinamount > newdistribution_criteria)
+                        {
+                            tempsus[m, n] += moveinamount;//eqully distrubute //not at left
+                            tempsus[m, n + 1] -= moveinamount;
+                        }
+
+                        //exposedmove
+
+                        //cutting out not make diff much() 
+                        /* 
+                        if(gexposedsum>0.0f)//skip 0 dog amount to decrese runtime
+                        {
+                        for (int d = 0; d < e_to_i_date; d++)
+                        {
+                            if (m > 0 && dogeachgroup[group].exposeamount[m - 1, n, d] > 0) moveinamount = dogeachgroup[group].exposeamount[m - 1, n, d] * finalfactor[m - 1, n, group, 3];//eqully distrubute //not at left
+                            else moveinamount = 0;
+                            if (moveinamount > exposecriteria)
+                            {
+                                tempexpose[m, n, d] += moveinamount;
+                                tempexpose[m - 1, n, d] -= moveinamount;
+                            }
+
+                            if (n > 0 && dogeachgroup[group].exposeamount[m, n - 1, d] > 0) moveinamount = dogeachgroup[group].exposeamount[m, n - 1, d] * finalfactor[m, n - 1, group, 0];//not at down
+                            else moveinamount = 0;
+                            if (moveinamount > exposecriteria)
+                            {
+                                tempexpose[m, n, d] += moveinamount;
+                                tempexpose[m, n - 1, d] -= moveinamount;
+                            }
+
+                            if (m < xgridsize - 1 && dogeachgroup[group].exposeamount[m + 1, n, d] > 0) moveinamount = dogeachgroup[group].exposeamount[m + 1, n, d] * finalfactor[m + 1, n, group, 2];//not at right
+                            else moveinamount = 0;
+                            if (moveinamount > exposecriteria)
+                            {
+                                tempexpose[m, n, d] += moveinamount;
+                                tempexpose[m + 1, n, d] -= moveinamount;
+                            }
+
+                            if (n < ygridsize - 1 && dogeachgroup[group].exposeamount[m, n + 1, d] > 0) moveinamount = dogeachgroup[group].exposeamount[m, n + 1, d] * finalfactor[m, n + 1, group, 1];//not at top
+                            else moveinamount = 0;
+                            if (moveinamount > exposecriteria)
+                            {
+                                tempexpose[m, n, d] += moveinamount;
+                                tempexpose[m, n + 1, d] -= moveinamount;
+                            }
+                        }
+                        }*/
+                    }
+                    //ifect is only one who can move outside 
+                    //infectedmove 
+                    if(ginfectsum>0.0f) //skip 0 dog amount to decrese runtime
+                    {
+                    for (int dd = 0; dd < i_to_r_date; dd++)
+                    {
+                        if (m > 0 && dogeachgroup[group].infectamount[m - 1, n, dd] > 0) moveinamount = dogeachgroup[group].infectamount[m - 1, n, dd] * finalfactor_I[m - 1, n, group, 3];//eqully distrubute //not at left
+                        else moveinamount = 0;
+                        if (moveinamount > infectedcriteria)
+                        {
+                            tempinf[m, n, dd] += moveinamount;
+                            tempinf[m - 1, n, dd] -= moveinamount;
+                        }
+
+                        if (n > 0 && dogeachgroup[group].infectamount[m, n - 1, dd] > 0) moveinamount = dogeachgroup[group].infectamount[m, n - 1, dd] * finalfactor_I[m, n - 1, group, 0];//not at down
+                        else moveinamount = 0;
+                        if (moveinamount > infectedcriteria)
+                        {
+                            tempinf[m, n, dd] += moveinamount;
+                            tempinf[m, n - 1, dd] -= moveinamount;
+                        }
+
+                        if (m < xgridsize - 1 && dogeachgroup[group].infectamount[m + 1, n, dd] > 0) moveinamount = dogeachgroup[group].infectamount[m + 1, n, dd] * finalfactor_I[m + 1, n, group, 2];//not at right
+                        else moveinamount = 0;
+                        if (moveinamount > infectedcriteria)
+                        {
+                            tempinf[m, n, dd] += moveinamount;
+                            tempinf[m + 1, n, dd] -= moveinamount;
+                        }
+
+                        if (n < ygridsize - 1 && dogeachgroup[group].infectamount[m, n + 1, dd] > 0) moveinamount = dogeachgroup[group].infectamount[m, n + 1, dd] * finalfactor_I[m, n + 1, group, 1];//not at top
+                        else moveinamount = 0;
+                        if (moveinamount > infectedcriteria)
+                        {
+                            tempinf[m, n, dd] += moveinamount;
+                            tempinf[m, n + 1, dd] -= moveinamount;
+                        }
+
+                    }
+                }
+                }
+            }
+            //finish all value of one group
+            //add value of temp
+            for (int m = 0; m < xgridsize; m++)
+            {
+                for (int n = 0; n < ygridsize; n++)
+                {
+                    dogeachgroup[group].suspectamount[m, n] += tempsus[m, n];
+                    tempsus[m, n] = 0.0f;
+                    for (int d = 0; d < e_to_i_date; d++)
+                    {
+                        dogeachgroup[group].exposeamount[m, n, d] += tempexpose[m, n, d];
+                        tempexpose[m, n, d] = 0.0f;
+                    }
+                    for (int dd = 0; dd < i_to_r_date; dd++)
+                    {
+                        dogeachgroup[group].infectamount[m, n, dd] += tempinf[m, n, dd];
+                        tempinf[m, n, dd] = 0.0f;
+                    }
+                }
+            }
+        
+    }
+    private void Groupdogmovement_centerdistributeout(int group)
+    {
+        float ginfectsum=infectsum_group(group);
+        float gexposedsum=exposesum_group(group);
+        float sumofinf=infectsum();
+        float newdistribution_criteria = 0.5f;
+        float exposecriteria = newdistribution_criteria * (gexposedsum/sumeverypoint());
+        float infectedcriteria = 0.000000001f ;//newdistribution_criteria*((infectsum()/(float)infectdogdata.Count))*(Mathf.Pow(4.0f,((float)_mbfunction.GridSize/5.0f)))*0.000000001f;//0.000001f;  
+        if(sumofinf!=0.0f) {infectedcriteria = 0.000000001f * (infectsum_group(group)/sumofinf)*(Mathf.Pow(2.5f,((float)_mbfunction.GridSize/5.0f)))*0.4f*0.1f*(float)_mbfunction.GridSize/5.0f;}
+        float moveoutamount = 0.0f;
+        float[,] tempsus = new float[xgridsize, ygridsize];
+        float[,,] tempexpose = new float[xgridsize, ygridsize, e_to_i_date];
+        float[,,] tempinf = new float[xgridsize, ygridsize, i_to_r_date];
+
+        //float temp
+
+    
+            //infectedcriteria= newdistribution_criteria*(infectsum_group(g)/(sumeverypoint()*(float)i_to_r_date)); //average for each day
+            for (int m = 0; m < xgridsize; m++)
+            {
+                for (int n = 0; n < ygridsize; n++)
+                {
+                     
+                    //suspected
+                    if(dogeachgroup[group].suspectamount[m , n] > 0.0f )
+                    {
+                        //distribute 0,1,2,3 :up down left right
+                        if(m!=xgridsize-1) //ifnot right, 
+                        //distribute right
+                        {
+                            if(homedestination[m +1 , n] == group) //if right still in home range
+                            {
+                                moveoutamount=dogeachgroup[group].suspectamount[m , n] * finalfactor[m , n, group, 3];
+                                if (moveoutamount > newdistribution_criteria)
+                                {
+                                    tempsus[m +1, n] += moveoutamount;
+                                    tempsus[m , n] -= moveoutamount;
+                                }
+                            }
+                            
+                        }
+
+                        if(m!=0) //ifnot left, 
+                        //distribute left
+                        {
+                            if(homedestination[m -1 , n] == group) //if left still in home range
+                            {
+                                moveoutamount=dogeachgroup[group].suspectamount[m , n] * finalfactor[m , n, group, 2];
+                                if (moveoutamount > newdistribution_criteria)
+                                {
+                                    tempsus[m -1, n] += moveoutamount;
+                                    tempsus[m , n] -= moveoutamount;
+                                }
+                            }
+                            
+                        }
+
+                        if(n!=ygridsize-1) //ifnot up, 
+                        //distribute to
+                        {
+                            if(homedestination[m  , n+1] == group) //if top still in home range
+                            {
+                                moveoutamount=dogeachgroup[group].suspectamount[m , n] * finalfactor[m , n, group, 0];
+                                if (moveoutamount > newdistribution_criteria)
+                                {
+                                    tempsus[m , n+1] += moveoutamount;
+                                    tempsus[m , n] -= moveoutamount;
+                                }
+                            }
+                            
+                        }
+
+                        if(n!=0) //ifnot down, 
+                        //distribute top
+                        {
+                            if(homedestination[m  , n-1] == group) //if top still in home range
+                            {
+                                moveoutamount=dogeachgroup[group].suspectamount[m , n] * finalfactor[m , n, group, 1];
+                                if (moveoutamount > newdistribution_criteria)
+                                {
+                                    tempsus[m , n-1] += moveoutamount;
+                                    tempsus[m , n] -= moveoutamount;
+                                }
+                            }
+                            
+                        }
+                    }
+
+                    /*    
+                    //exposed
+                    if(gexposedsum>0.0f)//skip 0 dog amount to decrese runtime
+                    {
+                    for (int d = 0; d < e_to_i_date; d++)
+                    {
+                         if(dogeachgroup[group].exposeamount[m , n, d] > 0.0f )
+                        {
+                            if(m!=xgridsize-1)
+                            {
+                                moveoutamount=dogeachgroup[group].exposeamount[m , n, d] * finalfactor[m , n, group, 3];
+                                if (moveoutamount >exposecriteria )
+                                {
+                                   tempexpose[m+1, n, d] += moveoutamount;
+                                   tempexpose[m, n, d] -= moveoutamount;
+                                }
+                            }
+                            if(m!=0)
+                            {
+                                 moveoutamount=dogeachgroup[group].exposeamount[m , n, d] * finalfactor[m , n, group, 2];
+                                if (moveoutamount > exposecriteria )
+                                {
+                                   tempexpose[m-1, n, d] += moveoutamount;
+                                   tempexpose[m, n, d] -= moveoutamount;
+                                }
+                            }
+                            if(n!=ygridsize-1)
+                            {
+                                 moveoutamount=dogeachgroup[group].exposeamount[m , n, d] * finalfactor[m , n, group, 0];
+                                if (moveoutamount >exposecriteria )
+                                {
+                                   tempexpose[m, n+1, d] += moveoutamount;
+                                   tempexpose[m, n, d] -= moveoutamount;
+                                }
+                            }
+                            if(n!=0)
+                            {
+                                 moveoutamount=dogeachgroup[group].exposeamount[m , n, d] * finalfactor[m , n, group, 1];
+                                if (moveoutamount > exposecriteria )
+                                {
+                                   tempexpose[m, n-1, d] += moveoutamount;
+                                   tempexpose[m, n, d] -= moveoutamount;
+                                }
+                            }
+                        }
+                    }
+                    } */
+                    //infected
+                     if(ginfectsum>0.0f) //skip 0 dog amount to decrese runtime
+                    {
+                     for (int dd = 0; dd < i_to_r_date; dd++)
+                    {
+                        if(dogeachgroup[group].infectamount[m , n, dd] > 0.0f )//?
+                        {
+                            //Debug.Log("inf at "+m+","+n);
+                            if(m!=xgridsize-1)
+                            {
+                                moveoutamount=dogeachgroup[group].infectamount[m , n, dd] * finalfactor[m , n, group, 3];
+                                
+                                if (moveoutamount > infectedcriteria)
+                                {
+                                   
+                                   tempinf[m+1, n, dd] += moveoutamount;
+                                   tempinf[m, n, dd] -= moveoutamount;
+                                }
+                            }
+                            if(m!=0)
+                            {
+                                 moveoutamount=dogeachgroup[group].infectamount[m , n, dd] * finalfactor[m , n, group, 2];
+                                  
+                                if (moveoutamount > infectedcriteria)
+                                {
+                                    
+                                   tempinf[m-1, n, dd] += moveoutamount;
+                                   tempinf[m, n, dd] -= moveoutamount;
+                                }
+                            }
+                            if(n!=ygridsize-1)
+                            {
+                                 moveoutamount=dogeachgroup[group].infectamount[m , n, dd] * finalfactor[m , n, group, 0];
+                                  
+                                if (moveoutamount > infectedcriteria)
+                                {
+                                   
+                                   tempinf[m, n+1, dd] += moveoutamount;
+                                   tempinf[m, n, dd] -= moveoutamount;
+                                }
+                            }
+                            if(n!=0)
+                            {
+                                 moveoutamount=dogeachgroup[group].infectamount[m , n, dd] * finalfactor[m , n, group, 1];
+                                  
+                                if (moveoutamount > infectedcriteria)
+                                {
+                                    
+                                   tempinf[m, n-1, dd] += moveoutamount;
+                                   tempinf[m, n, dd] -= moveoutamount;
+                                }
+                            }
+                        }
+                    }
+                    }
+                }
+            }
+            //finish all value of one group
+            //add value of temp
+            for (int m = 0; m < xgridsize; m++)
+            {
+                for (int n = 0; n < ygridsize; n++)
+                {
+                    dogeachgroup[group].suspectamount[m, n] += tempsus[m, n];
+                   // tempsus[m, n] = 0.0f;
+                    for (int d = 0; d < e_to_i_date; d++)
+                    {
+                        dogeachgroup[group].exposeamount[m, n, d] += tempexpose[m, n, d];
+                        //tempexpose[m, n, d] = 0.0f;
+                    }
+                    for (int dd = 0; dd < i_to_r_date; dd++)
+                    {
+                        dogeachgroup[group].infectamount[m, n, dd] += tempinf[m, n, dd];
+                       // tempinf[m, n, dd] = 0.0f;
+                    }
+                }
+            }
+        
+    }
     private void dogeverygroup_updater()
     {
         float sumsus = 0.0f;
@@ -607,6 +987,8 @@ public class OnMapSpawn : MonoBehaviour
         }
 
     }
+
+    
     private float groupgridcounter(int groupnumber)
     {
         float gridcount = 0;
@@ -1180,7 +1562,9 @@ public class OnMapSpawn : MonoBehaviour
     //---------------------------------------------------------------------------------------------------------------------------
     private void rabiesEnvironmentSet()
     {
-
+        //text folder+pic folder reset
+        folder_resetter();
+        Debug.Log("folder reset");
         dogeverygroup = new dogamountSEIRV(xgridsize, ygridsize, e_to_i_date, i_to_r_date);
         dogeachgroup = new List<dogamountSEIRV>();
         for (int i = 0; i < dogdata.Count; i++)
@@ -1513,7 +1897,7 @@ public class OnMapSpawn : MonoBehaviour
                     for (int i = 0; i < 4; i++)
                     {
                         finalfactor[m, n, g, i] = inclinefactor[m, n, i];//*fleefactor[m,n,i]*flee_weight;
-                        finalfactor_I[m, n, g, i] = inclinefactor[m, n, i] * (homefactor[m, n, g, i] + 0.75f); //-0.25+1.00
+                        finalfactor_I[m, n, g, i] = inclinefactor[m, n, i] *((((homefactor[m, n, g, i] + 0.75f)-1.0f)*0.2f)+1.0f); 
 
                     }
 
@@ -1683,22 +2067,7 @@ public class OnMapSpawn : MonoBehaviour
 
 
 
-                    //group now not move an inches,except placed rabies
-                    //So no way we will see two group in one area 
-                    //but it fucking spread to whole group right now
-                    //Damn realistic ever
-                    //Help me a lot fuck
-                    //spread number to fuck whole group
-                    // Debug.Log("rabietranfer :"+rabietranfer);
-
-                    /*  if(rabietranfer>0.0f)
-                      {
-                          int pointgroupnum=foundgroupnum(m,n);
-                          rabiestranfer_plusval[pointgroupnum]+=rabietranfer;
-                      }*/
-
-                    //well not whole group anymore
-                    //shet
+             
                 }
             }
         }
@@ -2085,17 +2454,18 @@ public class OnMapSpawn : MonoBehaviour
 
     private void text_file_creation()
     {
-        string path = (Application.streamingAssetsPath +"/Textreport/Report_day" + rentext_sysdate + ".txt");
+        string path = (Application.streamingAssetsPath +"/Textreport/Report_day" + (rentext_sysdate+1) + ".txt");
         float inf_rad_temp = 0, temp_rzero = 0.0f, newr0 = 0.0f;
         float temp=0.0f,allsumtemp=0.0f,groupsumtemp=0.0f;
         temp_rzero = daily_rzero;
+        float tempdailyrabiesbite=daily_rabiesbite;
 
 
        // justwannaknow = daily_rzero;
        // justwannaknow2 = daily_rabiesbite;
 
         daily_rzero = 0.0f;
-        daily_rabiesbite = daily_rabiesbite / 288.0f;
+        daily_rabiesbite = daily_rabiesbite / ((skipRunRadius*1000*2.4f)/_mbfunction.GridSize) ;
 
        // justwannaknow3 = daily_rabiesbite;
         newr0 = (temp_rzero * ((float)i_to_r_date)) / infectsum();
@@ -2103,11 +2473,15 @@ public class OnMapSpawn : MonoBehaviour
         if(daily_rabiesbite == 0)  temp_rzero= 0;
         else temp_rzero = (temp_rzero * ((float)i_to_r_date)) / daily_rabiesbite;
 
+        float xmeter = Mathf.Round(Mathf.Pow(2,(19-_mapManager.Zoom)) * 75.0f *5.0f);
+        float ymeter = Mathf.Round(Mathf.Pow(2,(19-_mapManager.Zoom)) * 35.0f *5.0f);
+
         daily_rabiesbite = 0.0f;
         // Create a file to write to.
         StreamWriter sw = File.CreateText(path);
        // sw.WriteLine("Tester : All sum rabies tranfer" + justwannaknow + " Tester : All sum rabies bite" + justwannaknow2 + " Tester : avg rabie bite" + justwannaknow3 + "  New r0 with all r use to divide " + newr0 + "\n");
-        sw.WriteLine("รายงานผลการจำลองการแพร่กระจายโรคพิษสุนัขบ้า วันที่ " + rentext_sysdate + "\n");
+        sw.WriteLine("รายงานผลการจำลองการแพร่กระจายโรคพิษสุนัขบ้า วันที่ " + (rentext_sysdate+1) + "\n");
+        sw.WriteLine("ขนาดพื้นที่ "+ xmeter +" x "+ymeter+" ตารางเมตร");
         sw.WriteLine("==================================");
         allsumtemp=sumeverypoint();
         sw.WriteLine("จำนวนสุนัขทั้งหมด  : " + allsumtemp.ToString("F2"));
@@ -2118,6 +2492,8 @@ public class OnMapSpawn : MonoBehaviour
         temp=infectsum();
         sw.WriteLine("จำนวนสุนัขติดเชื้อ (Infected) : " + temp.ToString("F2")+ "   คิดเป็น  " +  (temp*100.0f/allsumtemp).ToString("F2") + " %");
         sw.WriteLine("ค่า R-zero ของวันนี้ : " + temp_rzero.ToString("F2"));
+
+       // sw.WriteLine("ทดลอง ค่า R-zero ของวันนี้แบบหารจำนวน sum : " + newr0.ToString("F2"));
         sw.WriteLine("==================================");
         sw.WriteLine("รายงานผลการจำลองการแพร่กระจายโรคพิษสุนัขบ้าแบบแยกกลุ่ม วันที่" + rentext_sysdate);
         sw.WriteLine("==================================");
@@ -2275,7 +2651,7 @@ public class OnMapSpawn : MonoBehaviour
                     {
                         if (founddog(lon - xgriddiff, (ygridsize - 1) - (lat - ygriddiff)))
                             // Debug.Log("y"+((ygridsize-1) -(lat-ygriddiff))+"x"+(lon-xgriddiff));
-                            texture.SetPixel(lon, lat + 90, getColorFromColorType(((ygridsize - 1) - (lat - ygriddiff)), lon - xgriddiff, 100));
+                            texture.SetPixel(lon, lat + 90, getColorFromColorType(((ygridsize - 1) - (lat - ygriddiff)), lon - xgriddiff, 12));
                         else texture.SetPixel(lon, lat + 90, getColorFromColorType((extend_ygridsize - 1) - lat, lon, 1001));
                     }
                     else
@@ -2449,6 +2825,28 @@ public class OnMapSpawn : MonoBehaviour
 
         }
 
+        else if (imagetype == 12)//all
+        {
+            float infsum = infectsumatpoint(lon, lat);
+            float exsum = exposesumatpoint(lon, lat);
+            if(edge_s[lon,lat]==1)return new Color(0.0f, edge_s[lon,lat],0.0f,0.5f );
+            else if (dogeverygroup.suspectamount[lon, lat] > 0.0f)
+            {
+                return new Color(0.0f,1.0f , 0.0f,0.5f);
+            }
+            else if(edge_e[lon,lat]==1)return new Color(edge_e[lon,lat], edge_e[lon,lat],0.0f,0.5f );
+            else if (exsum > 0.0f )
+            {
+                return new Color(1.0f,1.0f , 0.0f,5f);
+            }
+            else if(edge_i[lon,lat]==1)return new Color(edge_i[lon,lat], 0.0f,0.0f,0.5f );
+            else if (infsum > 0.0f)
+            {
+                return new Color(1.0f, 0.0f, 0.0f,0.5f);
+                //return new Color(((infsum / maxinfect) * 0.5f) + 0.5f, 0.0f, 0.0f,0.5f);
+            }
+            else return Color.clear;
+        }
 
 
         else if (imagetype == 100)
@@ -2549,6 +2947,32 @@ public class OnMapSpawn : MonoBehaviour
                 }
              else return temp_realmap.GetPixel(lon,ygridsize-lat);//need flip
         }
+      /*  else if (imagetype == 1013) //all
+        {
+             if(edge_s[lon,lat]==1)return new Color(0.0f, edge_s[lon,lat],0.0f );
+            
+             else if (dogeverygroup.suspectamount[lon, lat] > 0.0f)
+            {
+                Blend_color = Color.Lerp(temp_realmap.GetPixel(lon,ygridsize-lat),new Color(0.0f,1.0f,0.0f,0.5f),0.5f);
+                return Blend_color ;
+            }
+             else if(edge_i[lon,lat]==1)return new Color(1.0f, 0.0f,0.0f );
+              else if (infectsumatpoint(lon, lat) > 0.0f)
+                {
+                Blend_color = Color.Lerp(temp_realmap.GetPixel(lon,ygridsize-lat),new Color(1.0f,0.0f,0.0f,0.5f),0.5f);
+                return Blend_color ;
+                }
+
+             else if(edge_e[lon,lat]==1)return new Color(edge_e[lon,lat], edge_e[lon,lat],0.0f );
+              else if (exposesumatpoint(lon, lat) > 0.0f )
+            {
+                Blend_color = Color.Lerp(temp_realmap.GetPixel(lon,ygridsize-lat),new Color(1.0f,1.0f,0.0f,0.5f),0.5f);
+                return Blend_color ;
+            }
+
+             else return temp_realmap.GetPixel(lon,ygridsize-lat);//need flip
+           
+        }*/
          //=============================================
         return Color.white;
     }
@@ -3716,6 +4140,10 @@ public class OnMapSpawn : MonoBehaviour
         ygridsize = _mbfunction.y_gsize;
         heightxy = new float[xgridsize, ygridsize];
         pointToColorMap(startlat, startlon, xgridsize, ygridsize);
+
+        //make no error on extend for now
+        extend_ygridsize=xgridsize;
+        extend_xgridsize=ygridsize;
        // createImage(0, 0); //Create Height Map
         Debug.Log("Map Array is created with size (" + xgridsize + ", " + ygridsize + ")");
         tempzoomsize=_mapManager.Zoom;
@@ -3736,7 +4164,7 @@ public class OnMapSpawn : MonoBehaviour
 
         extendmapping(extend_slat, extend_slon, extend_xgridsize, extend_ygridsize);
         // pointToColorMap(startlat , startlon , xgridsize , ygridsize);
-        createImage_extendmap(0, 1001); //Create Height Map
+        //createImage_extendmap(0, 1001); //Create Height Map
         Debug.Log("Extend Map Array is created with size (" + extend_xgridsize + ", " + extend_ygridsize + ")");
     }
 
@@ -3766,6 +4194,8 @@ public class OnMapSpawn : MonoBehaviour
         uicontroller.setupActivation(true);
         //frame skipping complete
         ExtendMapcapture();
+        //extra for decrese load
+        coreuicontroller.hideDogObject();
     }
 
     private void registerUIControllerData()
@@ -3924,8 +4354,59 @@ public class OnMapSpawn : MonoBehaviour
                 uicontroller.updateProcessDetail("Rabies is running");
                 if (sysdate < dayloop) //set date here
                 {
+                  if(allowUsingSkipRun)
+                  {
+                      if(rabiespreadloop == -1)
+                      {
+                        rabiesEnvironmentSet();
+                        InclineFactorCalculated();
+                        HomeFactorCalculated();
+                        Factor_summarize();//tempolary cause no dynamic factor at moment
+                        dogeverygroup_updater();
+                        EdgeforSEIR(0);
+                        EdgeforSEIR(1);
+                        EdgeforSEIR(2);
+                        timelenght_perday=(24*60*60)/loopperday;
+                        rabiespreadloop++;
+                        Debug.Log("Fucking finish factor calculation");
+                      } 
+                    //skiprun test
+                     int loopc=0;
+                     converge_count=0;
+                        while(converge_count<4 && loopc< (int)(skipRunRadius*1000*2.4f)/_mbfunction.GridSize)
+                         {
+                               //Alldogmovement();
+                               speedrun_convergecheck();//include dogeverygroup_updater and Alldogmovement(); inside()
+                               loopc++;
+                         }   
+                        Debug.Log("Loopc :"+loopc +"  Converge count: "+converge_count);
+                        rabies_bite_and_spread(); 
+                       //  Debug.Log("Here pass2");
+                        dogeverygroup_updater();
+                        Stateupdater();
+                        // Debug.Log("Here pass3");
+                        dogeverygroup_updater();
+                        text_file_creation();
+                        EdgeforSEIR(0);
+                        EdgeforSEIR(1);
+                        EdgeforSEIR(2);
+                        sysdate++;
+                        createImage(rentext_frame, 9);
+                        createImage(rentext_frame, 10);
+                        createImage(rentext_frame, 11);
+                        createImage_screensize(rentext_frame, 12,203);
+                       // createImage_extendmap(0, 1003);
+                       // createImage_screensize(rentext_frame, 9,203);
+                        rentext_sysdate++;
+                        //sysdate++;
 
-                    if (rabiespreadloop == -1 && sysdate == 0 && step_factor == true)
+
+                  }
+                    //not speed run
+                    else
+                  {
+                      Debug.Log("do long run");
+                       if (rabiespreadloop == -1 && sysdate == 0 && step_factor == true)
                     {
                        // Backgroundscale();
                         rabiesEnvironmentSet();
@@ -3969,7 +4450,7 @@ public class OnMapSpawn : MonoBehaviour
                                 createImage(rentext_frame, 10);
                                 createImage(rentext_frame, 11);
 
-                                createImage_screensize(rentext_frame, 9,200);
+                                createImage_screensize(rentext_frame, 12,200);
                                 
                                 //edge //unused for now
                                // createImage(rentext_frame, 1010);
@@ -3986,7 +4467,7 @@ public class OnMapSpawn : MonoBehaviour
                                 createImage(rentext_frame, 10);
                                 createImage(rentext_frame, 11);
 
-                                createImage_screensize(rentext_frame, 9,200);
+                                createImage_screensize(rentext_frame, 12,200);
                                  //edge //unused for now
                                // createImage(rentext_frame, 1010);
                                // createImage(rentext_frame, 1011);
@@ -4069,7 +4550,9 @@ public class OnMapSpawn : MonoBehaviour
                         EdgeforSEIR(2);
                         sysdate += 1;
                         rabiespreadloop = 0;
-                    }
+                    } 
+                  }
+                    
                 }
                 else
                 {
@@ -4079,7 +4562,7 @@ public class OnMapSpawn : MonoBehaviour
                     createImage(rentext_frame, 9);
                     createImage(rentext_frame, 10);
                     createImage(rentext_frame, 11);
-                    createImage_screensize(rentext_frame, 9,200);
+                  //  createImage_screensize(rentext_frame, 9,200);
                      //edge //unused for now
                     //createImage(rentext_frame, 1010);
                     //createImage(rentext_frame, 1011);
@@ -4092,6 +4575,7 @@ public class OnMapSpawn : MonoBehaviour
                     float zoom = Mathf.Max(0.0f, Mathf.Min(tempzoomsize, 21.0f));
                     _mapManager.UpdateMap(_mapManager.CenterLatitudeLongitude, zoom);
                     //SceneManager.LoadScene("StopReporting", LoadSceneMode.Single);
+                    //coreuicontroller.ShowDogObject();
                 }
             }
         }
@@ -4254,7 +4738,7 @@ public class OnMapSpawn : MonoBehaviour
         {
             coreuicontroller.extendmapset = false;
             coreuicontroller.hideDogObject();
-            extendmapSelection();
+            //extendmapSelection(); //on this when extend map complete
             coreuicontroller.runProgramNotification = true;
         }
 
@@ -4264,6 +4748,7 @@ public class OnMapSpawn : MonoBehaviour
         if (coreuicontroller.runProgramNotification==true && frameskipper==true)
         {
             coreuicontroller.runProgramNotification = false;
+            frameskipper=false;
             //frame skipping
            
             initialPreDataRegister();
@@ -4432,6 +4917,7 @@ public class OnMapSpawn : MonoBehaviour
         //using edge detection on dog group (image processing)
         int[,] tempedge = new int[xgridsize, ygridsize];
         int[,] dir_val;
+       
 
         //Relay array index to directional value
         if (statetype==0)
@@ -4448,6 +4934,7 @@ public class OnMapSpawn : MonoBehaviour
 
         else if (statetype==2)
         {
+          
             prepare_edge_i();
             dir_val = edge_i;
         }
@@ -4542,8 +5029,6 @@ public class OnMapSpawn : MonoBehaviour
                 }
             }
         }
-         //Reapply the detected edge
-        bool itchange=false;
         for (int y = 0; y < ygridsize; y++)
         {
             for (int x = 0; x < xgridsize; x++)
@@ -4573,7 +5058,6 @@ public class OnMapSpawn : MonoBehaviour
                  if(statetype==2)
                 {
                     //test converge
-                   int oldegde=edge_i[x, y];
                      if (tempedge[x, y] <= 0.0f)
                     {
                         edge_i[x, y] = 0;
@@ -4582,11 +5066,10 @@ public class OnMapSpawn : MonoBehaviour
                     {
                          edge_i[x, y] = 1;
                     }
-                    if(oldegde!=edge_i[x, y]){itchange=true;}
+                   // Debug.Log("old "+oldedge[x,y]+" new " + edge_i[x,y] +" at "+x+","+y);
                 }      
             }
         }
-        if(itchange==false&&statetype==2)converge_count=converge_count+1; 
        // else converge_count=0;
     }
 
@@ -4675,5 +5158,72 @@ public class OnMapSpawn : MonoBehaviour
         sw.WriteLine ("</Document>");
         sw.WriteLine ("</kml>");
         sw.Close();
+    }
+
+    private void speedrun_convergecheck()
+    {
+        int[,] oldmap= new int[xgridsize,ygridsize];
+        int[,] newmap= new int[xgridsize,ygridsize];
+        bool itchange=false;
+        oldmap=prepare_Cvcheck();
+        //Alldogmovement();
+        //test run on new method
+        for (int gnum=0;gnum<dogeachgroup.Count;gnum++)
+        {
+            Groupdogmovement(gnum);
+        }
+        dogeverygroup_updater();
+        newmap=prepare_Cvcheck();
+          for (int y = 0; y < ygridsize; y++)
+        {
+            for (int x = 0; x < xgridsize; x++)
+            {
+                if(oldmap[x,y]!=newmap[x,y])itchange=true;
+            }
+        }
+        if(itchange==false) converge_count++;
+        else converge_count=0;
+    }
+
+    private int[,] prepare_Cvcheck()
+    {
+        int[,] mapforconvergecheck = new int[xgridsize,ygridsize];
+         for (int y = 0; y < ygridsize; y++)
+        {
+            for (int x = 0; x < xgridsize; x++)
+            {
+                for(int d=0; d<i_to_r_date;d++)
+                {
+                     if(dogeverygroup.infectamount[x,y,d]>0.0f)
+                     {
+                         mapforconvergecheck[x,y]=1;
+                         break;
+                     }
+                     else mapforconvergecheck[x,y]=0;
+                }
+            }
+        }
+        return mapforconvergecheck;
+    }
+    private void folder_resetter()
+    {
+        string folpath1=Application.streamingAssetsPath+"/PictureReport";
+        string folpath2=Application.streamingAssetsPath+"/Textreport";
+        string folpathS=Application.streamingAssetsPath+"/S_state";
+        string folpathE=Application.streamingAssetsPath+"/E_state";
+        string folpathI=Application.streamingAssetsPath+"/I_state";
+        string test=Application.streamingAssetsPath+"/asdsadsadsada";
+    
+      
+        if (Directory.Exists(folpath1)) { Directory.Delete(folpath1, true); }
+        Directory.CreateDirectory(folpath1);
+        if (Directory.Exists(folpath2)) { Directory.Delete(folpath2, true); }
+        Directory.CreateDirectory(folpath2);
+        if (Directory.Exists(folpathS)) { Directory.Delete(folpathS, true); }
+        Directory.CreateDirectory(folpathS);
+        if (Directory.Exists(folpathE)) { Directory.Delete(folpathE, true); }
+        Directory.CreateDirectory(folpathE);
+        if (Directory.Exists(folpathI)) { Directory.Delete(folpathI, true); }
+        Directory.CreateDirectory(folpathI);
     }
 }

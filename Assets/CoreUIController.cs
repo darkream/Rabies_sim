@@ -198,9 +198,10 @@ public class CoreUIController : MonoBehaviour
         showWorldAdvancedSetting.GetComponent<Button>().onClick.AddListener(showOrHideWorldAdvancedSetting);
         dogBehaviorNext.GetComponent<Button>().onClick.AddListener(moveToChangeParameters3);
         imageGenNext.GetComponent<Button>().onClick.AddListener(moveToChangeParameter4);
-        rabiesParamNext.GetComponent<Button>().onClick.AddListener(moveToExtendMapSelection);
+       // rabiesParamNext.GetComponent<Button>().onClick.AddListener(moveToExtendMapSelection); //on this when extend map complete
+        rabiesParamNext.GetComponent<Button>().onClick.AddListener(moveToRunProgram);//delete this on go on above for extend
         openEasyRun.GetComponent<Toggle>().onValueChanged.AddListener(showOrHideSkipRunRadius);
-        extendmapnext.GetComponent<Button>().onClick.AddListener(moveToRunProgram);
+       // extendmapnext.GetComponent<Button>().onClick.AddListener(moveToRunProgram);
 
         imageGen[0].onValueChanged.AddListener(delegate {hordeMustNotExceedOne();});
         imageGen[1].onValueChanged.AddListener(delegate {exploreMustNotExceedOne();});
@@ -339,8 +340,9 @@ public class CoreUIController : MonoBehaviour
     private void moveToRunProgram(){
         if (checkImageGenParamIntegrity()){
             hideAllScreens();
-            extendmapset=true;
-            extendmapNotification=false;
+            extendmapset=true; //use this for run whole calculate process
+            /*extendmapNotification=false;*/ //on this baclet when extend complete
+            resetInfectedDogParameter = true;
             runProgramNotification = true;
             zoomlock=true;
         } else {
