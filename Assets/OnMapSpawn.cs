@@ -2495,7 +2495,7 @@ public class OnMapSpawn : MonoBehaviour
 
        // sw.WriteLine("ทดลอง ค่า R-zero ของวันนี้แบบหารจำนวน sum : " + newr0.ToString("F2"));
         sw.WriteLine("==================================");
-        sw.WriteLine("รายงานผลการจำลองการแพร่กระจายโรคพิษสุนัขบ้าแบบแยกกลุ่ม วันที่" + rentext_sysdate);
+        sw.WriteLine("รายงานผลการจำลองการแพร่กระจายโรคพิษสุนัขบ้าแบบแยกกลุ่ม วันที่" + (rentext_sysdate+1));
         sw.WriteLine("==================================");
         for (int i = 0; i < dogeachgroup.Count; i++)
         {
