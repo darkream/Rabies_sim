@@ -331,7 +331,7 @@ public class MapboxInheritance : MonoBehaviour
 
         Vector3 location = Conversions.GeoToWorldPosition(lat , lon , _map.CenterMercator , _map.WorldRelativeScale).ToVector3xz();
         location = new Vector3(location.x , h * tile.TileScale, location.z);
-
+        
         var obj = Instantiate(dogpanel);
 
         //Try to make every dog spawn at higher level
@@ -340,10 +340,12 @@ public class MapboxInheritance : MonoBehaviour
 
         obj.transform.localScale = new Vector3(_spawnScale , _spawnScale , _spawnScale);
         obj.transform.parent = DogLayer.transform; //let the dog becomes the child of DogLayer game object
+
         
         dogObjs.Add(obj);
         dogradius.Add(0.0f);
         factradius.Add(0);
+        obj.active=false; //for speed graphic
     }
 
     public void clearDogObjectMemory(){
@@ -393,7 +395,7 @@ public class MapboxInheritance : MonoBehaviour
         int at_lon = getLonGridIndex(abs(s_lon - lon));
         //temporaly 
         tempinfect= new LatLonSize(at_lat , at_lon , groupsize);
-
+        Debug.Log("latx"+at_lat+"lony"+at_lon);
 
         //
         spawninfectedPrefab(lat , lon);
@@ -409,6 +411,7 @@ public class MapboxInheritance : MonoBehaviour
         int lastIndex = infectedlocations.Count - 1;
         float newlat = (float)infectedlocations[lastIndex].x;
         float newlon = (float)infectedlocations[lastIndex].y;
+
         spawninfectedPrefab(newlat , newlon);
     }
     public void spawninfectedPrefab(double lat , double lon)

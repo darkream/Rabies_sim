@@ -13,10 +13,25 @@ using System.Collections.Generic;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using UnityEngine.EventSystems;
+using System;
 
 
 public class OnMapSpawn : MonoBehaviour
 {
+    [Serializable]
+    public class Outputjson
+    {
+        public float Current_lat_json;
+        public float Current_lon_json;
+        public int xgridsize_json;
+        public int ygridsize_json;
+        public float[] suspectamount; //array is destination
+        public float[] exposeamount; //array is destination
+        public float[] infectamount; //array is destination
+        
+    }
+
+
     [SerializeField]
 	AbstractMap _mapManager;
 
@@ -101,6 +116,10 @@ public class OnMapSpawn : MonoBehaviour
     private int atAttract = 0;
     private int atTime = 0;
     public float tempzoomsize;
+
+    public Outputjson jsonoutput;
+
+    DateTime begindt,finishdt;
 
 
     //--------------------------------------------------------------------------------------------
@@ -258,6 +277,7 @@ public class OnMapSpawn : MonoBehaviour
 
     void Start()
     {
+        Screen.SetResolution(800,800,false);
         _mbfunction.initializeLocations();
         dogdata = new List<LatLonSize>();
         attracter = new List<AttractSource>();
@@ -284,6 +304,7 @@ public class OnMapSpawn : MonoBehaviour
 
     private void Update()
     {
+        
         for (int i = 0; i < _mbfunction.dogObjs.Count; i++) //for each spawn object
         {
             var dogObject = _mbfunction.dogObjs[i];
@@ -559,8 +580,8 @@ public class OnMapSpawn : MonoBehaviour
         float sumofinf=infectsum();
         float newdistribution_criteria = 0.5f;
         float exposecriteria = newdistribution_criteria * (gexposedsum/sumeverypoint());
-        float infectedcriteria = 0.000000001f ;//newdistribution_criteria*((infectsum()/(float)infectdogdata.Count))*(Mathf.Pow(4.0f,((float)_mbfunction.GridSize/5.0f)))*0.000000001f;//0.000001f;  
-        if(sumofinf!=0.0f) {infectedcriteria = 0.000000001f * (ginfectsum/sumofinf)*(Mathf.Pow(2.5f,((float)_mbfunction.GridSize/5.0f)))*0.4f*0.1f*(float)_mbfunction.GridSize/5.0f;}
+        float infectedcriteria = 0.000000001f ;// //newdistribution_criteria*((infectsum()/(float)infectdogdata.Count))*(Mathf.Pow(4.0f,((float)_mbfunction.GridSize/5.0f)))*0.000000001f;//0.000001f;  
+        if(sumofinf!=0.0f) /*Base is 0.000000001f ,just change foe test*/ {infectedcriteria = 0.000000001f * (ginfectsum/sumofinf)*(Mathf.Pow(2.5f,((float)_mbfunction.GridSize/5.0f)))*0.4f*0.1f*(float)_mbfunction.GridSize/5.0f;}
         float moveinamount = 0.0f;
         float[,] tempsus = new float[xgridsize, ygridsize];
         float[,,] tempexpose = new float[xgridsize, ygridsize, e_to_i_date];
@@ -2473,13 +2494,18 @@ public class OnMapSpawn : MonoBehaviour
         if(daily_rabiesbite == 0)  temp_rzero= 0;
         else temp_rzero = (temp_rzero * ((float)i_to_r_date)) / daily_rabiesbite;
 
-        float xmeter = Mathf.Round(Mathf.Pow(2,(19-_mapManager.Zoom)) * 75.0f *5.0f);
+        float xmeter = Mathf.Round(Mathf.Pow(2,(19-_mapManager.Zoom)) * 35.0f *5.0f);
         float ymeter = Mathf.Round(Mathf.Pow(2,(19-_mapManager.Zoom)) * 35.0f *5.0f);
 
         daily_rabiesbite = 0.0f;
         // Create a file to write to.
         StreamWriter sw = File.CreateText(path);
        // sw.WriteLine("Tester : All sum rabies tranfer" + justwannaknow + " Tester : All sum rabies bite" + justwannaknow2 + " Tester : avg rabie bite" + justwannaknow3 + "  New r0 with all r use to divide " + newr0 + "\n");
+        sw.WriteLine("==================================");
+        sw.WriteLine("Begin at"+begindt.ToString());
+        sw.WriteLine("Finish at"+finishdt.ToString());
+        sw.WriteLine("==================================");
+        
         sw.WriteLine("รายงานผลการจำลองการแพร่กระจายโรคพิษสุนัขบ้า วันที่ " + (rentext_sysdate+1) + "\n");
         sw.WriteLine("ขนาดพื้นที่ "+ xmeter +" x "+ymeter+" ตารางเมตร");
         sw.WriteLine("==================================");
@@ -4083,6 +4109,7 @@ public class OnMapSpawn : MonoBehaviour
             }
         }
         Debug.Log(doggroupsize.Count);
+        DebugConsole.Log("Finish Defualt");
     }
 
     float innate_total = 0.0f, outage_total = 0.0f;
@@ -4127,6 +4154,9 @@ public class OnMapSpawn : MonoBehaviour
         _mbfunction.setStartLatLon(latlondeltaLeftTop);
         Vector2d latlondeltaRightBottom = _mbfunction.getLatLonFromXY(Screen.width, 0);
         _mbfunction.setEndLatLon(latlondeltaRightBottom);
+        Vector2d latlonmid = _mbfunction.getLatLonFromXY(Screen.width/2, Screen.height/2);
+        jsonoutput.Current_lat_json= (float)latlondeltaLeftTop.x;
+        jsonoutput.Current_lon_json= (float)latlondeltaLeftTop.y;
 
         //ADD THIS LINE LATER ON 21/03/2020 DURING CORONA VIRUS
         coreuicontroller.setMinMaxLatLon(
@@ -4185,6 +4215,7 @@ public class OnMapSpawn : MonoBehaviour
     {
         //Vector2d latlonDelta = _mbfunction.getLatLonFromMousePosition();
         _mbfunction.addInfectedLocation(latlondelta, groupsize); //add new dog object from clicked position
+       // Debug.Log("lat"+latlondelta.x+"lon"+latlondelta.y);
         infectdogdata.Add(_mbfunction.getNewInfect());
     }
 
@@ -4345,13 +4376,16 @@ public class OnMapSpawn : MonoBehaviour
                     // startPreDataRegister = false;
                     Debug.Log("This area has innate: " + (innate_total / (float)timeScaleFactor.Length) + ", outage: " + (outage_total / (float)timeScaleFactor.Length));
                     uicontroller.triggerCompleteProcess();
+                    begindt=DateTime.Now;
                 }
-
+               
             }
             //test rabies run
             else if (uicontroller.getCompletedProcess() == 10)
             {
                 uicontroller.updateProcessDetail("Rabies is running");
+                 
+
                 if (sysdate < dayloop) //set date here
                 {
                   if(allowUsingSkipRun)
@@ -4386,7 +4420,9 @@ public class OnMapSpawn : MonoBehaviour
                         Stateupdater();
                         // Debug.Log("Here pass3");
                         dogeverygroup_updater();
+                        finishdt=DateTime.Now;
                         text_file_creation();
+                        savetojson();
                         EdgeforSEIR(0);
                         EdgeforSEIR(1);
                         EdgeforSEIR(2);
@@ -4399,7 +4435,7 @@ public class OnMapSpawn : MonoBehaviour
                        // createImage_screensize(rentext_frame, 9,203);
                         rentext_sysdate++;
                         //sysdate++;
-
+                        
 
                   }
                     //not speed run
@@ -4574,6 +4610,7 @@ public class OnMapSpawn : MonoBehaviour
                     reportpage.SetActive(true);
                     float zoom = Mathf.Max(0.0f, Mathf.Min(tempzoomsize, 21.0f));
                     _mapManager.UpdateMap(_mapManager.CenterLatitudeLongitude, zoom);
+                    finishdt=DateTime.Now;
                     //SceneManager.LoadScene("StopReporting", LoadSceneMode.Single);
                     //coreuicontroller.ShowDogObject();
                 }
@@ -5225,5 +5262,39 @@ public class OnMapSpawn : MonoBehaviour
         Directory.CreateDirectory(folpathE);
         if (Directory.Exists(folpathI)) { Directory.Delete(folpathI, true); }
         Directory.CreateDirectory(folpathI);
+    }
+
+    private void savetojson()
+    {
+        int jsonindex=0;
+        jsonoutput.xgridsize_json=xgridsize;
+        jsonoutput.ygridsize_json=ygridsize;
+       // Current_lat_json;
+      //  Current_lon_json;
+        jsonoutput.suspectamount=new float[xgridsize*ygridsize]; 
+        jsonoutput.exposeamount=new float[xgridsize*ygridsize]; 
+        jsonoutput.infectamount=new float[xgridsize*ygridsize]; 
+        for(int i=0;i<xgridsize;i++)
+        {
+            for(int j=0;j<ygridsize;j++)
+            {
+            jsonoutput.suspectamount[jsonindex]=dogeverygroup.suspectamount[i,j];    
+            jsonoutput.exposeamount[jsonindex]=exposesumatpoint(i,j);   
+            jsonoutput.infectamount[jsonindex]=infectsumatpoint(i,j);   
+            jsonindex++;
+            } 
+        }
+
+        string jsonstr= JsonUtility.ToJson(jsonoutput,true);
+
+        writetojsonfle(jsonstr);
+    }
+    private void writetojsonfle(string json)
+    {
+        string path = (Application.streamingAssetsPath +"/Textreport/Json_Report_day" + (rentext_sysdate+1) + ".json");
+        //FileStream fileStream = new FileStream(path)
+        StreamWriter sw = File.CreateText(path);
+        sw.Write(json);
+        sw.Close();
     }
 }

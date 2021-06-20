@@ -810,7 +810,9 @@ public class CoreUIController : MonoBehaviour
 
     public void updateZoomLevel(float zoomLevel) {
         //THIS IS THE ROUGH CALCULATION
-        float x = Mathf.Round(Mathf.Pow(2,(19-zoomLevel)) * 75.0f *5.0f);
+        //float x = Mathf.Round(Mathf.Pow(2,(19-zoomLevel)) * 75.0f *5.0f);
+        //float y = Mathf.Round(Mathf.Pow(2,(19-zoomLevel)) * 35.0f *5.0f);
+        float x = Mathf.Round(Mathf.Pow(2,(19-zoomLevel)) * 35.0f *5.0f);
         float y = Mathf.Round(Mathf.Pow(2,(19-zoomLevel)) * 35.0f *5.0f);
         mapZoom.text = "(" + x + ", " + y + ") m.";
         extendZoom.text = "(" + x + ", " + y + ") m.";

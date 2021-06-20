@@ -7970,6 +7970,14 @@ MonoBehaviour:
   uicontroller: {fileID: 990755673}
   coreuicontroller: {fileID: 1577296746}
   tempzoomsize: 0
+  jsonoutput:
+    Current_lat_json: 0
+    Current_lon_json: 0
+    xgridsize_json: 0
+    ygridsize_json: 0
+    suspectamount: []
+    exposeamount: []
+    infectamount: []
   biterate: 0.07
   infectedrate: 0.5
   cutoff_percentage: 0.05
@@ -17824,7 +17832,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 200, y: 120}
+  m_AnchoredPosition: {x: 130.9, y: 120}
   m_SizeDelta: {x: 270, y: 80}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1324946197
@@ -25705,7 +25713,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1814380703
 RectTransform:
   m_ObjectHideFlags: 0
