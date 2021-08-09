@@ -25,6 +25,7 @@ public class OnMapSpawn : MonoBehaviour
         public float Current_lon_json;
         public int xgridsize_json;
         public int ygridsize_json;
+        public int gridsize_json;
         public float[] suspectamount; //array is destination
         public float[] exposeamount; //array is destination
         public float[] infectamount; //array is destination
@@ -275,6 +276,9 @@ public class OnMapSpawn : MonoBehaviour
     int[,] edge_e;
     int[,] edge_i;
 
+    //temp loop weight
+    public float loopweight=2.6f;
+
     void Start()
     {
         Screen.SetResolution(800,800,false);
@@ -291,6 +295,7 @@ public class OnMapSpawn : MonoBehaviour
         coreuicontroller.setupActivation();
         mapcap_cam.targetTexture = new RenderTexture( Screen.width, Screen.height, 24 );
         Debug.Log(Application.streamingAssetsPath);
+         Application.targetFrameRate = 60;
         //clustering.pixelReaderAndFileWritten("Assets/mapcolor.txt");
         //clustering.createStringColorListFromReadFile("Assets/mapcolor.txt");
         //clustering.kMeanClustering();
@@ -4407,7 +4412,7 @@ public class OnMapSpawn : MonoBehaviour
                     //skiprun test
                      int loopc=0;
                      converge_count=0;
-                        while(converge_count<4 && loopc< (int)(skipRunRadius*1000*2.4f)/_mbfunction.GridSize)
+                        while(converge_count<4 && loopc< (int)(skipRunRadius*1000*loopweight)/_mbfunction.GridSize)
                          {
                                //Alldogmovement();
                                speedrun_convergecheck();//include dogeverygroup_updater and Alldogmovement(); inside()
@@ -4613,6 +4618,11 @@ public class OnMapSpawn : MonoBehaviour
                     finishdt=DateTime.Now;
                     //SceneManager.LoadScene("StopReporting", LoadSceneMode.Single);
                     //coreuicontroller.ShowDogObject();
+
+                    /// This for cleanup memory + automated phase
+
+                     Application.Quit();
+                    ///
                 }
             }
         }
@@ -4915,6 +4925,7 @@ public class OnMapSpawn : MonoBehaviour
         coreuicontroller.rabiesInputField[1].text = "" + loopperday;
         coreuicontroller.openEasyRun.isOn = allowUsingSkipRun;
         coreuicontroller.rabiesInputField[2].text = "" + skipRunRadius;
+        coreuicontroller.rabiesInputField[3].text = "" + loopweight;
     }
 
     private void setParamRabiesParam_CoreUIToMB(){
@@ -4922,6 +4933,7 @@ public class OnMapSpawn : MonoBehaviour
         loopperday = (int)float.Parse(coreuicontroller.rabiesInputField[1].text);
         allowUsingSkipRun = coreuicontroller.openEasyRun.isOn;
         skipRunRadius = float.Parse(coreuicontroller.rabiesInputField[2].text);
+        loopweight=float.Parse(coreuicontroller.rabiesInputField[3].text);
     }
 
     private void Texturescale(Texture targettext,int sizeof_x,int sizeof_y) 
@@ -5269,6 +5281,7 @@ public class OnMapSpawn : MonoBehaviour
         int jsonindex=0;
         jsonoutput.xgridsize_json=xgridsize;
         jsonoutput.ygridsize_json=ygridsize;
+        jsonoutput.gridsize_json=(int)_mbfunction.GridSize;
        // Current_lat_json;
       //  Current_lon_json;
         jsonoutput.suspectamount=new float[xgridsize*ygridsize]; 
