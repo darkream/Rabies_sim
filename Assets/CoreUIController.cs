@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
@@ -217,7 +217,7 @@ public class CoreUIController : MonoBehaviour
     //TO HIDE ALL UI BEFORE PLACING ANOTHER ONE
 
 
-    private void hideAllScreens(){
+    public void hideAllScreens(){
         languageSelectorScreen.SetActive(false);
         mapSelection.SetActive(false);
         populationQuantBox.SetActive(false);

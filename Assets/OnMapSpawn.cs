@@ -14,7 +14,10 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using UnityEngine.EventSystems;
 using System;
-
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.Threading.Tasks;
+using System.Collections;
 
 public class OnMapSpawn : MonoBehaviour
 {
@@ -26,10 +29,24 @@ public class OnMapSpawn : MonoBehaviour
         public int xgridsize_json;
         public int ygridsize_json;
         public int gridsize_json;
-        public float[] suspectamount; //array is destination
-        public float[] exposeamount; //array is destination
-        public float[] infectamount; //array is destination
-        
+        public float[,] suspectamount; //array is destination
+        public float[,] exposeamount; //array is destination
+        public float[,] infectamount; //array is destination
+        public float[,] latedge;
+        public float[,] lonedge;
+    }
+
+    public class Inputjson
+    {
+        public float Normaldogdata { get; set; }
+        public string Infectdogdata { get; set; }
+        public int Grid_size { get; set; }
+        public float Bite_Rate { get; set; }
+        public float Infect_Rate { get; set; }
+         public int Simulation_Day{ get; set; }
+         public float Roam_radius{ get; set; }
+        public float Current_map_pos_lat{ get; set; }
+        public float Current_map_pos_lng{ get; set; }
     }
 
 
@@ -276,8 +293,15 @@ public class OnMapSpawn : MonoBehaviour
     int[,] edge_e;
     int[,] edge_i;
 
+    int[,] max_boundary_dog;
+    int[,] max_boundary_edge;
+    
+
     //temp loop weight
     public float loopweight=2.6f;
+
+    bool automate_complete=false;
+    bool delay_complete=false;
 
     void Start()
     {
@@ -347,23 +371,36 @@ public class OnMapSpawn : MonoBehaviour
         //ALL OF MY INPUT ARE REDUCED INTO 3 MAIN FUNCTIONS
         //Because of render texture need to update frame first so...
       
-        overallUIFlowController();
-        overallOnClickHandlerUIController();
-        
-        registerUIControllerData();
-
-        if(coreuicontroller.runProgramNotification==false && frameskipper==true)
+        //overallUIFlowController(); //comment this out when automated
+        if (automate_complete==true &&delay_complete == false) // automate be true first for 1 time couroutine
         {
-            //coreuicontroller.ShowDogObject();
-
+        StartCoroutine("map_load_delayer");
+        //automate now be false
+        delay_complete=true;
         }
-        if(coreuicontroller.runProgramNotification==true && frameskipper==false)
+        if(automate_complete==false && delay_complete == true)
         {
-         frameskipper=true;
-         coreuicontroller.hideDogObject();
+            AutomatedUIFlowController();
         }
-        //frame skipping
+
+      /* if(automate_complete==true && delay_complete == true)
+        {
+                overallOnClickHandlerUIController();
         
+                registerUIControllerData();
+
+                 if(coreuicontroller.runProgramNotification==false && frameskipper==true)
+                {
+                     //frame skipping
+
+                }
+                  if(coreuicontroller.runProgramNotification==true && frameskipper==false)
+                {
+                frameskipper=true;
+                 coreuicontroller.hideDogObject();
+                }
+
+         }*/    
     }
 
     //add for rabies testing
@@ -1612,6 +1649,8 @@ public class OnMapSpawn : MonoBehaviour
         edge_s=new int[xgridsize, ygridsize];
         edge_e=new int[xgridsize, ygridsize];
         edge_i=new int[xgridsize, ygridsize];
+        max_boundary_dog = new int[xgridsize, ygridsize];
+        max_boundary_edge = new int[xgridsize, ygridsize];
         //roamingrabies = new List<float[,]>();
         //let's set environment
 
@@ -1630,6 +1669,8 @@ public class OnMapSpawn : MonoBehaviour
                 {
                     dogeverygroup.infectamount[m, n, dd] = 0.0f;
                 }
+                max_boundary_dog[m,n] = 0;
+                max_boundary_edge[m,n] = 0;
             }
         }
 
@@ -2467,13 +2508,13 @@ public class OnMapSpawn : MonoBehaviour
         {
             File.WriteAllBytes(Application.streamingAssetsPath + getFileNameTag(imagetype, route, ".png"), bytes);
 
-            //I'LL CREATE EXAMPLE HERE FOR BOAT
+           /* //I'LL CREATE EXAMPLE HERE FOR BOAT
             if (imagetype == 11) {
                 createKMLFile(
                     Application.streamingAssetsPath + "/KMLFile/" + getFileNameTag(imagetype, route, ".kml"), 
                     "state_i_dog" + rentext_sysdate + "_runloop_" + rentext_frame + ".kml"
                 );
-            }
+            }*/
         }
     }
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -2879,6 +2920,13 @@ public class OnMapSpawn : MonoBehaviour
             else return Color.clear;
         }
 
+        else if (imagetype == 13)
+        {  
+            
+            if(max_boundary_edge[lon,lat]== 1){return Color.red;}
+            else return Color.clear;
+
+        }
 
         else if (imagetype == 100)
         {
@@ -3062,6 +3110,10 @@ public class OnMapSpawn : MonoBehaviour
         else if (imagetype == 12)
         {
             return "/PictureReport/" + "Bitearea" + rentext_sysdate + "_runloop_" + rentext_frame + datatype;
+        }
+         else if (imagetype == 13)
+        {
+            return "/PictureReport/" + "maximum_edge" + rentext_sysdate + "_runloop_" + rentext_frame + datatype;
         }
         else if (imagetype == 100)
         {
@@ -4405,6 +4457,7 @@ public class OnMapSpawn : MonoBehaviour
                         EdgeforSEIR(0);
                         EdgeforSEIR(1);
                         EdgeforSEIR(2);
+                      //  EdgeforSEIR(3);
                         timelenght_perday=(24*60*60)/loopperday;
                         rabiespreadloop++;
                         Debug.Log("Fucking finish factor calculation");
@@ -4425,16 +4478,19 @@ public class OnMapSpawn : MonoBehaviour
                         Stateupdater();
                         // Debug.Log("Here pass3");
                         dogeverygroup_updater();
+                        update_max_boundary();
                         finishdt=DateTime.Now;
                         text_file_creation();
-                        savetojson();
                         EdgeforSEIR(0);
                         EdgeforSEIR(1);
                         EdgeforSEIR(2);
+                        EdgeforSEIR(3);
+                        savetojson();
                         sysdate++;
                         createImage(rentext_frame, 9);
                         createImage(rentext_frame, 10);
                         createImage(rentext_frame, 11);
+                        createImage(rentext_frame, 13);
                         createImage_screensize(rentext_frame, 12,203);
                        // createImage_extendmap(0, 1003);
                        // createImage_screensize(rentext_frame, 9,203);
@@ -4960,7 +5016,7 @@ public class OnMapSpawn : MonoBehaviour
         return "";
     }
 
-    private void EdgeforSEIR(int statetype) //statetype 0=s 1=e 2=i
+    private void EdgeforSEIR(int statetype) //statetype 0=s 1=e 2=i 3=max_boundary
     {
 
         //using edge detection on dog group (image processing)
@@ -4986,6 +5042,12 @@ public class OnMapSpawn : MonoBehaviour
           
             prepare_edge_i();
             dir_val = edge_i;
+        }
+
+        else if (statetype==3)
+        {
+            prepare_edge_maxbound();
+            dir_val = max_boundary_edge;
         }
         else return;
 
@@ -5116,7 +5178,43 @@ public class OnMapSpawn : MonoBehaviour
                          edge_i[x, y] = 1;
                     }
                    // Debug.Log("old "+oldedge[x,y]+" new " + edge_i[x,y] +" at "+x+","+y);
-                }      
+                } 
+
+                 if(statetype==3)
+                {
+                    
+                     if (tempedge[x, y] <= 0.0f)
+                    {
+                        max_boundary_edge[x, y] = 0;
+                    }
+                     else
+                    {
+                         max_boundary_edge[x, y] = 1;
+                    }
+                   
+                   //for value max to boarder
+                     if ( max_boundary_dog[x, y] == 1 && x ==0)
+                    {
+                        max_boundary_edge[x, y] = 1;
+                    }
+                     else if ( max_boundary_dog[x, y] == 1 && x ==(xgridsize-1))
+                     {
+                            max_boundary_edge[x, y] = 1;
+                        
+                     }
+                    else if ( max_boundary_dog[x, y] == 1 && y ==0)
+                     {
+                            max_boundary_edge[x, y] = 1;
+                        
+                     }
+                     else if ( max_boundary_dog[x, y] == 1 && y ==(ygridsize-1))
+                     {
+                         max_boundary_edge[x, y] = 1;
+                        
+                     }
+
+
+                }   
             }
         }
        // else converge_count=0;
@@ -5176,6 +5274,34 @@ public class OnMapSpawn : MonoBehaviour
                      }
                      else edge_i[x,y]=0;
                 }
+            }
+        }
+    }
+
+
+    private void prepare_edge_maxbound()
+    {
+         for (int y = 0; y < ygridsize; y++)
+        {
+            for (int x = 0; x < xgridsize; x++)
+            {
+                max_boundary_edge[x,y]= max_boundary_dog[x,y];
+            }
+        }
+    }
+
+
+    private void update_max_boundary()
+    {
+         for (int y = 0; y < ygridsize; y++)
+        {
+            for (int x = 0; x < xgridsize; x++)
+            {
+                     if(foundinfect(x,y)==true)
+                     {
+                         max_boundary_dog[x,y]=1;
+                       
+                     }
             }
         }
     }
@@ -5261,7 +5387,7 @@ public class OnMapSpawn : MonoBehaviour
         string folpathS=Application.streamingAssetsPath+"/S_state";
         string folpathE=Application.streamingAssetsPath+"/E_state";
         string folpathI=Application.streamingAssetsPath+"/I_state";
-        string test=Application.streamingAssetsPath+"/asdsadsadsada";
+     
     
       
         if (Directory.Exists(folpath1)) { Directory.Delete(folpath1, true); }
@@ -5278,29 +5404,42 @@ public class OnMapSpawn : MonoBehaviour
 
     private void savetojson()
     {
-        int jsonindex=0;
+        Vector2d templatlonforvalue = new Vector2d();
         jsonoutput.xgridsize_json=xgridsize;
         jsonoutput.ygridsize_json=ygridsize;
         jsonoutput.gridsize_json=(int)_mbfunction.GridSize;
        // Current_lat_json;
       //  Current_lon_json;
-        jsonoutput.suspectamount=new float[xgridsize*ygridsize]; 
-        jsonoutput.exposeamount=new float[xgridsize*ygridsize]; 
-        jsonoutput.infectamount=new float[xgridsize*ygridsize]; 
+        jsonoutput.suspectamount=new float[xgridsize,ygridsize]; 
+        jsonoutput.exposeamount=new float[xgridsize,ygridsize]; 
+        jsonoutput.infectamount=new float[xgridsize,ygridsize]; 
+        jsonoutput.latedge = new float[xgridsize,ygridsize];
+        jsonoutput.lonedge = new float[xgridsize,ygridsize];
         for(int i=0;i<xgridsize;i++)
         {
             for(int j=0;j<ygridsize;j++)
             {
-            jsonoutput.suspectamount[jsonindex]=dogeverygroup.suspectamount[i,j];    
-            jsonoutput.exposeamount[jsonindex]=exposesumatpoint(i,j);   
-            jsonoutput.infectamount[jsonindex]=infectsumatpoint(i,j);   
-            jsonindex++;
+            jsonoutput.suspectamount[i,j]=dogeverygroup.suspectamount[i,j];    
+            jsonoutput.exposeamount[i,j]=exposesumatpoint(i,j);   
+            jsonoutput.infectamount[i,j]=infectsumatpoint(i,j); 
+            if(max_boundary_edge[i,j]==1)
+            {
+                templatlonforvalue=latlon_get_fromgrid(i,j);
+                jsonoutput.latedge[i,j] = (float)templatlonforvalue.x;
+                jsonoutput.lonedge[i,j] = (float)templatlonforvalue.y;
+            }
+            else
+            {
+                jsonoutput.latedge[i,j] = 0.0f;
+                jsonoutput.lonedge[i,j] = 0.0f;
+            }
             } 
         }
-
-        string jsonstr= JsonUtility.ToJson(jsonoutput,true);
-
-        writetojsonfle(jsonstr);
+        
+        //string jsonstr= JsonUtility.ToJson(jsonoutput,true);
+        JToken jsonstrtoken = JToken.FromObject(jsonoutput);
+        string beautified = jsonstrtoken.ToString(Formatting.Indented);
+        writetojsonfle(beautified);
     }
     private void writetojsonfle(string json)
     {
@@ -5310,4 +5449,145 @@ public class OnMapSpawn : MonoBehaviour
         sw.Write(json);
         sw.Close();
     }
+
+    private Vector2d latlon_get_fromgrid(int xgrid,int ygrid)
+    {
+        Vector2d latlonresult = new Vector2d();
+        int widthpos=Screen.width/xgridsize;
+        int heightpos=Screen.height/ygridsize;
+        latlonresult=_mbfunction.getLatLonFromXY(widthpos*xgrid+(widthpos/2),heightpos*ygrid+(heightpos/2));
+        return latlonresult ;
+    }
+
+    private void AutomatedUIFlowController()
+    {
+        coreuicontroller.hideAllScreens();
+        coreuicontroller.resetMapCalculationParameter = true; //pass ui
+        
+        //todo ... map zoom update at 5x5km  
+        _mapManager.UpdateMap(_mapManager.CenterLatitudeLongitude, 14.15f);
+
+        //todo .... delay for map update  
+         Debug.Log("test delayer"); 
+        
+    
+         // automate_complete=true;
+
+        screenSelection();
+        Mapcapture();
+      
+ 
+        //set defulat dog
+            coreuicontroller.useDefaultDogNotification = false;
+            readDogPopulationPoint(Application.streamingAssetsPath+"/Dogpop_3provinces.csv", 1, 2, 3);
+      
+       //todo ... Add infected dog
+      
+        if (coreuicontroller.dogIsAddedNotification_I)
+        {
+            coreuicontroller.dogIsAddedNotification_I = false;
+            _mbfunction.clearInfectObjectMemory();
+            int quantity = coreuicontroller.getDogPopulation_I();
+            if (quantity != -1)
+            {
+                addInfectObject(_mbfunction.temp_latlondelta, (int)quantity);
+                // coreuicontroller.setDeletableDogToContent();
+                coreuicontroller.showDogErrorInput_I("");
+            }
+            else
+            {
+                coreuicontroller.showDogErrorInput_I(coreuicontroller.stringScript.getErrorInputField());
+            }
+            coreuicontroller.switchAllowInput_I(true);
+            coreuicontroller.onDoginputNotification_I = false;
+        }
+
+        //HANDLING DEFAULT PARAMETERS
+        if (coreuicontroller.initMapCalculationParameter)
+        {
+            coreuicontroller.initMapCalculationParameter = false;
+            setParamMapCal_MBToCoreUI();
+        }
+        if (coreuicontroller.resetMapCalculationParameter)
+        {
+            coreuicontroller.resetMapCalculationParameter = false;
+            setParamMapCal_CoreUIToMB();
+        }
+        if (coreuicontroller.initDogBehaviorParameter)
+        {
+            coreuicontroller.initDogBehaviorParameter = false;
+            setParamDogBehavior_MBToCoreUI();
+        }
+        if (coreuicontroller.resetDogBehaviorParameter)
+        {
+            coreuicontroller.resetDogBehaviorParameter = false;
+            setParamDogBehavior_CoreUIToMB();
+        }
+        if (coreuicontroller.initImageGenParameter)
+        {
+            coreuicontroller.initImageGenParameter = false;
+            setParamImageGen_MBToCoreUI();
+        }
+        if (coreuicontroller.resetImageGenParameter)
+        {
+            coreuicontroller.resetImageGenParameter = false;
+            setParamImageGen_CoreUIToMB();
+        }
+        if (coreuicontroller.initInfectedDogParameter)
+        {
+            coreuicontroller.initInfectedDogParameter = false;
+            setParamRabiesParam_MBToCoreUI();
+            coreuicontroller.showOrHideSkipRunRadius(coreuicontroller.openEasyRun.isOn);
+        }
+        if (coreuicontroller.resetInfectedDogParameter){
+            coreuicontroller.resetInfectedDogParameter = false;
+            setParamRabiesParam_CoreUIToMB();
+        }
+
+
+         //extendmapSelection(); //on this when extend map complete
+        coreuicontroller.runProgramNotification = true;
+       
+
+        //AND HANDLING RESET PARAMETERS
+
+        //HANDLING RUNNING WHOLE PROGRAM
+        if (coreuicontroller.runProgramNotification==true && frameskipper==true)
+        {
+            coreuicontroller.runProgramNotification = false;
+            frameskipper=false;
+            //frame skipping
+           
+            initialPreDataRegister();
+        }
+        
+        //HANDLING ON MOUSE OVER TO UI FOR INSTRUCTION UI
+        string foundObject = checkRayCastTargetList();
+        int foundIndex = coreuicontroller.getInstructionIDFromString(foundObject);
+        if (foundIndex != -1){
+            coreuicontroller.notifyInstructionTextChange(foundIndex);
+        }
+
+        //HANDLING ZOOM LEVEL
+        coreuicontroller.updateZoomLevel(_mapManager.Zoom);
+        automate_complete=true;
+    }
+
+
+    IEnumerator map_load_delayer()
+    {
+         coreuicontroller.hideAllScreens();
+        coreuicontroller.resetMapCalculationParameter = true; //pass ui
+        
+        //todo ... map zoom update at 5x5km  
+        _mapManager.UpdateMap(_mapManager.CenterLatitudeLongitude, 14.15f);
+         Debug.Log("begin delayer");
+         yield return new WaitForSecondsRealtime(10.0f);
+        Debug.Log("end delayer");
+        automate_complete=false;
+               
+    }
+
+
+  
 }
