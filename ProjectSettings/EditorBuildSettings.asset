@@ -5,7 +5,7 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/Rabies_add/StartingScreen.unity
     guid: ce9716e108742e24898411e75cdece17
   - enabled: 1

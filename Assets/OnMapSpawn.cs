@@ -18,12 +18,20 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
 using System.Collections;
+using System.Net;
+using System.Net.Http;
+using System.Security.Cryptography.X509Certificates;
+using System.Security.Authentication;
+using System.Security;
+using System.Linq;
+using System.Text;
 
 public class OnMapSpawn : MonoBehaviour
 {
     [Serializable]
     public class Outputjson
     {
+        public string ExecName;
         public float Current_lat_json;
         public float Current_lon_json;
         public int xgridsize_json;
@@ -36,18 +44,7 @@ public class OnMapSpawn : MonoBehaviour
         public float[,] lonedge;
     }
 
-    public class Inputjson
-    {
-        public float Normaldogdata { get; set; }
-        public string Infectdogdata { get; set; }
-        public int Grid_size { get; set; }
-        public float Bite_Rate { get; set; }
-        public float Infect_Rate { get; set; }
-         public int Simulation_Day{ get; set; }
-         public float Roam_radius{ get; set; }
-        public float Current_map_pos_lat{ get; set; }
-        public float Current_map_pos_lng{ get; set; }
-    }
+    
 
 
     [SerializeField]
@@ -300,8 +297,22 @@ public class OnMapSpawn : MonoBehaviour
     //temp loop weight
     public float loopweight=2.6f;
 
-    bool automate_complete=false;
+    bool automate_complete=true;
     bool delay_complete=false;
+
+    public Mobileappinput mobileinput =new Mobileappinput();
+
+     private static HttpClientHandler handler = new HttpClientHandler()
+        { 
+             ClientCertificateOptions = ClientCertificateOption.Manual//,
+            // SslProtocols = SslProtocols.Tls12,
+          //   ServerCertificateCustomValidationCallback = (httpRequestMessage, cert, cetChain, policyErrors) =>
+          //  {
+          //  return true;
+         //   }
+        };
+    
+    private static readonly HttpClient client = new HttpClient(handler);
 
     void Start()
     {
@@ -319,7 +330,16 @@ public class OnMapSpawn : MonoBehaviour
         coreuicontroller.setupActivation();
         mapcap_cam.targetTexture = new RenderTexture( Screen.width, Screen.height, 24 );
         Debug.Log(Application.streamingAssetsPath);
-         Application.targetFrameRate = 60;
+        Application.targetFrameRate = 60;      
+        read_json_mobileinput();
+        //update map to location
+         Vector2d appinputlatlon = new Vector2d(double.Parse(mobileinput.Current_map_pos_lat),double.Parse(mobileinput.Current_map_pos_lng));
+       // _mapManager.UpdateMap(_mapManager.CenterLatitudeLongitude, 14.15f);
+        Debug.Log(appinputlatlon.x);
+        Debug.Log(appinputlatlon.y);
+        _mapManager.UpdateMap(appinputlatlon, 14.15f);
+
+        
         //clustering.pixelReaderAndFileWritten("Assets/mapcolor.txt");
         //clustering.createStringColorListFromReadFile("Assets/mapcolor.txt");
         //clustering.kMeanClustering();
@@ -372,6 +392,8 @@ public class OnMapSpawn : MonoBehaviour
         //Because of render texture need to update frame first so...
       
         //overallUIFlowController(); //comment this out when automated
+       
+       
         if (automate_complete==true &&delay_complete == false) // automate be true first for 1 time couroutine
         {
         StartCoroutine("map_load_delayer");
@@ -383,7 +405,16 @@ public class OnMapSpawn : MonoBehaviour
             AutomatedUIFlowController();
         }
 
-      /* if(automate_complete==true && delay_complete == true)
+        if(automate_complete==true && delay_complete == true)
+        {
+                overallOnClickHandlerUIController();
+        
+                registerUIControllerData();
+        }
+         
+
+        
+    /*  if(automate_complete==true && delay_complete == true)
         {
                 overallOnClickHandlerUIController();
         
@@ -400,7 +431,8 @@ public class OnMapSpawn : MonoBehaviour
                  coreuicontroller.hideDogObject();
                 }
 
-         }*/    
+        } */
+         
     }
 
     //add for rabies testing
@@ -2292,8 +2324,12 @@ public class OnMapSpawn : MonoBehaviour
         }
         for (int i = 0; i < dogdata.Count; i++)
         {
+            // recheck outbound
+           if(dogdata[i].lonid<xgridsize&&dogdata[i].latid<ygridsize &&dogdata[i].lonid>=0&&dogdata[i].latid>=0)
+            {
             doggroup[dogdata[i].lonid, dogdata[i].latid] = dogdata[i].size;
             tempgroup[dogdata[i].lonid, dogdata[i].latid] = dogdata[i].size;
+           }
         }
     }
 
@@ -4485,7 +4521,8 @@ public class OnMapSpawn : MonoBehaviour
                         EdgeforSEIR(1);
                         EdgeforSEIR(2);
                         EdgeforSEIR(3);
-                        savetojson();
+                        if(sysdate==dayloop-1)savetojson(1);
+                        else savetojson(0);
                         sysdate++;
                         createImage(rentext_frame, 9);
                         createImage(rentext_frame, 10);
@@ -4676,7 +4713,7 @@ public class OnMapSpawn : MonoBehaviour
                     //coreuicontroller.ShowDogObject();
 
                     /// This for cleanup memory + automated phase
-
+                    trigger_postrequest_http();
                      Application.Quit();
                     ///
                 }
@@ -4731,7 +4768,8 @@ public class OnMapSpawn : MonoBehaviour
         if (coreuicontroller.useDefaultDogNotification)
         {
             coreuicontroller.useDefaultDogNotification = false;
-            readDogPopulationPoint(Application.streamingAssetsPath+"/Dogpop_3provinces.csv", 1, 2, 3);
+            //readDogPopulationPoint(Application.streamingAssetsPath+"/Dogpop_3provinces.csv", 1, 2, 3);
+             readDogPopulationPoint(Application.streamingAssetsPath+"/DogDen.csv", 0, 1, 4);
         }
         if (coreuicontroller.deleteOneDogNotification != -1)
         {
@@ -5402,9 +5440,28 @@ public class OnMapSpawn : MonoBehaviour
         Directory.CreateDirectory(folpathI);
     }
 
-    private void savetojson()
+    private void read_json_mobileinput()
+    {
+        string path = (Application.streamingAssetsPath +"/app_mobile_input.json");
+        //FileStream fileStream = new FileStream(path)
+        StreamReader reader = new StreamReader (path);
+        string jsonString = reader.ReadToEnd();
+        mobileinput = JsonConvert.DeserializeObject<Mobileappinput>(jsonString);
+        reader.Close();
+        Debug.Log(mobileinput.NormalDogdata);
+        Debug.Log(mobileinput.SubdistInfo.SubdistCode);
+        Debug.Log(mobileinput.InfectDogdata[1].lat);
+        //Debug.Log(mobileinput.InfectDogdata);
+        Debug.Log(mobileinput.Infect_Rate);
+        Debug.Log(mobileinput.Roam_radius);
+        Debug.Log(mobileinput.Current_map_pos_lat);
+        Debug.Log(float.Parse(mobileinput.Current_map_pos_lat));
+        
+    }
+    private void savetojson(int finalday)
     {
         Vector2d templatlonforvalue = new Vector2d();
+        jsonoutput.ExecName=String.Copy(mobileinput.ExecName);
         jsonoutput.xgridsize_json=xgridsize;
         jsonoutput.ygridsize_json=ygridsize;
         jsonoutput.gridsize_json=(int)_mbfunction.GridSize;
@@ -5440,6 +5497,7 @@ public class OnMapSpawn : MonoBehaviour
         JToken jsonstrtoken = JToken.FromObject(jsonoutput);
         string beautified = jsonstrtoken.ToString(Formatting.Indented);
         writetojsonfle(beautified);
+        if(finalday == 1)writetojsonfle_final(beautified);
     }
     private void writetojsonfle(string json)
     {
@@ -5450,6 +5508,14 @@ public class OnMapSpawn : MonoBehaviour
         sw.Close();
     }
 
+     private void writetojsonfle_final(string json)
+    {
+        string path = (Application.streamingAssetsPath +"/Textreport/Json_Report_Final.json");
+        //FileStream fileStream = new FileStream(path)
+        StreamWriter sw = File.CreateText(path);
+        sw.Write(json);
+        sw.Close();
+    }
     private Vector2d latlon_get_fromgrid(int xgrid,int ygrid)
     {
         Vector2d latlonresult = new Vector2d();
@@ -5463,131 +5529,226 @@ public class OnMapSpawn : MonoBehaviour
     {
         coreuicontroller.hideAllScreens();
         coreuicontroller.resetMapCalculationParameter = true; //pass ui
-        
-        //todo ... map zoom update at 5x5km  
-        _mapManager.UpdateMap(_mapManager.CenterLatitudeLongitude, 14.15f);
 
-        //todo .... delay for map update  
-         Debug.Log("test delayer"); 
-        
-    
-         // automate_complete=true;
-
-        screenSelection();
-        Mapcapture();
-      
- 
-        //set defulat dog
-            coreuicontroller.useDefaultDogNotification = false;
-            readDogPopulationPoint(Application.streamingAssetsPath+"/Dogpop_3provinces.csv", 1, 2, 3);
-      
-       //todo ... Add infected dog
-      
-        if (coreuicontroller.dogIsAddedNotification_I)
-        {
-            coreuicontroller.dogIsAddedNotification_I = false;
-            _mbfunction.clearInfectObjectMemory();
-            int quantity = coreuicontroller.getDogPopulation_I();
-            if (quantity != -1)
-            {
-                addInfectObject(_mbfunction.temp_latlondelta, (int)quantity);
-                // coreuicontroller.setDeletableDogToContent();
-                coreuicontroller.showDogErrorInput_I("");
-            }
-            else
-            {
-                coreuicontroller.showDogErrorInput_I(coreuicontroller.stringScript.getErrorInputField());
-            }
-            coreuicontroller.switchAllowInput_I(true);
-            coreuicontroller.onDoginputNotification_I = false;
-        }
-
+        //parameter set
         //HANDLING DEFAULT PARAMETERS
-        if (coreuicontroller.initMapCalculationParameter)
-        {
+        //let's default Param kick in first
+     
             coreuicontroller.initMapCalculationParameter = false;
             setParamMapCal_MBToCoreUI();
-        }
-        if (coreuicontroller.resetMapCalculationParameter)
-        {
+        
+       
             coreuicontroller.resetMapCalculationParameter = false;
             setParamMapCal_CoreUIToMB();
-        }
-        if (coreuicontroller.initDogBehaviorParameter)
-        {
+        
+       
             coreuicontroller.initDogBehaviorParameter = false;
             setParamDogBehavior_MBToCoreUI();
-        }
-        if (coreuicontroller.resetDogBehaviorParameter)
-        {
+        
+        
             coreuicontroller.resetDogBehaviorParameter = false;
             setParamDogBehavior_CoreUIToMB();
-        }
-        if (coreuicontroller.initImageGenParameter)
-        {
+        
+      
             coreuicontroller.initImageGenParameter = false;
             setParamImageGen_MBToCoreUI();
-        }
-        if (coreuicontroller.resetImageGenParameter)
-        {
+        
+       
             coreuicontroller.resetImageGenParameter = false;
             setParamImageGen_CoreUIToMB();
-        }
-        if (coreuicontroller.initInfectedDogParameter)
-        {
+        
+       
             coreuicontroller.initInfectedDogParameter = false;
             setParamRabiesParam_MBToCoreUI();
             coreuicontroller.showOrHideSkipRunRadius(coreuicontroller.openEasyRun.isOn);
-        }
-        if (coreuicontroller.resetInfectedDogParameter){
+       
             coreuicontroller.resetInfectedDogParameter = false;
             setParamRabiesParam_CoreUIToMB();
-        }
-
-
-         //extendmapSelection(); //on this when extend map complete
-        coreuicontroller.runProgramNotification = true;
-       
-
-        //AND HANDLING RESET PARAMETERS
-
-        //HANDLING RUNNING WHOLE PROGRAM
-        if (coreuicontroller.runProgramNotification==true && frameskipper==true)
-        {
-            coreuicontroller.runProgramNotification = false;
-            frameskipper=false;
-            //frame skipping
-           
-            initialPreDataRegister();
-        }
         
-        //HANDLING ON MOUSE OVER TO UI FOR INSTRUCTION UI
-        string foundObject = checkRayCastTargetList();
-        int foundIndex = coreuicontroller.getInstructionIDFromString(foundObject);
-        if (foundIndex != -1){
-            coreuicontroller.notifyInstructionTextChange(foundIndex);
-        }
 
-        //HANDLING ZOOM LEVEL
-        coreuicontroller.updateZoomLevel(_mapManager.Zoom);
+          //then re-setting appinput to param
+            _mbfunction.GridSize=mobileinput.Grid_size;
+            biterate=mobileinput.Bite_Rate;
+            infectedrate=mobileinput.Infect_Rate;
+            dayloop=mobileinput.Simulation_Day;
+            skipRunRadius=mobileinput.Roam_radius;
+
+        
+        //set screen
+        screenSelection();
+        Mapcapture();
+
+        //set defulat dog
+        coreuicontroller.useDefaultDogNotification = false;
+          readDogPopulationPoint(Application.streamingAssetsPath+"/DogDen.csv", 0, 1, 4);
+           
+         //dummy test
+        // SpreadDogPopulation_per_subdistrict();
+      
+       //todo ... Add infected dog
+       for(int i = 0;i<mobileinput.InfectDogdata.Count;i++)
+       {
+           Vector2d infectappinput = new Vector2d(mobileinput.InfectDogdata[i].lat,mobileinput.InfectDogdata[i].lng);
+           addInfectObject(infectappinput, int.Parse(mobileinput.InfectDogdata[i].amt));
+       }
+      //handel other json input
+     
+        coreuicontroller.runProgramNotification = false;
+        initialPreDataRegister(); 
         automate_complete=true;
     }
 
 
     IEnumerator map_load_delayer()
     {
-         coreuicontroller.hideAllScreens();
+       coreuicontroller.hideAllScreens();
         coreuicontroller.resetMapCalculationParameter = true; //pass ui
         
         //todo ... map zoom update at 5x5km  
-        _mapManager.UpdateMap(_mapManager.CenterLatitudeLongitude, 14.15f);
+        //_mapManager.UpdateMap(_mapManager.CenterLatitudeLongitude, 14.15f);
          Debug.Log("begin delayer");
-         yield return new WaitForSecondsRealtime(10.0f);
+         yield return new WaitForSecondsRealtime(20.0f);
         Debug.Log("end delayer");
         automate_complete=false;
+        //testgetrequest_webreq();        
+    }
+
+    
+
+
+     private void SpreadDogPopulation_per_subdistrict()
+    {
+        //each point normally width 300 meter
+        //sample point is 200
+      
+        float sampledog = 200.0f;
+
+        //find number of point 
+        float gridhalfwidth = (float)Math.Floor(xgridsize/2.0f) ;
+        float gridhalfhight = (float)Math.Floor(ygridsize/2.0f) ;
+        float grid_distance= (float)Math.Floor(300.0f / _mbfunction.GridSize) ;
+        int dog_gridwidth = ((int)Math.Floor(gridhalfwidth / grid_distance) * 2)+1;
+        int dog_gridhight = ((int)Math.Floor(gridhalfhight / grid_distance) * 2)+1;
+        float dognum_per_grid = sampledog / (float)(dog_gridwidth*dog_gridhight); 
+        int intgrid_distance= (int)grid_distance;
+        Vector2d latlonDelta = new Vector2d(0.0f,0.0f);
+
+        //top left side
+        for(int i = (int)gridhalfwidth; i>=0;i=i-intgrid_distance )
+        {
+          
+            for(int j = (int)gridhalfhight; j<ygridsize;j=j+intgrid_distance )
+            {
+
+                latlonDelta=_mbfunction.getLatLonFromXY(i, j);
+                doggroupsize.Add(dognum_per_grid);
+                _mbfunction.addDogLocation(latlonDelta, dognum_per_grid);
+                dogdata.Add(_mbfunction.getNewDog());
+                coreuicontroller.setDeletableDogToContent();
                
+            }
+          
+        }
+        //top right side
+       
+       for(int i = (int)gridhalfwidth+intgrid_distance; i<xgridsize;i=i+intgrid_distance )
+        {
+            for(int j = (int)gridhalfhight; j<ygridsize;j=j+intgrid_distance )
+            {
+
+                latlonDelta=_mbfunction.getLatLonFromXY(i, j);
+                doggroupsize.Add(dognum_per_grid);
+                _mbfunction.addDogLocation(latlonDelta, dognum_per_grid);
+                dogdata.Add(_mbfunction.getNewDog());
+                coreuicontroller.setDeletableDogToContent();
+             
+            }
+             
+             
+        }
+
+        //down left
+        for(int i = (int)gridhalfwidth; i>=0;i=i-intgrid_distance )
+        {
+         
+          for(int j = (int)gridhalfhight-intgrid_distance; j>=0;j=j-intgrid_distance )
+            {
+
+                latlonDelta=_mbfunction.getLatLonFromXY(i, j);
+                doggroupsize.Add(dognum_per_grid);
+                _mbfunction.addDogLocation(latlonDelta, dognum_per_grid);
+                dogdata.Add(_mbfunction.getNewDog());
+                coreuicontroller.setDeletableDogToContent();
+         
+                
+            }
+          
+        }
+        //down right
+        for(int i = (int)gridhalfwidth+intgrid_distance; i<xgridsize;i=i+intgrid_distance )
+        {
+            for(int j = (int)gridhalfhight-intgrid_distance; j>=0;j=j-intgrid_distance )
+            {
+
+                latlonDelta=_mbfunction.getLatLonFromXY(i, j);
+                doggroupsize.Add(dognum_per_grid);
+                _mbfunction.addDogLocation(latlonDelta, dognum_per_grid);
+                dogdata.Add(_mbfunction.getNewDog());
+                coreuicontroller.setDeletableDogToContent();
+                
+            }
+        }
+        
+        Debug.Log(doggroupsize.Count);
+        DebugConsole.Log("Finish Defualt");
+        
     }
 
 
+    private void trigger_postrequest_http()
+    {
+        var payload = "rabiesfinish5789";
+        HttpContent cont = new StringContent(payload, Encoding.UTF8, "text/plain");
+        client.DefaultRequestHeaders.ConnectionClose = true;
+        var response = client.PostAsync("http://localhost:26950/",cont).Result;
+        if (response.IsSuccessStatusCode)
+        {
+         var responseContent = response.Content; 
+
+        // by calling .Result you are synchronously reading the result
+         string responseString = responseContent.ReadAsStringAsync().Result;
+         Debug.Log(responseString);
+        }
+    }
+
+    private void testgetrequest_webreq()
+    { 
+      string url = "http://localhost:26950/";
+      HttpWebRequest request = WebRequest.CreateHttp(url);
+      request.Method = "GET"; // or "POST", "PUT", "PATCH", "DELETE", etc.
+      using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
+        {
+                // Do something with the response
+        }
+    }
+      static private X509Certificate2 GetClientTestingCertificate(string certificate)
+        {
+            X509Certificate2 certificate2 = null;
+            try
+            {
+
+                var privateKeyBytes = Convert.FromBase64String(certificate);
+                var pfxPassword = "";
+                certificate2 = new X509Certificate2(privateKeyBytes, pfxPassword, X509KeyStorageFlags.Exportable);
+
+                return certificate2;
+            }
+            catch (Exception)
+            {
+
+
+            }
+            return certificate2;
+        }
   
 }

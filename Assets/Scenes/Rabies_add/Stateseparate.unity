@@ -7893,8 +7893,8 @@ MonoBehaviour:
   _initializeOnStart: 1
   _options:
     locationOptions:
-      latitudeLongitude: '6.980814   ,100.338595 '
-      zoom: 18
+      latitudeLongitude: '6.96048   ,100.411 '
+      zoom: 14.15
     extentOptions:
       extentType: 0
       cameraBoundsOptions:
@@ -8055,9 +8055,6 @@ MonoBehaviour:
     xgridsize_json: 0
     ygridsize_json: 0
     gridsize_json: 0
-    suspectamount: []
-    exposeamount: []
-    infectamount: []
   biterate: 0.07
   infectedrate: 0.5
   cutoff_percentage: 0.05

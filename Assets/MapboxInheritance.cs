@@ -293,8 +293,18 @@ public class MapboxInheritance : MonoBehaviour
         int at_lon = getLonGridIndex(abs(s_lon - lon));
         //temporaly 
         
+        //for lat lon recheck
+        if(at_lat>=0&&at_lat<x_gsize&&at_lon>=0&&at_lon<y_gsize)
+       { tempdoglocation = new LatLonSize(at_lat , at_lon , groupsize);}
 
-        tempdoglocation = new LatLonSize(at_lat , at_lon , groupsize);
+       else
+       {
+           if(at_lat<0)at_lat=0;
+           if(at_lat>=x_gsize)at_lat=x_gsize-1;
+           if(at_lon<0)at_lon=0;
+           if(at_lon>=y_gsize)at_lon=y_gsize-1;
+            tempdoglocation = new LatLonSize(at_lat , at_lon , 0.0f);
+       }
 
 
         //

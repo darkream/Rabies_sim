@@ -1,0 +1,17 @@
+{
+  "ExecName": "Sample Execution (DLD BKK)",
+  "SubdistInfo": {
+    "SubdistCode": "103701",
+    "SubdistName": "THUNG PHAYA THAI",
+    "SubdistArea": 4589515.458
+  },
+  "NormalDogdata": 481.0,
+  "InfectDogdata": [{"lat":13.755459460393514,"lng":100.53369029199646,"amt":"1"},{"lat":13.755378696646957,"lng":100.53390755092667,"amt":"2"},{"lat":13.755662672277717,"lng":100.53383513128327,"amt":"1"}],
+  "Grid_size": 50,
+  "Bite_Rate": 0.5,
+  "Infect_Rate": 0.07,
+  "Simulation_Day": 30,
+  "Roam_radius": 2.5,
+  "Current_map_pos_lat": "13.755520684462336",
+  "Current_map_pos_lng": "100.53379892146157"
+}
